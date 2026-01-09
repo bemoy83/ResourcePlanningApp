@@ -1,0 +1,23 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Event {
+  id        String @id
+  name      String
+  startDate String
+  endDate   String
+  status    String
+}
+
+model WorkCategory {
+  id                    String @id
+  eventId               String
+  name                  String
+  estimatedEffortHours  Float
+}
