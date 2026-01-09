@@ -1,0 +1,273 @@
+Implementation Order (First Vertical Slice)
+Guiding rule for this order
+
+Define facts → define math → define state → define views
+
+We always implement:
+
+Definitions before behavior
+
+Pure logic before orchestration
+
+Read models after writes exist
+
+Phase 0 — Repo scaffolding (very light, 1 sitting)
+
+Goal: Make architectural intent visible before any logic exists.
+
+Do this first
+
+Create folder structure by module:
+
+/modules
+  /events
+  /work
+  /productivity
+  /resources
+  /schedule
+
+
+Add:
+
+ARCHITECTURE.md
+
+(optional) MVP.md with the slice definition
+
+🚫 No code yet. This prevents “where should this live?” mistakes later.
+
+Phase 1 — Events module (foundation, no planning risk)
+
+Why first:
+Events define the time boundary. Everything else depends on this, and it has zero planning logic risk.
+
+Implement in this order
+
+Event domain model
+
+Event ID
+
+Name
+
+Start / end date
+
+Status
+
+Pure logic
+
+isValidEventDateRange
+
+calculateEventDurationDays
+
+Persistence
+
+Prisma schema
+
+createEvent
+
+getEvent
+
+API routes
+
+Create event
+
+Fetch event
+
+✅ Stop here and test:
+“Can I create an event and retrieve its date range?”
+
+Phase 2 — Work module (static scope, no time logic)
+
+Why second:
+Work defines how much work exists, but not when. Still safe.
+
+Implement in this order
+
+Work Category model
+
+ID
+
+Event ID
+
+Name
+
+Estimated effort (hours/FTE)
+
+Pure validation
+
+validateEstimatedEffort
+
+Persistence
+
+Create / update work categories
+
+Query by event
+
+API routes
+
+Add work category
+
+Update estimate
+
+List work for event
+
+✅ Stop and test:
+“Can I define work categories with total estimates for an event?”
+
+Phase 3 — Productivity module (pure math only)
+
+Why now:
+You want conversions locked in before allocations exist.
+Also: zero persistence = very low risk.
+
+Implement in this order
+
+Pure functions only
+
+convertFteToHours
+
+convertHoursToFte
+
+Config source
+
+Hardcoded config or DB-backed (read-only)
+
+🚫 No API routes required yet
+🚫 No state mutation allowed
+
+✅ Test with unit tests only.
+
+Phase 4 — Resources module (capacity as passive input)
+
+Why before Schedule:
+Schedule must not own capacity logic. This enforces that separation.
+
+Implement in this order
+
+Resource model
+
+ID
+
+Name
+
+Daily capacity
+
+Availability rules
+
+Pure logic
+
+calculateDailyCapacity
+
+applyAvailabilityConstraints
+
+Stateful orchestration
+
+getResourceCapacity(resourceId, dateRange)
+
+Persistence + API
+
+Create resource
+
+Update capacity
+
+Fetch capacity summary
+
+✅ Stop and test:
+“Can I ask: how much capacity exists on a given day?”
+
+Phase 5 — Schedule module (the core, go slow here)
+
+Why last:
+This is where all your invariants matter. By now, everything it depends on is frozen.
+
+Implement in this exact order
+5.1 Allocation model (no evaluation yet)
+
+Allocation:
+
+ID
+
+Event ID
+
+Work Category ID
+
+Date
+
+Hours (normalized)
+
+5.2 Pure logic first
+
+normalizeAllocationToHours
+
+isAllocationWithinEventRange
+
+aggregateDailyDemand
+
+🚫 No persistence yet
+
+5.3 Stateful allocation commands
+
+addAllocation
+
+updateAllocation
+
+removeAllocation
+
+Rules enforced here:
+
+Valid IDs
+
+Within event range
+
+No auto-distribution
+
+5.4 Evaluation (signals only)
+
+calculateOverUnderAllocationIndicator
+
+evaluateSchedule(eventId)
+
+🚫 Must not mutate allocations
+✅ May populate read models
+
+5.5 Read models
+
+Daily demand per event
+
+Daily capacity per event
+
+Indicator flags
+
+Phase 6 — Minimal UI (only after backend is solid)
+
+Rule:
+UI must only reflect what already exists.
+
+Forms for:
+
+Events
+
+Work categories
+
+Resources
+
+Allocations
+
+Table for:
+
+Date | Demand | Capacity | Indicator
+
+🚫 No suggestions
+🚫 No defaults
+🚫 No auto-fill logic
+
+🔒 Hard stop rule (important)
+
+After each phase, stop and verify:
+
+Invariants still hold
+
+No module imported another’s internals
+
+No evaluation mutates state
+
+If something feels “helpful”, it’s wrong.

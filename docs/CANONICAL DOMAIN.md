@@ -1,0 +1,74 @@
+Here’s a canonical domain vocabulary for the Trade Fair Resource Planning App
+
+- Actual
+  - Definition: Effort that has been recorded as actually spent, expressed in hours, and associated with a date and work category.
+  - Aliases / Rejected terms: Spent (accepted synonym), Consumed (rejected — ambiguous)
+  - Module: Schedule (or future Actuals submodule)
+- Allocation
+  - Definition: A manual entry assigning a specific amount of effort (hours or FTE, normalized to hours) to a work category on a specific date or period.
+  - Aliases / Rejected terms: Assignment, Booking (rejected — imply resource assignment)
+  - Module: Schedule
+- Availability
+  - Definition: The portion of a resource’s capacity that is usable on a given date or period, after applying availability constraints such as non-working days.
+  - Aliases / Rejected terms: Free time (rejected — informal), Remaining capacity (rejected — derived concept)
+  - Module: Resources
+- Capacity
+  - Definition: The maximum amount of effort a resource can supply in a given period, expressed in hours.
+  - Aliases / Rejected terms: Supply (rejected — ambiguous), Throughput (rejected — productivity-related)
+  - Module: Resources
+- Deadline Pressure Signal
+  - Definition: A derived indicator showing that remaining estimated effort is becoming difficult to fit into the remaining event date range.
+  - Aliases / Rejected terms: Critical path, Risk score (rejected — imply optimization or enforcement)
+  - Module: Schedule
+- Demand
+  - Definition: The aggregated total of allocated effort across all work categories for a given date or period.
+  - Aliases / Rejected terms: Workload (rejected — ambiguous with capacity/load)
+  - Module: Schedule
+- Effort
+  - Definition: A quantity of work expressed in hours or FTE, representing labor input rather than output or duration.
+  - Aliases / Rejected terms: Man-hours (rejected — outdated), Time (rejected — ambiguous)
+  - Module: Work (estimates), Schedule (allocations)
+- Estimate
+  - Definition: The estimated total effort required to complete a work category for an event, stored as a single non-time-phased value.
+  - Aliases / Rejected terms: Budget, Planned effort (rejected — imply time-phasing)
+  - Module: Work
+- Event
+  - Definition: A trade fair treated as a project context, defining the valid scheduling window and metadata such as location and dates.
+  - Aliases / Rejected terms: Project (rejected — non-preferred term)
+  - Module: Events
+- Load
+  - Definition: Load is a derived, non-persistent comparison of Demand vs Capacity.
+  - Aliases / Rejected terms: Utilization (rejected — implies performance measurement)
+  - Module: Schedule (derived), Resources (capacity input)
+- Over/Under-allocation Indicator
+  - Definition: A non-enforcing signal showing that demand exceeds or falls below available capacity for a given period.
+  - Aliases / Rejected terms: Violation, Error (rejected — system does not enforce)
+  - Module: Schedule
+- Productivity
+  - Definition: Productivity is an assumption-based conversion rate, not a measurement of efficiency or output.
+  - Aliases / Rejected terms: Efficiency (rejected — evaluative), Velocity (rejected — agile-specific)
+  - Module: Productivity
+- Project
+  - Definition: Deprecated synonym for Event.
+  - Aliases / Rejected terms: Event (preferred)
+  - Module: Events
+- Resource
+  - Definition: A person, team, or abstract capacity pool that provides effort, characterized by capacity and availability.
+  - Aliases / Rejected terms: Worker, Staff (rejected — too specific)
+  - Module: Resources
+- Schedule
+  - Definition: The time-phased representation of allocated effort across dates within an event.
+  - Aliases / Rejected terms: Plan (rejected — too broad)
+  - Module: Schedule
+- Work
+  - Definition: The total scope of effort required for an event, represented exclusively through work categories and their estimates.
+  - Aliases / Rejected terms: Tasks (rejected — micromanagement)
+  - Module: Work
+- Work Band
+  - Definition: Deprecated synonym for Work Category.
+  - Aliases / Rejected terms: Work Category (preferred)
+  - Module: Work
+- Work Category
+  - Definition: An event-scoped grouping of similar work, used as the atomic unit for estimation and allocation.
+  - Aliases / Rejected terms: Task type, Discipline (rejected — ambiguous)
+  - Module: Work
