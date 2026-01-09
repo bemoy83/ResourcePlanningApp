@@ -21,3 +21,11 @@ model WorkCategory {
   name                  String
   estimatedEffortHours  Float
 }
+
+model Allocation {
+  id             String @id
+  eventId        String
+  workCategoryId String
+  date           String
+  effortHours    Float
+}
