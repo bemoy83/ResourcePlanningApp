@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { PlanningBoardGrid } from "../../components/PlanningBoardGrid";
+import { EvaluationLegend } from "../../components/EvaluationLegend";
+import { EvaluationSummary } from "../../components/EvaluationSummary";
 
 interface Event {
   id: string;
@@ -31,7 +33,23 @@ interface DailyDemand {
   totalEffortHours: number;
 }
 
+interface DailyCapacityComparison {
+  date: string;
+  demandHours: number;
+  capacityHours: number;
+  isOverAllocated: boolean;
+  isUnderAllocated: boolean;
+}
+
+interface WorkCategoryPressure {
+  workCategoryId: string;
+  remainingEffortHours: number;
+  remainingDays: number;
+  isUnderPressure: boolean;
+}
+
 interface AllocationDraft {
+  allocationId: string | null;
   key: string;
   workCategoryId: string;
   date: string;
@@ -39,79 +57,73 @@ interface AllocationDraft {
   effortUnit: "HOURS" | "FTE";
 }
 
-interface EventSection {
-  eventId: string;
-  eventName: string;
-  workCategories: WorkCategory[];
+interface Evaluation {
+  dailyDemand: DailyDemand[];
+  dailyCapacityComparison: DailyCapacityComparison[];
+  workCategoryPressure: WorkCategoryPressure[];
 }
 
-export default function PlanningOverviewPage() {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [workCategoriesByEvent, setWorkCategoriesByEvent] = useState<Record<string, WorkCategory[]>>({});
+export default function PlanningBoardPage() {
+  const [event, setEvent] = useState<Event | null>(null);
+  const [workCategories, setWorkCategories] = useState<WorkCategory[]>([]);
   const [allocations, setAllocations] = useState<Allocation[]>([]);
-  const [dailyDemand, setDailyDemand] = useState<DailyDemand[]>([]);
+  const [evaluation, setEvaluation] = useState<Evaluation>({
+    dailyDemand: [],
+    dailyCapacityComparison: [],
+    workCategoryPressure: [],
+  });
   const [drafts, setDrafts] = useState<AllocationDraft[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorsByCellKey, setErrorsByCellKey] = useState<Record<string, string>>({});
 
+  // Load initial data for single event
   useEffect(() => {
     async function loadInitialData() {
       setIsLoading(true);
       setError(null);
 
       try {
+        // Load the first active event
         const eventsRes = await fetch("/api/events");
         if (!eventsRes.ok) {
           throw new Error("Failed to load events");
         }
         const eventsData: Event[] = await eventsRes.json();
         const activeEvents = eventsData.filter((e) => e.status === "ACTIVE");
-        setEvents(activeEvents);
 
-        const eventDataPromises = activeEvents.map(async (event) => {
-          const [workCategoriesRes, allocationsRes, evaluationRes] = await Promise.all([
-            fetch(`/api/events/${event.id}/work-categories`),
-            fetch(`/api/schedule/events/${event.id}/allocations`),
-            fetch(`/api/schedule/events/${event.id}/evaluation`),
-          ]);
-
-          const workCategories = workCategoriesRes.ok ? await workCategoriesRes.json() : [];
-          const allocations = allocationsRes.ok ? await allocationsRes.json() : [];
-          const evaluation = evaluationRes.ok ? await evaluationRes.json() : { dailyDemand: [] };
-
-          return {
-            eventId: event.id,
-            workCategories,
-            allocations,
-            dailyDemand: evaluation.dailyDemand || [],
-          };
-        });
-
-        const eventDataResults = await Promise.all(eventDataPromises);
-
-        const workCategoriesMap: Record<string, WorkCategory[]> = {};
-        const allAllocations: Allocation[] = [];
-        const demandByDate: Record<string, number> = {};
-
-        for (const result of eventDataResults) {
-          workCategoriesMap[result.eventId] = result.workCategories;
-          allAllocations.push(...result.allocations);
-
-          for (const demand of result.dailyDemand) {
-            demandByDate[demand.date] = (demandByDate[demand.date] || 0) + demand.totalEffortHours;
-          }
+        if (activeEvents.length === 0) {
+          setError("No active events found");
+          setIsLoading(false);
+          return;
         }
 
-        setWorkCategoriesByEvent(workCategoriesMap);
-        setAllocations(allAllocations);
+        const selectedEvent = activeEvents[0];
+        setEvent(selectedEvent);
 
-        const aggregatedDemand: DailyDemand[] = Object.entries(demandByDate).map(([date, totalEffortHours]) => ({
-          date,
-          totalEffortHours,
-        }));
-        setDailyDemand(aggregatedDemand);
+        // Load work categories and allocations for this event
+        const [workCategoriesRes, allocationsRes, evaluationRes] = await Promise.all([
+          fetch(`/api/events/${selectedEvent.id}/work-categories`),
+          fetch(`/api/schedule/events/${selectedEvent.id}/allocations`),
+          fetch(`/api/schedule/events/${selectedEvent.id}/evaluation`),
+        ]);
+
+        if (!workCategoriesRes.ok) {
+          throw new Error("Failed to load work categories");
+        }
+
+        const workCategoriesData = await workCategoriesRes.json();
+        const allocationsData = allocationsRes.ok ? await allocationsRes.json() : [];
+        const evaluationData = evaluationRes.ok ? await evaluationRes.json() : {
+          dailyDemand: [],
+          dailyCapacityComparison: [],
+          workCategoryPressure: [],
+        };
+
+        setWorkCategories(workCategoriesData);
+        setAllocations(allocationsData);
+        setEvaluation(evaluationData);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load data");
       } finally {
@@ -122,44 +134,33 @@ export default function PlanningOverviewPage() {
     loadInitialData();
   }, []);
 
-  useEffect(() => {
-    async function refreshEvaluation() {
-      if (events.length === 0) return;
+  // Refresh evaluation after allocations change
+  async function refreshEvaluation() {
+    if (!event) return;
 
-      try {
-        const demandByDate: Record<string, number> = {};
-
-        for (const event of events) {
-          const res = await fetch(`/api/schedule/events/${event.id}/evaluation`);
-          if (res.ok) {
-            const evaluationData = await res.json();
-            for (const demand of evaluationData.dailyDemand || []) {
-              demandByDate[demand.date] = (demandByDate[demand.date] || 0) + demand.totalEffortHours;
-            }
-          }
-        }
-
-        const aggregatedDemand: DailyDemand[] = Object.entries(demandByDate).map(([date, totalEffortHours]) => ({
-          date,
-          totalEffortHours,
-        }));
-        setDailyDemand(aggregatedDemand);
-      } catch (err) {
-        // Silently fail
+    try {
+      const res = await fetch(`/api/schedule/events/${event.id}/evaluation`);
+      if (res.ok) {
+        const evaluationData = await res.json();
+        setEvaluation(evaluationData);
       }
+    } catch (err) {
+      // Silently fail - evaluation is advisory only
+      console.warn("Failed to refresh evaluation:", err);
     }
+  }
 
-    refreshEvaluation();
-  }, [events, allocations]);
-
-  function startEdit(workCategoryId: string, date: string) {
+  // Start editing a new allocation
+  function startCreateAllocation(workCategoryId: string, date: string) {
     const draftKey = `${workCategoryId}::${date}`;
 
+    // Check if already editing this cell
     const existingDraft = drafts.find((d) => d.key === draftKey);
     if (existingDraft) {
       return;
     }
 
+    // Check if allocation already exists
     const existingAllocation = allocations.find(
       (a) => a.workCategoryId === workCategoryId && a.date === date
     );
@@ -168,6 +169,7 @@ export default function PlanningOverviewPage() {
     }
 
     const draft: AllocationDraft = {
+      allocationId: null,
       key: draftKey,
       workCategoryId,
       date,
@@ -178,75 +180,126 @@ export default function PlanningOverviewPage() {
     setDrafts((prev) => [...prev, draft]);
   }
 
-  function changeDraft(draftKey: string, effortValue: number, effortUnit: "HOURS" | "FTE") {
-    setDrafts(
-      drafts.map((d) => (d.key === draftKey ? { ...d, effortValue, effortUnit } : d))
-    );
-  }
+  // Start editing an existing allocation
+  function startEditAllocation(allocationId: string, workCategoryId: string, date: string, effortHours: number) {
+    const draftKey = `${workCategoryId}::${date}`;
 
-  async function commitDraft(draftKey: string) {
-    const draft = drafts.find((d) => d.key === draftKey);
-    if (!draft) {
+    // Check if already editing this cell
+    const existingDraft = drafts.find((d) => d.key === draftKey);
+    if (existingDraft) {
       return;
     }
 
-    const workCategory = Object.values(workCategoriesByEvent)
-      .flat()
-      .find((wc) => wc.id === draft.workCategoryId);
+    const draft: AllocationDraft = {
+      allocationId,
+      key: draftKey,
+      workCategoryId,
+      date,
+      effortValue: effortHours,
+      effortUnit: "HOURS",
+    };
 
-    if (!workCategory) {
+    setDrafts((prev) => [...prev, draft]);
+  }
+
+  // Change draft values
+  function changeDraft(draftKey: string, effortValue: number, effortUnit: "HOURS" | "FTE") {
+    setDrafts((prev) =>
+      prev.map((d) => (d.key === draftKey ? { ...d, effortValue, effortUnit } : d))
+    );
+  }
+
+  // Commit draft (create or update allocation)
+  async function commitDraft(draftKey: string) {
+    const draft = drafts.find((d) => d.key === draftKey);
+    if (!draft || !event) {
       return;
     }
 
     setIsSaving(true);
-    setError(null);
 
     try {
-      const res = await fetch("/api/schedule/allocations", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          eventId: workCategory.eventId,
-          workCategoryId: draft.workCategoryId,
-          date: draft.date,
-          effortValue: draft.effortValue,
-          effortUnit: draft.effortUnit,
-        }),
-      });
+      let res: Response;
+
+      if (draft.allocationId) {
+        // Update existing allocation
+        res = await fetch(`/api/schedule/allocations/${draft.allocationId}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            eventId: event.id,
+            workCategoryId: draft.workCategoryId,
+            date: draft.date,
+            effortValue: draft.effortValue,
+            effortUnit: draft.effortUnit,
+          }),
+        });
+      } else {
+        // Create new allocation
+        res = await fetch("/api/schedule/allocations", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            eventId: event.id,
+            workCategoryId: draft.workCategoryId,
+            date: draft.date,
+            effortValue: draft.effortValue,
+            effortUnit: draft.effortUnit,
+          }),
+        });
+      }
 
       if (!res.ok) {
         const errorData = await res.json();
         const errorMessage = errorData.error || "Failed to save allocation";
-        setErrorsByCellKey({
-          ...errorsByCellKey,
+        setErrorsByCellKey((prev) => ({
+          ...prev,
           [draftKey]: errorMessage,
-        });
+        }));
         return;
       }
 
-      const allocation = await res.json();
-      setAllocations([...allocations, allocation]);
-      setDrafts(drafts.filter((d) => d.key !== draftKey));
+      const savedAllocation = await res.json();
+
+      // Update allocations list
+      if (draft.allocationId) {
+        // Replace updated allocation
+        setAllocations((prev) =>
+          prev.map((a) => (a.id === draft.allocationId ? savedAllocation : a))
+        );
+      } else {
+        // Add new allocation
+        setAllocations((prev) => [...prev, savedAllocation]);
+      }
+
+      // Remove draft and error
+      setDrafts((prev) => prev.filter((d) => d.key !== draftKey));
       setErrorsByCellKey((prev) => {
         const next = { ...prev };
         delete next[draftKey];
         return next;
       });
+
+      // Refresh evaluation
+      await refreshEvaluation();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to save allocation";
-      setErrorsByCellKey({
-        ...errorsByCellKey,
+      setErrorsByCellKey((prev) => ({
+        ...prev,
         [draftKey]: errorMessage,
-      });
+      }));
     } finally {
       setIsSaving(false);
     }
   }
 
+  // Cancel draft
   function cancelDraft(draftKey: string) {
-    setDrafts(drafts.filter((d) => d.key !== draftKey));
+    setDrafts((prev) => prev.filter((d) => d.key !== draftKey));
     setErrorsByCellKey((prev) => {
       const next = { ...prev };
       delete next[draftKey];
@@ -254,62 +307,139 @@ export default function PlanningOverviewPage() {
     });
   }
 
+  // Delete allocation
+  async function deleteAllocation(allocationId: string) {
+    if (!event) return;
+
+    setIsSaving(true);
+
+    try {
+      const res = await fetch(`/api/schedule/allocations/${allocationId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to delete allocation");
+      }
+
+      // Remove from allocations list
+      setAllocations((prev) => prev.filter((a) => a.id !== allocationId));
+
+      // Refresh evaluation
+      await refreshEvaluation();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete allocation");
+      // Error doesn't block - user can continue planning
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  // Loading state
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div style={{
+        padding: "20px",
+        backgroundColor: "#fafafa",
+        border: "2px solid #666",
+        margin: "20px",
+        color: "#000",
+        fontSize: "16px",
+      }}>
+        Loading...
+      </div>
+    );
   }
 
-  if (error) {
-    return <div>Error: {error}</div>;
+  // Error state (non-blocking)
+  if (error && !event) {
+    return (
+      <div style={{
+        padding: "20px",
+        backgroundColor: "#f5f5f5",
+        border: "2px solid #000",
+        margin: "20px",
+        color: "#000",
+        fontSize: "16px",
+      }}>
+        Error: {error}
+      </div>
+    );
   }
 
-  if (events.length === 0) {
-    return <div>No active events</div>;
+  // No event state
+  if (!event) {
+    return (
+      <div style={{
+        padding: "20px",
+        backgroundColor: "#fafafa",
+        border: "2px solid #666",
+        margin: "20px",
+        color: "#000",
+        fontSize: "16px",
+      }}>
+        No active events
+      </div>
+    );
   }
 
-  let minDate: string | null = null;
-  let maxDate: string | null = null;
-
-  for (const event of events) {
-    if (!minDate || event.startDate < minDate) {
-      minDate = event.startDate;
-    }
-    if (!maxDate || event.endDate > maxDate) {
-      maxDate = event.endDate;
-    }
-  }
-
+  // Calculate date range for grid
   const dates: string[] = [];
-  if (minDate && maxDate) {
-    const start = new Date(minDate);
-    const end = new Date(maxDate);
-    const current = new Date(start);
-    while (current <= end) {
-      dates.push(current.toISOString().split("T")[0]);
-      current.setDate(current.getDate() + 1);
-    }
+  const start = new Date(event.startDate);
+  const end = new Date(event.endDate);
+  const current = new Date(start);
+  while (current <= end) {
+    dates.push(current.toISOString().split("T")[0]);
+    current.setDate(current.getDate() + 1);
   }
-
-  const eventSections: EventSection[] = events.map((event) => ({
-    eventId: event.id,
-    eventName: event.name,
-    workCategories: workCategoriesByEvent[event.id] || [],
-  }));
 
   return (
-    <div>
-      <h1>Planning Overview</h1>
-      <PlanningBoardGrid
-        dates={dates}
-        eventSections={eventSections}
+    <div style={{ padding: "20px", maxWidth: "100%", overflowX: "auto", backgroundColor: "#fafafa" }}>
+      <h1 style={{ marginBottom: "8px", color: "#000", borderBottom: "2px solid #333", paddingBottom: "8px" }}>
+        Planning: {event.name}
+      </h1>
+      <div style={{ marginBottom: "16px", fontSize: "14px", color: "#333" }}>
+        {event.startDate} to {event.endDate}
+      </div>
+
+      {error && (
+        <div style={{ padding: "10px", marginBottom: "10px", backgroundColor: "#f5f5f5", color: "#000", border: "2px solid #000" }}>
+          Error: {error}
+        </div>
+      )}
+
+      {isSaving && (
+        <div style={{ padding: "10px", marginBottom: "10px", backgroundColor: "#f5f5f5", border: "2px solid #666" }}>
+          Saving...
+        </div>
+      )}
+
+      <EvaluationSummary
+        workCategories={workCategories}
         allocations={allocations}
-        dailyDemand={dailyDemand}
-        drafts={drafts}
-        errorsByCellKey={errorsByCellKey}
-        onStartEdit={startEdit}
-        onChangeDraft={changeDraft}
-        onCommit={commitDraft}
-        onCancel={cancelDraft}
+        workCategoryPressure={evaluation.workCategoryPressure}
+        dailyCapacityComparison={evaluation.dailyCapacityComparison}
       />
+
+      <EvaluationLegend />
+
+      <div style={{ overflowX: "auto" }}>
+        <PlanningBoardGrid
+          eventName={event.name}
+          dates={dates}
+          workCategories={workCategories}
+          allocations={allocations}
+          evaluation={evaluation}
+          drafts={drafts}
+          errorsByCellKey={errorsByCellKey}
+          onStartCreate={startCreateAllocation}
+          onStartEdit={startEditAllocation}
+          onChangeDraft={changeDraft}
+          onCommit={commitDraft}
+          onCancel={cancelDraft}
+          onDelete={deleteAllocation}
+        />
+      </div>
     </div>
   );
 }

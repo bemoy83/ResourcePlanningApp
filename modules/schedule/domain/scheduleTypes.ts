@@ -18,3 +18,23 @@ export interface PeriodDemand {
   periodEndDate: string;
   totalEffortHours: number;
 }
+
+export interface DailyCapacity {
+  date: string;
+  capacityHours: number;
+}
+
+export interface DailyCapacityComparison {
+  date: string;
+  demandHours: number;
+  capacityHours: number;
+  isOverAllocated: boolean;
+  isUnderAllocated: boolean;
+}
+
+export interface WorkCategoryPressure {
+  workCategoryId: string;
+  remainingEffortHours: number;
+  remainingDays: number;
+  isUnderPressure: boolean;
+}

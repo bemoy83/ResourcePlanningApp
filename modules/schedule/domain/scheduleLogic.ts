@@ -1,4 +1,4 @@
-import { Allocation, DailyDemand, PeriodDemand } from './scheduleTypes';
+import { Allocation, DailyDemand, PeriodDemand, DailyCapacityComparison } from './scheduleTypes';
 
 export function aggregateDailyDemand(allocations: Allocation[]): DailyDemand[] {
   const demandByDate = new Map<string, number>();
@@ -53,4 +53,50 @@ export function calculateDeadlinePressureSignal(
   return {
     isUnderPressure: remainingDays > 0 && remainingEffortHours / remainingDays > 0,
   };
+}
+
+export function calculateRemainingEffort(
+  estimatedEffortHours: number,
+  allocatedHours: number
+): number {
+  return Math.max(0, estimatedEffortHours - allocatedHours);
+}
+
+export function calculateRemainingDays(
+  currentDate: string,
+  deadlineDate: string
+): number {
+  const current = new Date(currentDate);
+  const deadline = new Date(deadlineDate);
+  const diffTime = deadline.getTime() - current.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return Math.max(0, diffDays);
+}
+
+export function compareDailyCapacity(
+  dailyDemand: DailyDemand[],
+  dailyCapacities: { date: string; capacityHours: number }[]
+): DailyCapacityComparison[] {
+  const capacityMap = new Map<string, number>();
+  for (const capacity of dailyCapacities) {
+    capacityMap.set(capacity.date, capacity.capacityHours);
+  }
+
+  const result: DailyCapacityComparison[] = [];
+  for (const demand of dailyDemand) {
+    const capacityHours = capacityMap.get(demand.date) || 0;
+    const indicator = calculateOverUnderAllocationIndicator(
+      demand.totalEffortHours,
+      capacityHours
+    );
+    result.push({
+      date: demand.date,
+      demandHours: demand.totalEffortHours,
+      capacityHours,
+      isOverAllocated: indicator.isOverAllocated,
+      isUnderAllocated: indicator.isUnderAllocated,
+    });
+  }
+
+  return result;
 }

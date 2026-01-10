@@ -1,31 +1,50 @@
 import { AllocationCell } from './AllocationCell';
 
+interface WorkCategory {
+  id: string;
+  name: string;
+  estimatedEffortHours: number;
+}
+
+interface Allocation {
+  id: string;
+  workCategoryId: string;
+  date: string;
+  effortHours: number;
+}
+
+interface AllocationDraft {
+  allocationId: string | null;
+  key: string;
+  workCategoryId: string;
+  date: string;
+  effortValue: number;
+  effortUnit: "HOURS" | "FTE";
+}
+
+interface WorkCategoryPressure {
+  workCategoryId: string;
+  remainingEffortHours: number;
+  remainingDays: number;
+  isUnderPressure: boolean;
+}
+
 interface WorkCategoryRowProps {
   eventName: string;
-  workCategory: {
-    id: string;
-    name: string;
-    estimatedEffortHours: number;
-  };
+  workCategory: WorkCategory;
+  allocatedTotal: number;
+  remaining: number;
+  pressure?: WorkCategoryPressure;
   dates: string[];
-  allocations: {
-    id: string;
-    workCategoryId: string;
-    date: string;
-    effortHours: number;
-  }[];
-  drafts: {
-    key: string;
-    workCategoryId: string;
-    date: string;
-    effortValue: number;
-    effortUnit: "HOURS" | "FTE";
-  }[];
+  allocations: Allocation[];
+  drafts: AllocationDraft[];
   errorsByCellKey: Record<string, string>;
-  onStartEdit(workCategoryId: string, date: string): void;
+  onStartCreate(workCategoryId: string, date: string): void;
+  onStartEdit(allocationId: string, workCategoryId: string, date: string, effortHours: number): void;
   onChangeDraft(draftKey: string, effortValue: number, effortUnit: "HOURS" | "FTE"): void;
   onCommit(draftKey: string): void;
   onCancel(draftKey: string): void;
+  onDelete(allocationId: string): void;
   gridTemplateColumns: string;
   cellStyle: React.CSSProperties;
 }
@@ -33,22 +52,80 @@ interface WorkCategoryRowProps {
 export function WorkCategoryRow({
   eventName,
   workCategory,
+  allocatedTotal,
+  remaining,
+  pressure,
   dates,
   allocations,
   drafts,
   errorsByCellKey,
+  onStartCreate,
   onStartEdit,
   onChangeDraft,
   onCommit,
   onCancel,
+  onDelete,
   gridTemplateColumns,
   cellStyle,
 }: WorkCategoryRowProps) {
+  // Determine row background color based on pressure
+  const rowStyle = pressure?.isUnderPressure
+    ? { ...cellStyle, backgroundColor: '#fff3cd' }
+    : cellStyle;
+
+  // Calculate progress percentage
+  const progressPercentage = workCategory.estimatedEffortHours > 0
+    ? Math.round((allocatedTotal / workCategory.estimatedEffortHours) * 100)
+    : 0;
+
   return (
     <section style={{ display: 'grid', gridTemplateColumns }}>
-      <div style={cellStyle}>{eventName}</div>
-      <div style={cellStyle}>{workCategory.name}</div>
-      <div style={cellStyle}>{workCategory.estimatedEffortHours}h</div>
+      {/* Work category name */}
+      <div style={rowStyle}>
+        <div>{workCategory.name}</div>
+        {pressure?.isUnderPressure && (
+          <div style={{ fontSize: '10px', color: '#f57c00', marginTop: '2px' }}>
+            ⚠ Pressure: {pressure.remainingDays} days left
+          </div>
+        )}
+      </div>
+
+      {/* Estimated effort */}
+      <div style={rowStyle}>
+        <div style={{ fontWeight: 'bold' }}>{workCategory.estimatedEffortHours}h</div>
+      </div>
+
+      {/* Allocated total with progress bar */}
+      <div style={rowStyle}>
+        <div style={{ fontWeight: 'bold' }}>{allocatedTotal}h</div>
+        <div style={{
+          marginTop: '4px',
+          height: '4px',
+          backgroundColor: '#e0e0e0',
+          borderRadius: '2px',
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            width: `${Math.min(progressPercentage, 100)}%`,
+            height: '100%',
+            backgroundColor: progressPercentage >= 100 ? '#4caf50' : '#2196f3',
+          }} />
+        </div>
+        <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
+          {progressPercentage}%
+        </div>
+      </div>
+
+      {/* Remaining effort */}
+      <div style={{
+        ...rowStyle,
+        color: remaining < 0 ? 'red' : remaining > 0 ? 'inherit' : '#4caf50',
+        fontWeight: remaining !== 0 ? 'bold' : 'normal',
+      }}>
+        {remaining > 0 ? `${remaining}h` : remaining < 0 ? `${Math.abs(remaining)}h (over)` : '✓ Complete'}
+      </div>
+
+      {/* Daily allocation cells */}
       {dates.map((date) => {
         const cellKey = `${workCategory.id}::${date}`;
         const allocation = allocations.find(
@@ -67,10 +144,12 @@ export function WorkCategoryRow({
               allocation={allocation}
               draft={draft}
               error={error}
+              onStartCreate={onStartCreate}
               onStartEdit={onStartEdit}
               onChangeDraft={onChangeDraft}
               onCommit={onCommit}
               onCancel={onCancel}
+              onDelete={onDelete}
             />
           </div>
         );

@@ -29,3 +29,12 @@ model Allocation {
   date           String
   effortHours    Float
 }
+
+model DailyCapacity {
+  id            String @id
+  eventId       String
+  date          String
+  capacityHours Float
+
+  @@unique([eventId, date])
+}
