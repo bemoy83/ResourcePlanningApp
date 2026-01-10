@@ -54,11 +54,6 @@ interface Evaluation {
   workCategoryPressure: WorkCategoryPressure[];
 }
 
-interface CrossEventEvaluation {
-  crossEventDailyDemand: DailyDemand[];
-  crossEventCapacityComparison: DailyCapacityComparison[];
-}
-
 interface TimelineLayout {
   dates: string[];
   dateColumnWidth: number;
@@ -72,7 +67,6 @@ interface PlanningBoardGridProps {
   workCategories: WorkCategory[];
   allocations: Allocation[];
   evaluation: Evaluation;
-  crossEventEvaluation: CrossEventEvaluation;
   drafts: AllocationDraft[];
   errorsByCellKey: Record<string, string>;
   onStartCreate(workCategoryId: string, date: string): void;
@@ -90,7 +84,6 @@ export function PlanningBoardGrid({
   workCategories,
   allocations,
   evaluation,
-  crossEventEvaluation,
   drafts,
   errorsByCellKey,
   onStartCreate,
@@ -255,48 +248,6 @@ export function PlanningBoardGrid({
         })}
       </div>
 
-      {/* Footer with totals */}
-      <footer style={{ display: 'grid', gridTemplateColumns, backgroundColor: '#e0e0e0', marginTop: '10px', border: '2px solid #666', position: 'relative' }}>
-        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0], 2) }}></div>
-        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[1], 2), fontWeight: 'bold' }}>
-          <div>Total Demand</div>
-          <div style={{ fontSize: '10px', fontWeight: 'normal', color: '#666' }}>per day</div>
-        </div>
-        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[2], 2) }}></div>
-        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[3], 2) }}></div>
-        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[4], 2) }}></div>
-        <div style={{
-          position: 'absolute',
-          left: `${timelineOriginPx}px`,
-          top: 0,
-          height: '100%',
-          width: `${timelineWidth}px`,
-        }}>
-          {dates.map((date, index) => {
-            const demand = evaluation.dailyDemand.find((d) => d.date === date);
-            const comparison = capacityMap.get(date);
-
-            // Determine if this day has any issues
-            const hasIssue = comparison?.isOverAllocated;
-
-            return (
-              <div key={date} style={{
-                ...cellStyle,
-                position: 'absolute',
-                left: `${index * dateColumnWidth}px`,
-                top: 0,
-                width: `${dateColumnWidth}px`,
-                height: '100%',
-                fontWeight: 'bold',
-                color: hasIssue ? 'red' : 'inherit',
-              }}>
-                {demand && demand.totalEffortHours > 0 ? `${demand.totalEffortHours}h` : '—'}
-              </div>
-            );
-          })}
-        </div>
-      </footer>
-
       {/* Capacity comparison row */}
       {evaluation.dailyCapacityComparison.length > 0 && (
         <footer style={{ display: 'grid', gridTemplateColumns, backgroundColor: '#e0e0e0', marginTop: '2px', border: '2px solid #666', position: 'relative' }}>
@@ -366,139 +317,6 @@ export function PlanningBoardGrid({
             })}
           </div>
         </footer>
-      )}
-
-      {/* Cross-Event Context Section */}
-      {crossEventEvaluation.crossEventDailyDemand.length > 0 && (
-        <div style={{
-          marginTop: '20px',
-          padding: '12px',
-          backgroundColor: '#f5f5f5',
-          border: '3px solid #333',
-        }}>
-          <h3 style={{
-            margin: '0 0 8px 0',
-            fontSize: '14px',
-            fontWeight: 'bold',
-            color: '#000',
-            borderBottom: '2px solid #666',
-            paddingBottom: '8px',
-          }}>
-            Cross-Event Context (Read-Only)
-          </h3>
-          <div style={{ fontSize: '11px', color: '#333', marginBottom: '12px' }}>
-            Total demand across all active events. This is advisory context only—no events are modified.
-          </div>
-
-          {/* Cross-event demand row */}
-          <footer style={{ display: 'grid', gridTemplateColumns, backgroundColor: '#e0e0e0', border: '2px solid #666', position: 'relative' }}>
-            <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0], 2) }}></div>
-            <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[1], 2), fontWeight: 'bold' }}>
-              <div>Total Demand (All Events)</div>
-              <div style={{ fontSize: '10px', fontWeight: 'normal', color: '#666' }}>aggregated</div>
-            </div>
-            <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[2], 2) }}></div>
-            <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[3], 2) }}></div>
-            <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[4], 2) }}></div>
-            <div style={{
-              position: 'absolute',
-              left: `${timelineOriginPx}px`,
-              top: 0,
-              height: '100%',
-              width: `${timelineWidth}px`,
-            }}>
-              {dates.map((date, index) => {
-                const crossDemand = crossEventEvaluation.crossEventDailyDemand.find((d) => d.date === date);
-                const crossComparison = crossEventEvaluation.crossEventCapacityComparison.find((c) => c.date === date);
-
-                // Color code based on cross-event pressure
-                const hasIssue = crossComparison?.isOverAllocated;
-
-                return (
-                  <div key={date} style={{
-                    ...cellStyle,
-                    position: 'absolute',
-                    left: `${index * dateColumnWidth}px`,
-                    top: 0,
-                    width: `${dateColumnWidth}px`,
-                    height: '100%',
-                    fontWeight: 'bold',
-                    color: hasIssue ? 'red' : 'inherit',
-                    backgroundColor: hasIssue ? '#fee' : '#fff',
-                  }}>
-                    {crossDemand && crossDemand.totalEffortHours > 0 ? `${crossDemand.totalEffortHours}h` : '—'}
-                  </div>
-                );
-              })}
-            </div>
-          </footer>
-
-          {/* Cross-event capacity comparison row */}
-          {crossEventEvaluation.crossEventCapacityComparison.length > 0 && (
-            <footer style={{ display: 'grid', gridTemplateColumns, backgroundColor: '#e0e0e0', marginTop: '2px', border: '2px solid #666', position: 'relative' }}>
-              <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0], 2) }}></div>
-              <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[1], 2), fontWeight: 'bold' }}>
-                <div>Total Capacity Status</div>
-                <div style={{ fontSize: '10px', fontWeight: 'normal', color: '#666' }}>demand vs capacity</div>
-              </div>
-              <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[2], 2) }}></div>
-              <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[3], 2) }}></div>
-              <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[4], 2) }}></div>
-              <div style={{
-                position: 'absolute',
-                left: `${timelineOriginPx}px`,
-                top: 0,
-                height: '100%',
-                width: `${timelineWidth}px`,
-              }}>
-                {dates.map((date, index) => {
-                  const crossComparison = crossEventEvaluation.crossEventCapacityComparison.find((c) => c.date === date);
-                  if (!crossComparison || crossComparison.capacityHours === 0) {
-                    return (
-                      <div key={date} style={{
-                        ...cellStyle,
-                        position: 'absolute',
-                        left: `${index * dateColumnWidth}px`,
-                        top: 0,
-                        width: `${dateColumnWidth}px`,
-                        height: '100%',
-                      }}>—</div>
-                    );
-                  }
-
-                  const statusStyle = crossComparison.isOverAllocated
-                    ? { ...cellStyle, backgroundColor: '#fee', color: 'red' }
-                    : crossComparison.isUnderAllocated
-                    ? { ...cellStyle, backgroundColor: '#efe', color: 'green' }
-                    : cellStyle;
-
-                  return (
-                    <div key={date} style={{
-                      ...statusStyle,
-                      position: 'absolute',
-                      left: `${index * dateColumnWidth}px`,
-                      top: 0,
-                      width: `${dateColumnWidth}px`,
-                      height: '100%',
-                    }} title={`All Events Demand: ${crossComparison.demandHours}h, Total Capacity: ${crossComparison.capacityHours}h`}>
-                      <div style={{ fontWeight: 'bold' }}>{crossComparison.capacityHours}h</div>
-                      {crossComparison.isOverAllocated && (
-                        <div style={{ fontSize: '10px' }}>
-                          +{(crossComparison.demandHours - crossComparison.capacityHours).toFixed(1)}h over
-                        </div>
-                      )}
-                      {crossComparison.isUnderAllocated && (
-                        <div style={{ fontSize: '10px' }}>
-                          {(crossComparison.capacityHours - crossComparison.demandHours).toFixed(1)}h free
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </footer>
-          )}
-        </div>
       )}
     </section>
   );

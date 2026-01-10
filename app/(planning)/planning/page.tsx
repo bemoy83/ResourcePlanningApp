@@ -5,6 +5,7 @@ import { PlanningBoardGrid } from "../../components/PlanningBoardGrid";
 import { EvaluationLegend } from "../../components/EvaluationLegend";
 import { EvaluationSummary } from "../../components/EvaluationSummary";
 import { EventCalendar } from "../../components/EventCalendar";
+import { CrossEventContext } from "../../components/CrossEventContext";
 
 interface Event {
   id: string;
@@ -566,6 +567,8 @@ export default function PlanningWorkspacePage() {
       <HorizontalScrollContainer>
         <EventLocationCalendar locations={locations} events={calendarEvents} timeline={timeline} />
 
+        <CrossEventContext crossEventEvaluation={crossEventEvaluation} timeline={timeline} />
+
         <PlanningBoardGrid
           events={events}
           dates={dates}
@@ -573,7 +576,6 @@ export default function PlanningWorkspacePage() {
           workCategories={workCategories}
           allocations={allocations}
           evaluation={evaluation}
-          crossEventEvaluation={crossEventEvaluation}
           drafts={drafts}
           errorsByCellKey={errorsByCellKey}
           onStartCreate={startCreateAllocation}

@@ -40,7 +40,7 @@ export function AllocationCell({
   // Draft mode - show edit UI
   if (draft) {
     return (
-      <div onClick={(e) => e.stopPropagation()} style={{ padding: '4px', backgroundColor: '#f5f5f5', border: '2px solid #333' }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ padding: '4px', backgroundColor: '#f5f5f5', border: '2px solid #333', position: 'relative', zIndex: 100 }}>
         <input
           type="number"
           value={draft.effortValue}
