@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PlanningBoardGrid } from "../../components/PlanningBoardGrid";
 import { EvaluationLegend } from "../../components/EvaluationLegend";
 import { EvaluationSummary } from "../../components/EvaluationSummary";
@@ -63,7 +64,18 @@ interface Evaluation {
   workCategoryPressure: WorkCategoryPressure[];
 }
 
+interface CrossEventEvaluation {
+  crossEventDailyDemand: DailyDemand[];
+  crossEventCapacityComparison: DailyCapacityComparison[];
+}
+
 export default function PlanningBoardPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const eventIdFromUrl = searchParams.get("eventId");
+
+  const [availableEvents, setAvailableEvents] = useState<Event[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(eventIdFromUrl);
   const [event, setEvent] = useState<Event | null>(null);
   const [workCategories, setWorkCategories] = useState<WorkCategory[]>([]);
   const [allocations, setAllocations] = useState<Allocation[]>([]);
@@ -72,34 +84,55 @@ export default function PlanningBoardPage() {
     dailyCapacityComparison: [],
     workCategoryPressure: [],
   });
+  const [crossEventEvaluation, setCrossEventEvaluation] = useState<CrossEventEvaluation>({
+    crossEventDailyDemand: [],
+    crossEventCapacityComparison: [],
+  });
   const [drafts, setDrafts] = useState<AllocationDraft[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorsByCellKey, setErrorsByCellKey] = useState<Record<string, string>>({});
 
-  // Load initial data for single event
+  // Load available events
   useEffect(() => {
-    async function loadInitialData() {
-      setIsLoading(true);
-      setError(null);
-
+    async function loadEvents() {
       try {
-        // Load the first active event
         const eventsRes = await fetch("/api/events");
         if (!eventsRes.ok) {
           throw new Error("Failed to load events");
         }
         const eventsData: Event[] = await eventsRes.json();
         const activeEvents = eventsData.filter((e) => e.status === "ACTIVE");
+        setAvailableEvents(activeEvents);
 
-        if (activeEvents.length === 0) {
-          setError("No active events found");
-          setIsLoading(false);
-          return;
+        // Set initial selected event if not already set
+        if (!selectedEventId && activeEvents.length > 0) {
+          setSelectedEventId(activeEvents[0].id);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load events");
+      }
+    }
+
+    loadEvents();
+  }, []);
+
+  // Load selected event data
+  useEffect(() => {
+    async function loadEventData() {
+      if (!selectedEventId) return;
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        // Find the selected event
+        const selectedEvent = availableEvents.find((e) => e.id === selectedEventId);
+        if (!selectedEvent) {
+          throw new Error("Selected event not found");
         }
 
-        const selectedEvent = activeEvents[0];
         setEvent(selectedEvent);
 
         // Load work categories and allocations for this event
@@ -131,8 +164,38 @@ export default function PlanningBoardPage() {
       }
     }
 
-    loadInitialData();
-  }, []);
+    if (availableEvents.length > 0) {
+      loadEventData();
+    }
+  }, [selectedEventId, availableEvents]);
+
+  // Load cross-event evaluation
+  useEffect(() => {
+    async function loadCrossEventEvaluation() {
+      try {
+        const res = await fetch('/api/schedule/evaluation/cross-event');
+        if (res.ok) {
+          const data = await res.json();
+          setCrossEventEvaluation(data);
+        }
+      } catch (err) {
+        // Silently fail - evaluation is advisory only
+        console.warn("Failed to load cross-event evaluation:", err);
+      }
+    }
+
+    loadCrossEventEvaluation();
+  }, [allocations]); // Refresh when allocations change
+
+  // Handle event selection
+  function handleEventChange(newEventId: string) {
+    setSelectedEventId(newEventId);
+    // Update URL
+    router.push(`/planning?eventId=${newEventId}`);
+    // Clear drafts when switching events
+    setDrafts([]);
+    setErrorsByCellKey({});
+  }
 
   // Refresh evaluation after allocations change
   async function refreshEvaluation() {
@@ -367,8 +430,8 @@ export default function PlanningBoardPage() {
     );
   }
 
-  // No event state
-  if (!event) {
+  // No events available
+  if (availableEvents.length === 0 && !isLoading) {
     return (
       <div style={{
         padding: "20px",
@@ -383,6 +446,11 @@ export default function PlanningBoardPage() {
     );
   }
 
+  // No event selected yet
+  if (!event) {
+    return null;
+  }
+
   // Calculate date range for grid
   const dates: string[] = [];
   const start = new Date(event.startDate);
@@ -395,11 +463,54 @@ export default function PlanningBoardPage() {
 
   return (
     <div style={{ padding: "20px", maxWidth: "100%", overflowX: "auto", backgroundColor: "#fafafa" }}>
-      <h1 style={{ marginBottom: "8px", color: "#000", borderBottom: "2px solid #333", paddingBottom: "8px" }}>
-        Planning: {event.name}
-      </h1>
-      <div style={{ marginBottom: "16px", fontSize: "14px", color: "#333" }}>
-        {event.startDate} to {event.endDate}
+      <div style={{ marginBottom: "16px" }}>
+        <h1 style={{ marginBottom: "8px", color: "#000", borderBottom: "2px solid #333", paddingBottom: "8px" }}>
+          Planning Board
+        </h1>
+
+        {/* Event Selector */}
+        <div style={{
+          padding: "12px",
+          backgroundColor: "#f5f5f5",
+          border: "2px solid #666",
+          marginBottom: "12px",
+        }}>
+          <label htmlFor="event-select" style={{
+            display: "block",
+            marginBottom: "8px",
+            fontSize: "14px",
+            fontWeight: "bold",
+            color: "#000",
+          }}>
+            Select Event to Plan:
+          </label>
+          <select
+            id="event-select"
+            value={selectedEventId || ""}
+            onChange={(e) => handleEventChange(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "8px",
+              fontSize: "14px",
+              border: "2px solid #666",
+              backgroundColor: "#fff",
+              color: "#000",
+            }}
+          >
+            {availableEvents.map((evt) => (
+              <option key={evt.id} value={evt.id}>
+                {evt.name} ({evt.startDate} to {evt.endDate})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ fontSize: "14px", color: "#333" }}>
+          <strong>Planning:</strong> {event.name}
+        </div>
+        <div style={{ marginBottom: "8px", fontSize: "12px", color: "#666" }}>
+          {event.startDate} to {event.endDate}
+        </div>
       </div>
 
       {error && (
@@ -430,6 +541,7 @@ export default function PlanningBoardPage() {
           workCategories={workCategories}
           allocations={allocations}
           evaluation={evaluation}
+          crossEventEvaluation={crossEventEvaluation}
           drafts={drafts}
           errorsByCellKey={errorsByCellKey}
           onStartCreate={startCreateAllocation}

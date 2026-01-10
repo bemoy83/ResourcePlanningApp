@@ -188,3 +188,52 @@ export async function evaluateSchedule(eventId: string): Promise<ScheduleEvaluat
     workCategoryPressure,
   };
 }
+
+export async function evaluateCrossEventSchedule(): Promise<{
+  crossEventDailyDemand: DailyDemand[];
+  crossEventCapacityComparison: DailyCapacityComparison[];
+}> {
+  // Load all active events
+  const { listAllEvents } = await import('../../events/services/eventService');
+  const allEvents = await listAllEvents();
+  const activeEvents = allEvents.filter((e) => e.status === 'ACTIVE');
+
+  // Aggregate allocations across all active events
+  const allAllocations: Allocation[] = [];
+  for (const event of activeEvents) {
+    const eventAllocations = await loadAllocationsByEvent(event.id);
+    allAllocations.push(...eventAllocations);
+  }
+
+  // Aggregate demand across all events
+  const crossEventDailyDemand = aggregateDailyDemand(allAllocations);
+
+  // Load all capacity entries (capacity is shared across events)
+  const allCapacities: DailyCapacityRecord[] = [];
+  for (const event of activeEvents) {
+    const eventCapacities = await loadDailyCapacitiesByEvent(event.id);
+    allCapacities.push(...eventCapacities);
+  }
+
+  // Merge capacities by date (sum if multiple events define capacity for same day)
+  const capacityByDate = new Map<string, number>();
+  for (const capacity of allCapacities) {
+    const current = capacityByDate.get(capacity.date) || 0;
+    capacityByDate.set(capacity.date, current + capacity.capacityHours);
+  }
+
+  const mergedCapacities = Array.from(capacityByDate.entries()).map(
+    ([date, capacityHours]) => ({ date, capacityHours })
+  );
+
+  // Compare aggregated demand against merged capacity
+  const crossEventCapacityComparison = compareDailyCapacity(
+    crossEventDailyDemand,
+    mergedCapacities
+  );
+
+  return {
+    crossEventDailyDemand,
+    crossEventCapacityComparison,
+  };
+}
