@@ -1,7 +1,13 @@
 import { WorkCategoryRow } from './WorkCategoryRow';
 
+interface Event {
+  id: string;
+  name: string;
+}
+
 interface WorkCategory {
   id: string;
+  eventId: string;
   name: string;
   estimatedEffortHours: number;
 }
@@ -60,7 +66,7 @@ interface TimelineLayout {
 }
 
 interface PlanningBoardGridProps {
-  eventName: string;
+  events: Event[];
   dates: string[];
   timeline?: TimelineLayout;
   workCategories: WorkCategory[];
@@ -78,7 +84,7 @@ interface PlanningBoardGridProps {
 }
 
 export function PlanningBoardGrid({
-  eventName: _eventName,
+  events,
   dates,
   timeline,
   workCategories,
@@ -94,9 +100,16 @@ export function PlanningBoardGrid({
   onCancel,
   onDelete,
 }: PlanningBoardGridProps) {
+  // Build event lookup map
+  const eventMap = new Map<string, Event>();
+  for (const event of events) {
+    eventMap.set(event.id, event);
+  }
+
   // Use timeline contract if provided, otherwise use legacy values
   const dateColumnWidth = timeline?.dateColumnWidth ?? 100;
   const leftColumns = [
+    { key: "event", width: 200 },
     { key: "workCategory", width: 200 },
     { key: "estimate", width: 100 },
     { key: "allocated", width: 100 },
@@ -157,19 +170,22 @@ export function PlanningBoardGrid({
       </div>
 
       {/* Header */}
-      <header style={{ display: 'grid', gridTemplateColumns, backgroundColor: '#e0e0e0', fontWeight: 'bold', border: '2px solid #666', position: 'relative' }}>
-        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0], 3) }}>
+      <header style={{ display: 'grid', gridTemplateColumns, backgroundColor: '#e0e0e0', fontWeight: 'bold', border: '2px solid #666', position: 'sticky', top: 0, zIndex: 4 }}>
+        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0], 5) }}>
+          <div>Event</div>
+        </div>
+        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[1], 5) }}>
           <div>Work Category</div>
         </div>
-        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[1], 3) }}>
+        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[2], 5) }}>
           <div>Estimate</div>
           <div style={{ fontSize: '10px', fontWeight: 'normal' }}>total hours</div>
         </div>
-        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[2], 3) }}>
+        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[3], 5) }}>
           <div>Allocated</div>
           <div style={{ fontSize: '10px', fontWeight: 'normal' }}>total hours</div>
         </div>
-        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[3], 3) }}>
+        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[4], 5) }}>
           <div>Remaining</div>
           <div style={{ fontSize: '10px', fontWeight: 'normal' }}>to allocate</div>
         </div>
@@ -207,9 +223,14 @@ export function PlanningBoardGrid({
             .reduce((sum, a) => sum + a.effortHours, 0);
           const remaining = workCategory.estimatedEffortHours - allocatedTotal;
 
+          // Look up event name for this work category
+          const event = eventMap.get(workCategory.eventId);
+          const eventName = event?.name || 'Unknown Event';
+
           return (
             <WorkCategoryRow
               key={workCategory.id}
+              eventName={eventName}
               workCategory={workCategory}
               allocatedTotal={allocatedTotal}
               remaining={remaining}
@@ -236,13 +257,14 @@ export function PlanningBoardGrid({
 
       {/* Footer with totals */}
       <footer style={{ display: 'grid', gridTemplateColumns, backgroundColor: '#e0e0e0', marginTop: '10px', border: '2px solid #666', position: 'relative' }}>
-        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0], 2), fontWeight: 'bold' }}>
+        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0], 2) }}></div>
+        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[1], 2), fontWeight: 'bold' }}>
           <div>Total Demand</div>
           <div style={{ fontSize: '10px', fontWeight: 'normal', color: '#666' }}>per day</div>
         </div>
-        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[1], 2) }}></div>
         <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[2], 2) }}></div>
         <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[3], 2) }}></div>
+        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[4], 2) }}></div>
         <div style={{
           position: 'absolute',
           left: `${timelineOriginPx}px`,
@@ -278,13 +300,14 @@ export function PlanningBoardGrid({
       {/* Capacity comparison row */}
       {evaluation.dailyCapacityComparison.length > 0 && (
         <footer style={{ display: 'grid', gridTemplateColumns, backgroundColor: '#e0e0e0', marginTop: '2px', border: '2px solid #666', position: 'relative' }}>
-          <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0], 2), fontWeight: 'bold' }}>
+          <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0], 2) }}></div>
+          <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[1], 2), fontWeight: 'bold' }}>
             <div>Capacity</div>
             <div style={{ fontSize: '10px', fontWeight: 'normal', color: '#666' }}>available per day</div>
           </div>
-          <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[1], 2) }}></div>
           <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[2], 2) }}></div>
           <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[3], 2) }}></div>
+          <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[4], 2) }}></div>
           <div style={{
             position: 'absolute',
             left: `${timelineOriginPx}px`,
@@ -369,13 +392,14 @@ export function PlanningBoardGrid({
 
           {/* Cross-event demand row */}
           <footer style={{ display: 'grid', gridTemplateColumns, backgroundColor: '#e0e0e0', border: '2px solid #666', position: 'relative' }}>
-            <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0], 2), fontWeight: 'bold' }}>
+            <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0], 2) }}></div>
+            <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[1], 2), fontWeight: 'bold' }}>
               <div>Total Demand (All Events)</div>
               <div style={{ fontSize: '10px', fontWeight: 'normal', color: '#666' }}>aggregated</div>
             </div>
-            <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[1], 2) }}></div>
             <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[2], 2) }}></div>
             <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[3], 2) }}></div>
+            <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[4], 2) }}></div>
             <div style={{
               position: 'absolute',
               left: `${timelineOriginPx}px`,
@@ -412,13 +436,14 @@ export function PlanningBoardGrid({
           {/* Cross-event capacity comparison row */}
           {crossEventEvaluation.crossEventCapacityComparison.length > 0 && (
             <footer style={{ display: 'grid', gridTemplateColumns, backgroundColor: '#e0e0e0', marginTop: '2px', border: '2px solid #666', position: 'relative' }}>
-              <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0], 2), fontWeight: 'bold' }}>
+              <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0], 2) }}></div>
+              <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[1], 2), fontWeight: 'bold' }}>
                 <div>Total Capacity Status</div>
                 <div style={{ fontSize: '10px', fontWeight: 'normal', color: '#666' }}>demand vs capacity</div>
               </div>
-              <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[1], 2) }}></div>
               <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[2], 2) }}></div>
               <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[3], 2) }}></div>
+              <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[4], 2) }}></div>
               <div style={{
                 position: 'absolute',
                 left: `${timelineOriginPx}px`,

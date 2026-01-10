@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import { WorkCategory, WorkCategoryId } from '../domain/workCategory';
 import { assertValidEstimatedEffortHours } from '../domain/workLogic';
-import { saveWorkCategory, loadWorkCategoryById, listWorkCategoriesByEvent } from '../persistence/workRepository';
+import { saveWorkCategory, loadWorkCategoryById, listWorkCategoriesByEvent, listAllWorkCategories } from '../persistence/workRepository';
 
 interface CreateWorkCategoryCommand {
   eventId: string;
@@ -50,4 +50,8 @@ export async function renameWorkCategory(workCategoryId: WorkCategoryId, newName
 
 export async function listWorkCategoriesForEvent(eventId: string) {
   return await listWorkCategoriesByEvent(eventId);
+}
+
+export async function listWorkCategories() {
+  return await listAllWorkCategories();
 }

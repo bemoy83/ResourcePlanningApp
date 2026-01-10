@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { addAllocation } from '../../../../modules/schedule/services/scheduleService';
+import { addAllocation, listAllocations } from '../../../../modules/schedule/services/scheduleService';
+
+export async function GET() {
+  try {
+    const allocations = await listAllocations();
+    return NextResponse.json(allocations);
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to list allocations' },
+      { status: 500 }
+    );
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {

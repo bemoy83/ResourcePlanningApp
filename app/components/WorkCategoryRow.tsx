@@ -30,6 +30,7 @@ interface WorkCategoryPressure {
 }
 
 interface WorkCategoryRowProps {
+  eventName: string;
   workCategory: WorkCategory;
   allocatedTotal: number;
   remaining: number;
@@ -52,6 +53,7 @@ interface WorkCategoryRowProps {
 }
 
 export function WorkCategoryRow({
+  eventName,
   workCategory,
   allocatedTotal,
   remaining,
@@ -91,8 +93,13 @@ export function WorkCategoryRow({
 
   return (
     <section style={{ display: 'grid', gridTemplateColumns, position: 'relative' }}>
-      {/* Work category name */}
+      {/* Event name */}
       <div style={{ ...rowStyle, ...stickyColumnStyle(leftColumnOffsets[0]) }}>
+        <div>{eventName}</div>
+      </div>
+
+      {/* Work category name */}
+      <div style={{ ...rowStyle, ...stickyColumnStyle(leftColumnOffsets[1]) }}>
         <div>{workCategory.name}</div>
         {pressure?.isUnderPressure && (
           <div style={{ fontSize: '10px', color: '#f57c00', marginTop: '2px' }}>
@@ -102,12 +109,12 @@ export function WorkCategoryRow({
       </div>
 
       {/* Estimated effort */}
-      <div style={{ ...rowStyle, ...stickyColumnStyle(leftColumnOffsets[1]) }}>
+      <div style={{ ...rowStyle, ...stickyColumnStyle(leftColumnOffsets[2]) }}>
         <div style={{ fontWeight: 'bold' }}>{workCategory.estimatedEffortHours}h</div>
       </div>
 
       {/* Allocated total with progress bar */}
-      <div style={{ ...rowStyle, ...stickyColumnStyle(leftColumnOffsets[2]) }}>
+      <div style={{ ...rowStyle, ...stickyColumnStyle(leftColumnOffsets[3]) }}>
         <div style={{ fontWeight: 'bold' }}>{allocatedTotal}h</div>
         <div style={{
           marginTop: '4px',
@@ -130,7 +137,7 @@ export function WorkCategoryRow({
       {/* Remaining effort */}
       <div style={{
         ...rowStyle,
-        ...stickyColumnStyle(leftColumnOffsets[3]),
+        ...stickyColumnStyle(leftColumnOffsets[4]),
         color: remaining < 0 ? 'red' : remaining > 0 ? 'inherit' : '#4caf50',
         fontWeight: remaining !== 0 ? 'bold' : 'normal',
       }}>

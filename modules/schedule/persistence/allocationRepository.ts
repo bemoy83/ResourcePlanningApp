@@ -48,6 +48,18 @@ export async function loadAllocationsByWorkCategory(workCategoryId: string): Pro
   }));
 }
 
+export async function loadAllAllocations(): Promise<Allocation[]> {
+  const rows = await prisma.allocation.findMany();
+
+  return rows.map((row) => ({
+    id: row.id,
+    eventId: row.eventId,
+    workCategoryId: row.workCategoryId,
+    date: row.date,
+    effortHours: row.effortHours,
+  }));
+}
+
 export async function deleteAllocation(allocationId: AllocationId): Promise<void> {
   await prisma.allocation.delete({
     where: { id: allocationId },

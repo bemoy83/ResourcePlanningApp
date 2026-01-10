@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createWorkCategory } from "../../../modules/work/services/workService";
+import { createWorkCategory, listWorkCategories } from "../../../modules/work/services/workService";
+
+export async function GET() {
+    try {
+        const workCategories = await listWorkCategories();
+        return NextResponse.json(workCategories);
+    } catch (error) {
+        return NextResponse.json(
+            { error: error instanceof Error ? error.message : "Failed to list work categories" },
+            { status: 500 }
+        );
+    }
+}
 
 export async function POST(request: NextRequest) {
     try {

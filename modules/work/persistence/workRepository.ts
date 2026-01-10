@@ -47,3 +47,14 @@ export async function listWorkCategoriesByEvent(eventId: string): Promise<WorkCa
     estimatedEffortHours: record.estimatedEffortHours,
   }));
 }
+
+export async function listAllWorkCategories(): Promise<WorkCategory[]> {
+  const records = await prisma.workCategory.findMany();
+
+  return records.map((record) => ({
+    id: record.id as WorkCategoryId,
+    eventId: record.eventId,
+    name: record.name,
+    estimatedEffortHours: record.estimatedEffortHours,
+  }));
+}

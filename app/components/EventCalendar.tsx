@@ -174,13 +174,15 @@ export function EventCalendar({ locations, events, timeline }: EventCalendarProp
         backgroundColor: '#e0e0e0',
         fontWeight: 'bold',
         border: '2px solid #666',
-        position: 'relative',
+        position: 'sticky',
+        top: 0,
+        zIndex: 4,
       }}>
         <div style={{
           ...cellStyle,
           position: 'sticky',
           left: 0,
-          zIndex: 3,
+          zIndex: 5,
           backgroundColor: '#e0e0e0',
         }}>Location</div>
         <div style={{
@@ -215,7 +217,7 @@ export function EventCalendar({ locations, events, timeline }: EventCalendarProp
 
           // Calculate row height based on number of vertical stacks needed
           const maxRows = spanRows.length > 0 ? Math.max(...spanRows.map((sr) => sr.row)) + 1 : 0;
-          const rowHeight = Math.max(maxRows, 1) * ROW_LAYER_HEIGHT;
+          const rowHeight = Math.max(maxRows, 1) * ROW_LAYER_HEIGHT + 2; // Add 2px for bottom border
 
           return (
             <div
@@ -238,6 +240,7 @@ export function EventCalendar({ locations, events, timeline }: EventCalendarProp
                 position: 'sticky',
                 left: 0,
                 zIndex: 2,
+                height: '100%',
               }}>
                 {location.name}
               </div>

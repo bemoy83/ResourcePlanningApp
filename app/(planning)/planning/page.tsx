@@ -1,7 +1,6 @@
 "use client";
 
 import { ReactNode, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import { PlanningBoardGrid } from "../../components/PlanningBoardGrid";
 import { EvaluationLegend } from "../../components/EvaluationLegend";
 import { EvaluationSummary } from "../../components/EvaluationSummary";
@@ -102,7 +101,7 @@ interface TimelineLayout {
 
 // Timeline constants
 const TIMELINE_DATE_COLUMN_WIDTH = 100;
-const TIMELINE_ORIGIN_PX = 500;
+const TIMELINE_ORIGIN_PX = 700;
 
 function PlanningToolbar({ children }: { children: ReactNode }) {
   return <div>{children}</div>;
@@ -110,7 +109,7 @@ function PlanningToolbar({ children }: { children: ReactNode }) {
 
 function HorizontalScrollContainer({ children }: { children: ReactNode }) {
   return (
-    <div style={{ overflowX: "auto", overflowY: "hidden", position: "relative" }}>
+    <div style={{ overflowX: "auto", overflowY: "visible", position: "relative" }}>
       {children}
     </div>
   );
@@ -152,15 +151,10 @@ function resolveVisibleDateRange(event: Event) {
 
 
 export default function PlanningWorkspacePage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const eventIdFromUrl = searchParams.get("eventId");
-
-  const [availableEvents, setAvailableEvents] = useState<Event[]>([]);
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(eventIdFromUrl);
-  const [event, setEvent] = useState<Event | null>(null);
+  const [events, setEvents] = useState<Event[]>([]);
   const [workCategories, setWorkCategories] = useState<WorkCategory[]>([]);
-  const [locationsForEvent, setLocationsForEvent] = useState<Location[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [eventLocations, setEventLocations] = useState<EventLocation[]>([]);
   const [allocations, setAllocations] = useState<Allocation[]>([]);
   const [evaluation, setEvaluation] = useState<Evaluation>({
     dailyDemand: [],
@@ -177,90 +171,49 @@ export default function PlanningWorkspacePage() {
   const [error, setError] = useState<string | null>(null);
   const [errorsByCellKey, setErrorsByCellKey] = useState<Record<string, string>>({});
 
-  // Load available events
+  // Load all data (events, work categories, allocations, locations)
   useEffect(() => {
-    async function loadEvents() {
-      try {
-        const eventsRes = await fetch("/api/events");
-        if (!eventsRes.ok) {
-          throw new Error("Failed to load events");
-        }
-        const eventsData: Event[] = await eventsRes.json();
-        const activeEvents = eventsData.filter((e) => e.status === "ACTIVE");
-        setAvailableEvents(activeEvents);
-
-        // Set initial selected event if not already set
-        if (!selectedEventId && activeEvents.length > 0) {
-          setSelectedEventId(activeEvents[0].id);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load events");
-      }
-    }
-
-    loadEvents();
-  }, []);
-
-  // Load selected event data
-  useEffect(() => {
-    async function loadEventData() {
-      if (!selectedEventId) return;
-
+    async function loadAllData() {
       setIsLoading(true);
       setError(null);
 
       try {
-        // Find the selected event
-        const selectedEvent = availableEvents.find((e) => e.id === selectedEventId);
-        if (!selectedEvent) {
-          throw new Error("Selected event not found");
-        }
-
-        setEvent(selectedEvent);
-
-        setLocationsForEvent([]);
-
-        // Load work categories, allocations, evaluation, and location assignments
+        // Load all data in parallel
         const [
+          eventsRes,
           workCategoriesRes,
           allocationsRes,
-          evaluationRes,
           locationsRes,
           eventLocationsRes,
         ] = await Promise.all([
-          fetch(`/api/events/${selectedEvent.id}/work-categories`),
-          fetch(`/api/schedule/events/${selectedEvent.id}/allocations`),
-          fetch(`/api/schedule/events/${selectedEvent.id}/evaluation`),
+          fetch("/api/events"),
+          fetch("/api/work-categories"),
+          fetch("/api/schedule/allocations"),
           fetch("/api/locations"),
           fetch("/api/event-locations"),
         ]);
 
+        if (!eventsRes.ok) {
+          throw new Error("Failed to load events");
+        }
         if (!workCategoriesRes.ok) {
           throw new Error("Failed to load work categories");
         }
 
-        const workCategoriesData = await workCategoriesRes.json();
-        const allocationsData = allocationsRes.ok ? await allocationsRes.json() : [];
-        const evaluationData = evaluationRes.ok ? await evaluationRes.json() : {
-          dailyDemand: [],
-          dailyCapacityComparison: [],
-          workCategoryPressure: [],
-        };
+        const eventsData: Event[] = await eventsRes.json();
+        const activeEvents = eventsData.filter((e) => e.status === "ACTIVE");
+        const workCategoriesData: WorkCategory[] = await workCategoriesRes.json();
+        const allocationsData: Allocation[] = allocationsRes.ok ? await allocationsRes.json() : [];
         const locationsData: Location[] = locationsRes.ok ? await locationsRes.json() : [];
         const eventLocationsData: EventLocation[] = eventLocationsRes.ok
           ? await eventLocationsRes.json()
           : [];
 
-        const locationsById = new Map(locationsData.map((loc) => [loc.id, loc]));
-        const assignedLocations: Location[] = eventLocationsData
-          .filter((mapping) => mapping.eventId === selectedEvent.id)
-          .map((mapping) => locationsById.get(mapping.locationId))
-          .filter((loc): loc is Location => Boolean(loc));
-
+        setEvents(activeEvents);
         setWorkCategories(workCategoriesData);
         setAllocations(allocationsData);
-        setEvaluation(evaluationData);
-        setLocationsForEvent(assignedLocations);
+        setLocations(locationsData);
+        setEventLocations(eventLocationsData);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load data");
       } finally {
@@ -268,10 +221,8 @@ export default function PlanningWorkspacePage() {
       }
     }
 
-    if (availableEvents.length > 0) {
-      loadEventData();
-    }
-  }, [selectedEventId, availableEvents]);
+    loadAllData();
+  }, []);
 
   // Load cross-event evaluation
   useEffect(() => {
@@ -291,25 +242,13 @@ export default function PlanningWorkspacePage() {
     loadCrossEventEvaluation();
   }, [allocations]); // Refresh when allocations change
 
-  // Handle event selection
-  function handleEventChange(newEventId: string) {
-    setSelectedEventId(newEventId);
-    // Update URL
-    router.push(`/planning?eventId=${newEventId}`);
-    // Clear drafts when switching events
-    setDrafts([]);
-    setErrorsByCellKey({});
-  }
-
   // Refresh evaluation after allocations change
   async function refreshEvaluation() {
-    if (!event) return;
-
     try {
-      const res = await fetch(`/api/schedule/events/${event.id}/evaluation`);
+      const res = await fetch('/api/schedule/evaluation/cross-event');
       if (res.ok) {
-        const evaluationData = await res.json();
-        setEvaluation(evaluationData);
+        const data = await res.json();
+        setCrossEventEvaluation(data);
       }
     } catch (err) {
       // Silently fail - evaluation is advisory only
@@ -379,7 +318,13 @@ export default function PlanningWorkspacePage() {
   // Commit draft (create or update allocation)
   async function commitDraft(draftKey: string) {
     const draft = drafts.find((d) => d.key === draftKey);
-    if (!draft || !event) {
+    if (!draft) {
+      return;
+    }
+
+    // Find the work category to get the eventId
+    const workCategory = workCategories.find((wc) => wc.id === draft.workCategoryId);
+    if (!workCategory) {
       return;
     }
 
@@ -396,7 +341,7 @@ export default function PlanningWorkspacePage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            eventId: event.id,
+            eventId: workCategory.eventId,
             workCategoryId: draft.workCategoryId,
             date: draft.date,
             effortValue: draft.effortValue,
@@ -411,7 +356,7 @@ export default function PlanningWorkspacePage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            eventId: event.id,
+            eventId: workCategory.eventId,
             workCategoryId: draft.workCategoryId,
             date: draft.date,
             effortValue: draft.effortValue,
@@ -476,8 +421,6 @@ export default function PlanningWorkspacePage() {
 
   // Delete allocation
   async function deleteAllocation(allocationId: string) {
-    if (!event) return;
-
     setIsSaving(true);
 
     try {
@@ -519,7 +462,7 @@ export default function PlanningWorkspacePage() {
   }
 
   // Error state (non-blocking)
-  if (error && !event) {
+  if (error) {
     return (
       <div style={{
         padding: "20px",
@@ -535,7 +478,7 @@ export default function PlanningWorkspacePage() {
   }
 
   // No events available
-  if (availableEvents.length === 0 && !isLoading) {
+  if (events.length === 0 && !isLoading) {
     return (
       <div style={{
         padding: "20px",
@@ -550,28 +493,44 @@ export default function PlanningWorkspacePage() {
     );
   }
 
-  // No event selected yet
-  if (!event) {
-    return null;
+  // Build calendar events with location IDs
+  const eventLocationMap = new Map<string, string[]>();
+  for (const el of eventLocations) {
+    if (!eventLocationMap.has(el.eventId)) {
+      eventLocationMap.set(el.eventId, []);
+    }
+    eventLocationMap.get(el.eventId)!.push(el.locationId);
   }
 
-  const calendarEvents: CalendarEvent[] = [
-    {
-      ...event,
-      locationIds: locationsForEvent.map((location) => location.id),
-    },
-  ];
+  const calendarEvents: CalendarEvent[] = events.map((event) => ({
+    ...event,
+    locationIds: eventLocationMap.get(event.id) || [],
+  }));
 
-  const visibleDateRange = resolveVisibleDateRange(event);
+  // Calculate date range spanning all events
+  let minDate: string | null = null;
+  let maxDate: string | null = null;
 
-  // Calculate date range once (shared timeline for calendar and grid)
+  for (const event of events) {
+    const range = resolveVisibleDateRange(event);
+    if (!minDate || range.startDate < minDate) {
+      minDate = range.startDate;
+    }
+    if (!maxDate || range.endDate > maxDate) {
+      maxDate = range.endDate;
+    }
+  }
+
+  // Generate dates array
   const dates: string[] = [];
-  const start = new Date(visibleDateRange.startDate);
-  const end = new Date(visibleDateRange.endDate);
-  const current = new Date(start);
-  while (current <= end) {
-    dates.push(current.toISOString().split("T")[0]);
-    current.setDate(current.getDate() + 1);
+  if (minDate && maxDate) {
+    const start = new Date(minDate);
+    const end = new Date(maxDate);
+    const current = new Date(start);
+    while (current <= end) {
+      dates.push(current.toISOString().split("T")[0]);
+      current.setDate(current.getDate() + 1);
+    }
   }
 
   // Timeline layout contract
@@ -589,56 +548,13 @@ export default function PlanningWorkspacePage() {
             Planning Board
           </h1>
 
-          {/* Event Selector */}
-          <div style={{
-            padding: "12px",
-            backgroundColor: "#f5f5f5",
-            border: "2px solid #666",
-            marginBottom: "12px",
-          }}>
-            <label htmlFor="event-select" style={{
-              display: "block",
-              marginBottom: "8px",
-              fontSize: "14px",
-              fontWeight: "bold",
-              color: "#000",
-            }}>
-              Select Event to Plan:
-            </label>
-            <select
-              id="event-select"
-              value={selectedEventId || ""}
-              onChange={(e) => handleEventChange(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "8px",
-                fontSize: "14px",
-                border: "2px solid #666",
-                backgroundColor: "#fff",
-                color: "#000",
-              }}
-            >
-              {availableEvents.map((evt) => (
-                <option key={evt.id} value={evt.id}>
-                  {evt.name} ({evt.startDate} to {evt.endDate})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ fontSize: "14px", color: "#333" }}>
-            <strong>Planning:</strong> {event.name}
+          <div style={{ fontSize: "14px", color: "#333", marginBottom: "8px" }}>
+            <strong>Multi-Event Planning</strong> - All active events
           </div>
           <div style={{ marginBottom: "8px", fontSize: "12px", color: "#666" }}>
-            {event.startDate} to {event.endDate}
+            {events.length} event{events.length !== 1 ? 's' : ''} | {workCategories.length} work categor{workCategories.length !== 1 ? 'ies' : 'y'} | {locations.length} location{locations.length !== 1 ? 's' : ''}
           </div>
         </div>
-
-        {error && (
-          <div style={{ padding: "10px", marginBottom: "10px", backgroundColor: "#f5f5f5", color: "#000", border: "2px solid #000" }}>
-            Error: {error}
-          </div>
-        )}
 
         {isSaving && (
           <div style={{ padding: "10px", marginBottom: "10px", backgroundColor: "#f5f5f5", border: "2px solid #666" }}>
@@ -648,10 +564,10 @@ export default function PlanningWorkspacePage() {
       </PlanningToolbar>
 
       <HorizontalScrollContainer>
-        <EventLocationCalendar locations={locationsForEvent} events={calendarEvents} timeline={timeline} />
+        <EventLocationCalendar locations={locations} events={calendarEvents} timeline={timeline} />
 
         <PlanningBoardGrid
-          eventName={event.name}
+          events={events}
           dates={dates}
           timeline={timeline}
           workCategories={workCategories}

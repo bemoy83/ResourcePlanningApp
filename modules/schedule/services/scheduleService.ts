@@ -11,6 +11,7 @@ import {
   saveAllocation,
   loadAllocationsByEvent,
   loadAllocationsByWorkCategory,
+  loadAllAllocations,
   deleteAllocation,
 } from '../persistence/allocationRepository';
 import {
@@ -236,4 +237,8 @@ export async function evaluateCrossEventSchedule(): Promise<{
     crossEventDailyDemand,
     crossEventCapacityComparison,
   };
+}
+
+export async function listAllocations(): Promise<Allocation[]> {
+  return await loadAllAllocations();
 }
