@@ -18,9 +18,16 @@ interface Location {
   name: string;
 }
 
+interface TimelineLayout {
+  dates: string[];
+  dateColumnWidth: number;
+  timelineOriginPx: number;
+}
+
 interface EventCalendarProps {
   locations: Location[];
   events: Event[];
+  timeline: TimelineLayout;
 }
 
 // Unified calendar span (event or phase)
@@ -32,13 +39,10 @@ interface CalendarSpan {
   isPhase: boolean;
 }
 
-const LOCATION_COL_WIDTH = 200;
-const DAY_COL_WIDTH = 80;
 const CELL_BORDER_WIDTH = 1;
-const DAY_COL_FULL_WIDTH = DAY_COL_WIDTH;
 const ROW_LAYER_HEIGHT = 40;
 
-export function EventCalendar({ locations, events }: EventCalendarProps) {
+export function EventCalendar({ locations, events, timeline }: EventCalendarProps) {
   if (locations.length === 0) {
     return (
       <div style={{
@@ -65,46 +69,14 @@ export function EventCalendar({ locations, events }: EventCalendarProps) {
     );
   }
 
-  // Calculate date range across all events and phases
-  let minDate: string | null = null;
-  let maxDate: string | null = null;
-
-  for (const event of events) {
-    // Check event dates
-    if (!minDate || event.startDate < minDate) {
-      minDate = event.startDate;
-    }
-    if (!maxDate || event.endDate > maxDate) {
-      maxDate = event.endDate;
-    }
-
-    // Check phase dates
-    if (event.phases) {
-      for (const phase of event.phases) {
-        if (!minDate || phase.startDate < minDate) {
-          minDate = phase.startDate;
-        }
-        if (!maxDate || phase.endDate > maxDate) {
-          maxDate = phase.endDate;
-        }
-      }
-    }
-  }
-
-  if (!minDate || !maxDate) {
-    return <div>Invalid date range</div>;
-  }
-
-  // Generate all dates in range
-  const dates: string[] = [];
-  const start = new Date(minDate);
-  const end = new Date(maxDate);
-  const current = new Date(start);
-
-  while (current <= end) {
-    dates.push(current.toISOString().split('T')[0]);
-    current.setDate(current.getDate() + 1);
-  }
+  // Use dates from timeline contract (computed by parent)
+  const dates = timeline.dates;
+  const DAY_COL_FULL_WIDTH = timeline.dateColumnWidth;
+  const timelineOriginPx = timeline.timelineOriginPx;
+  const leftColumns = [{ key: "location", width: timelineOriginPx }];
+  const leftColumnsTemplate = leftColumns.map((col) => `${col.width}px`).join(" ");
+  const timelineWidth = dates.length * DAY_COL_FULL_WIDTH;
+  const scrollWidth = timelineOriginPx + timelineWidth;
 
   // Build calendar spans: events + phases as peer spans
   const locationSpanRows: Record<string, { span: CalendarSpan; row: number }[]> = {};
@@ -171,7 +143,7 @@ export function EventCalendar({ locations, events }: EventCalendarProps) {
   }
 
   // Grid styling
-  const gridTemplateColumns = `${LOCATION_COL_WIDTH}px repeat(${dates.length}, ${DAY_COL_FULL_WIDTH}px)`;
+  const gridTemplateColumns = leftColumnsTemplate;
   const cellStyle = {
     border: `${CELL_BORDER_WIDTH}px solid #999`,
     padding: '8px',
@@ -183,7 +155,7 @@ export function EventCalendar({ locations, events }: EventCalendarProps) {
   };
 
   return (
-    <section>
+    <section style={{ minWidth: `${scrollWidth}px` }}>
       <div style={{
         marginBottom: '8px',
         padding: '8px',
@@ -202,13 +174,38 @@ export function EventCalendar({ locations, events }: EventCalendarProps) {
         backgroundColor: '#e0e0e0',
         fontWeight: 'bold',
         border: '2px solid #666',
+        position: 'relative',
       }}>
-        <div style={cellStyle}>Location</div>
-        {dates.map((date) => (
-          <div key={date} style={cellStyle}>
-            {date}
-          </div>
-        ))}
+        <div style={{
+          ...cellStyle,
+          position: 'sticky',
+          left: 0,
+          zIndex: 3,
+          backgroundColor: '#e0e0e0',
+        }}>Location</div>
+        <div style={{
+          position: 'absolute',
+          left: `${timelineOriginPx}px`,
+          top: 0,
+          height: '100%',
+          width: `${timelineWidth}px`,
+        }}>
+          {dates.map((date, index) => (
+            <div
+              key={date}
+              style={{
+                ...cellStyle,
+                position: 'absolute',
+                left: `${index * DAY_COL_FULL_WIDTH}px`,
+                top: 0,
+                width: `${DAY_COL_FULL_WIDTH}px`,
+                height: '100%',
+              }}
+            >
+              {date}
+            </div>
+          ))}
+        </div>
       </header>
 
       {/* Location rows - one row per location, spans stacked vertically within */}
@@ -232,81 +229,95 @@ export function EventCalendar({ locations, events }: EventCalendarProps) {
                 boxSizing: 'border-box',
               }}
             >
-              {/* Location name column */}
               <div style={{
                 ...cellStyle,
                 textAlign: 'left',
                 fontWeight: 'bold',
                 fontSize: '12px',
                 backgroundColor: '#f5f5f5',
+                position: 'sticky',
+                left: 0,
+                zIndex: 2,
               }}>
                 {location.name}
               </div>
 
-              {/* Date columns - empty cells for grid structure */}
-              {dates.map((date) => (
-                <div
-                  key={date}
-                  style={{
-                    ...cellStyle,
-                    backgroundColor: '#fff',
-                  }}
-                >
-                  —
-                </div>
-              ))}
-
-              {/* Calendar spans (events + phases) positioned as peers */}
-              {spanRows.map((sr) => {
-                // Normalize DateTime to YYYY-MM-DD format to match dates array
-                const normalizedStart = sr.span.startDate.split('T')[0];
-                const normalizedEnd = sr.span.endDate.split('T')[0];
-
-                // Find where this span starts and ends in the visible date range
-                const startIndex = dates.indexOf(normalizedStart);
-                const endIndex = dates.indexOf(normalizedEnd);
-
-                // Skip spans completely outside visible range
-                if (startIndex === -1 && endIndex === -1) return null;
-
-                // Clamp to visible range
-                const spanStart = Math.max(startIndex, 0);
-                const spanEnd = Math.min(endIndex === -1 ? dates.length - 1 : endIndex, dates.length - 1);
-                const spanLength = spanEnd - spanStart + 1;
-
-                // Horizontal positioning: same logic for all spans
-                const leftOffset = LOCATION_COL_WIDTH + (spanStart * DAY_COL_FULL_WIDTH);
-                const blockWidth = spanLength * DAY_COL_FULL_WIDTH;
-
-                // Vertical positioning: uniform stacking for all spans
-                const topOffset = sr.row * ROW_LAYER_HEIGHT;
-
-                return (
+              <div style={{
+                position: 'absolute',
+                left: `${timelineOriginPx}px`,
+                top: 0,
+                height: '100%',
+                width: `${timelineWidth}px`,
+              }}>
+                {dates.map((date, index) => (
                   <div
-                    key={sr.span.id}
+                    key={date}
                     style={{
+                      ...cellStyle,
                       position: 'absolute',
-                      top: `${topOffset}px`,
-                      left: `${leftOffset}px`,
-                      width: `${blockWidth}px`,
-                      height: `${ROW_LAYER_HEIGHT}px`,
-                      backgroundColor: sr.span.isPhase ? '#d0d0d0' : '#e0e0e0',
-                      border: `${CELL_BORDER_WIDTH}px solid #999`,
-                      padding: '8px 12px',
-                      fontWeight: 'bold',
-                      fontSize: '11px',
-                      color: '#000',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      boxSizing: 'border-box',
-                      zIndex: 1,
+                      left: `${index * DAY_COL_FULL_WIDTH}px`,
+                      top: 0,
+                      width: `${DAY_COL_FULL_WIDTH}px`,
+                      height: '100%',
+                      backgroundColor: '#fff',
                     }}
                   >
-                    {sr.span.label}
+                    —
                   </div>
-                );
-              })}
+                ))}
+
+                {/* Calendar spans (events + phases) positioned as peers */}
+                {spanRows.map((sr) => {
+                  // Normalize DateTime to YYYY-MM-DD format to match dates array
+                  const normalizedStart = sr.span.startDate.split('T')[0];
+                  const normalizedEnd = sr.span.endDate.split('T')[0];
+
+                  // Find where this span starts and ends in the visible date range
+                  const startIndex = dates.indexOf(normalizedStart);
+                  const endIndex = dates.indexOf(normalizedEnd);
+
+                  // Skip spans completely outside visible range
+                  if (startIndex === -1 && endIndex === -1) return null;
+
+                  // Clamp to visible range
+                  const spanStart = Math.max(startIndex, 0);
+                  const spanEnd = Math.min(endIndex === -1 ? dates.length - 1 : endIndex, dates.length - 1);
+                  const spanLength = spanEnd - spanStart + 1;
+
+                  // Horizontal positioning: same logic for all spans
+                  const leftOffset = spanStart * DAY_COL_FULL_WIDTH;
+                  const blockWidth = spanLength * DAY_COL_FULL_WIDTH;
+
+                  // Vertical positioning: uniform stacking for all spans
+                  const topOffset = sr.row * ROW_LAYER_HEIGHT;
+
+                  return (
+                    <div
+                      key={sr.span.id}
+                      style={{
+                        position: 'absolute',
+                        top: `${topOffset}px`,
+                        left: `${leftOffset}px`,
+                        width: `${blockWidth}px`,
+                        height: `${ROW_LAYER_HEIGHT}px`,
+                        backgroundColor: sr.span.isPhase ? '#d0d0d0' : '#e0e0e0',
+                        border: `${CELL_BORDER_WIDTH}px solid #999`,
+                        padding: '8px 12px',
+                        fontWeight: 'bold',
+                        fontSize: '11px',
+                        color: '#000',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        boxSizing: 'border-box',
+                        zIndex: 1,
+                      }}
+                    >
+                      {sr.span.label}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           );
         })}

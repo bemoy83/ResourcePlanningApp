@@ -24,6 +24,58 @@ interface EventLocation {
 
 interface EventWithLocations extends Event {
   locationIds: string[];
+  phases?: {
+    id: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+  }[];
+}
+
+// Timeline constants (matching planning workspace)
+const TIMELINE_COLUMN_WIDTH = 100;
+const TIMELINE_ORIGIN_PX = 500;
+
+function computeDateRange(events: EventWithLocations[]): string[] {
+  if (events.length === 0) return [];
+
+  let minDate: string | null = null;
+  let maxDate: string | null = null;
+
+  for (const event of events) {
+    if (!minDate || event.startDate < minDate) {
+      minDate = event.startDate;
+    }
+    if (!maxDate || event.endDate > maxDate) {
+      maxDate = event.endDate;
+    }
+
+    // Include phases
+    if (event.phases) {
+      for (const phase of event.phases) {
+        if (!minDate || phase.startDate < minDate) {
+          minDate = phase.startDate;
+        }
+        if (!maxDate || phase.endDate > maxDate) {
+          maxDate = phase.endDate;
+        }
+      }
+    }
+  }
+
+  if (!minDate || !maxDate) return [];
+
+  const dates: string[] = [];
+  const start = new Date(minDate);
+  const end = new Date(maxDate);
+  const current = new Date(start);
+
+  while (current <= end) {
+    dates.push(current.toISOString().split('T')[0]);
+    current.setDate(current.getDate() + 1);
+  }
+
+  return dates;
 }
 
 export default function CalendarPage() {
@@ -139,7 +191,15 @@ export default function CalendarPage() {
         Read-only view of events grouped by location
       </div>
 
-      <EventCalendar locations={locations} events={events} />
+      <EventCalendar
+        locations={locations}
+        events={events}
+        timeline={{
+          dates: computeDateRange(events),
+          dateColumnWidth: TIMELINE_COLUMN_WIDTH,
+          timelineOriginPx: TIMELINE_ORIGIN_PX,
+        }}
+      />
     </div>
   );
 }

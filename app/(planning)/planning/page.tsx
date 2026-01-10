@@ -93,12 +93,27 @@ interface CrossEventEvaluation {
   crossEventCapacityComparison: DailyCapacityComparison[];
 }
 
+// Timeline layout contract (shared axis for calendar and grid)
+interface TimelineLayout {
+  dates: string[];
+  dateColumnWidth: number;
+  timelineOriginPx: number;
+}
+
+// Timeline constants
+const TIMELINE_DATE_COLUMN_WIDTH = 100;
+const TIMELINE_ORIGIN_PX = 500;
+
 function PlanningToolbar({ children }: { children: ReactNode }) {
   return <div>{children}</div>;
 }
 
-function TimelineViewport({ children }: { children: ReactNode }) {
-  return <div>{children}</div>;
+function HorizontalScrollContainer({ children }: { children: ReactNode }) {
+  return (
+    <div style={{ overflowX: "auto", overflowY: "hidden", position: "relative" }}>
+      {children}
+    </div>
+  );
 }
 
 function PlanningStatusFooter({ children }: { children: ReactNode }) {
@@ -108,11 +123,13 @@ function PlanningStatusFooter({ children }: { children: ReactNode }) {
 function EventLocationCalendar({
   locations,
   events,
+  timeline,
 }: {
   locations: Location[];
   events: CalendarEvent[];
+  timeline: TimelineLayout;
 }) {
-  return <EventCalendar locations={locations} events={events} />;
+  return <EventCalendar locations={locations} events={events} timeline={timeline} />;
 }
 
 function resolveVisibleDateRange(event: Event) {
@@ -132,6 +149,7 @@ function resolveVisibleDateRange(event: Event) {
 
   return { startDate: minDate, endDate: maxDate };
 }
+
 
 export default function PlanningWorkspacePage() {
   const router = useRouter();
@@ -546,7 +564,7 @@ export default function PlanningWorkspacePage() {
 
   const visibleDateRange = resolveVisibleDateRange(event);
 
-  // Calculate date range for grid
+  // Calculate date range once (shared timeline for calendar and grid)
   const dates: string[] = [];
   const start = new Date(visibleDateRange.startDate);
   const end = new Date(visibleDateRange.endDate);
@@ -556,8 +574,15 @@ export default function PlanningWorkspacePage() {
     current.setDate(current.getDate() + 1);
   }
 
+  // Timeline layout contract
+  const timeline: TimelineLayout = {
+    dates,
+    dateColumnWidth: TIMELINE_DATE_COLUMN_WIDTH,
+    timelineOriginPx: TIMELINE_ORIGIN_PX,
+  };
+
   return (
-    <div style={{ padding: "20px", maxWidth: "100%", overflowX: "auto", backgroundColor: "#fafafa" }}>
+    <div style={{ padding: "20px", maxWidth: "100%", backgroundColor: "#fafafa" }}>
       <PlanningToolbar>
         <div style={{ marginBottom: "16px" }}>
           <h1 style={{ marginBottom: "8px", color: "#000", borderBottom: "2px solid #333", paddingBottom: "8px" }}>
@@ -622,28 +647,27 @@ export default function PlanningWorkspacePage() {
         )}
       </PlanningToolbar>
 
-      <TimelineViewport>
-        <EventLocationCalendar locations={locationsForEvent} events={calendarEvents} />
+      <HorizontalScrollContainer>
+        <EventLocationCalendar locations={locationsForEvent} events={calendarEvents} timeline={timeline} />
 
-        <div style={{ overflowX: "auto" }}>
-          <PlanningBoardGrid
-            eventName={event.name}
-            dates={dates}
-            workCategories={workCategories}
-            allocations={allocations}
-            evaluation={evaluation}
-            crossEventEvaluation={crossEventEvaluation}
-            drafts={drafts}
-            errorsByCellKey={errorsByCellKey}
-            onStartCreate={startCreateAllocation}
-            onStartEdit={startEditAllocation}
-            onChangeDraft={changeDraft}
-            onCommit={commitDraft}
-            onCancel={cancelDraft}
-            onDelete={deleteAllocation}
-          />
-        </div>
-      </TimelineViewport>
+        <PlanningBoardGrid
+          eventName={event.name}
+          dates={dates}
+          timeline={timeline}
+          workCategories={workCategories}
+          allocations={allocations}
+          evaluation={evaluation}
+          crossEventEvaluation={crossEventEvaluation}
+          drafts={drafts}
+          errorsByCellKey={errorsByCellKey}
+          onStartCreate={startCreateAllocation}
+          onStartEdit={startEditAllocation}
+          onChangeDraft={changeDraft}
+          onCommit={commitDraft}
+          onCancel={cancelDraft}
+          onDelete={deleteAllocation}
+        />
+      </HorizontalScrollContainer>
 
       <PlanningStatusFooter>
         <EvaluationSummary

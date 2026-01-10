@@ -30,12 +30,14 @@ interface WorkCategoryPressure {
 }
 
 interface WorkCategoryRowProps {
-  eventName: string;
   workCategory: WorkCategory;
   allocatedTotal: number;
   remaining: number;
   pressure?: WorkCategoryPressure;
   dates: string[];
+  dateColumnWidth: number;
+  timelineOriginPx: number;
+  leftColumnOffsets: number[];
   allocations: Allocation[];
   drafts: AllocationDraft[];
   errorsByCellKey: Record<string, string>;
@@ -50,12 +52,14 @@ interface WorkCategoryRowProps {
 }
 
 export function WorkCategoryRow({
-  eventName,
   workCategory,
   allocatedTotal,
   remaining,
   pressure,
   dates,
+  dateColumnWidth,
+  timelineOriginPx,
+  leftColumnOffsets,
   allocations,
   drafts,
   errorsByCellKey,
@@ -73,15 +77,22 @@ export function WorkCategoryRow({
     ? { ...cellStyle, backgroundColor: '#fff3cd' }
     : cellStyle;
 
-  // Calculate progress percentage
   const progressPercentage = workCategory.estimatedEffortHours > 0
     ? Math.round((allocatedTotal / workCategory.estimatedEffortHours) * 100)
     : 0;
 
+  const timelineWidth = dates.length * dateColumnWidth;
+
+  const stickyColumnStyle = (offset: number): React.CSSProperties => ({
+    position: 'sticky',
+    left: `${offset}px`,
+    zIndex: 2,
+  });
+
   return (
-    <section style={{ display: 'grid', gridTemplateColumns }}>
+    <section style={{ display: 'grid', gridTemplateColumns, position: 'relative' }}>
       {/* Work category name */}
-      <div style={rowStyle}>
+      <div style={{ ...rowStyle, ...stickyColumnStyle(leftColumnOffsets[0]) }}>
         <div>{workCategory.name}</div>
         {pressure?.isUnderPressure && (
           <div style={{ fontSize: '10px', color: '#f57c00', marginTop: '2px' }}>
@@ -91,12 +102,12 @@ export function WorkCategoryRow({
       </div>
 
       {/* Estimated effort */}
-      <div style={rowStyle}>
+      <div style={{ ...rowStyle, ...stickyColumnStyle(leftColumnOffsets[1]) }}>
         <div style={{ fontWeight: 'bold' }}>{workCategory.estimatedEffortHours}h</div>
       </div>
 
       {/* Allocated total with progress bar */}
-      <div style={rowStyle}>
+      <div style={{ ...rowStyle, ...stickyColumnStyle(leftColumnOffsets[2]) }}>
         <div style={{ fontWeight: 'bold' }}>{allocatedTotal}h</div>
         <div style={{
           marginTop: '4px',
@@ -119,41 +130,59 @@ export function WorkCategoryRow({
       {/* Remaining effort */}
       <div style={{
         ...rowStyle,
+        ...stickyColumnStyle(leftColumnOffsets[3]),
         color: remaining < 0 ? 'red' : remaining > 0 ? 'inherit' : '#4caf50',
         fontWeight: remaining !== 0 ? 'bold' : 'normal',
       }}>
         {remaining > 0 ? `${remaining}h` : remaining < 0 ? `${Math.abs(remaining)}h (over)` : '✓ Complete'}
       </div>
 
-      {/* Daily allocation cells */}
-      {dates.map((date) => {
-        const cellKey = `${workCategory.id}::${date}`;
-        const allocation = allocations.find(
-          (a) => a.workCategoryId === workCategory.id && a.date === date
-        );
-        const draft = drafts.find(
-          (d) => d.workCategoryId === workCategory.id && d.date === date
-        );
-        const error = errorsByCellKey[cellKey];
+      <div style={{
+        position: 'absolute',
+        left: `${timelineOriginPx}px`,
+        top: 0,
+        height: '100%',
+        width: `${timelineWidth}px`,
+      }}>
+        {dates.map((date, index) => {
+          const cellKey = `${workCategory.id}::${date}`;
+          const allocation = allocations.find(
+            (a) => a.workCategoryId === workCategory.id && a.date === date
+          );
+          const draft = drafts.find(
+            (d) => d.workCategoryId === workCategory.id && d.date === date
+          );
+          const error = errorsByCellKey[cellKey];
 
-        return (
-          <div key={cellKey} style={cellStyle}>
-            <AllocationCell
-              workCategoryId={workCategory.id}
-              date={date}
-              allocation={allocation}
-              draft={draft}
-              error={error}
-              onStartCreate={onStartCreate}
-              onStartEdit={onStartEdit}
-              onChangeDraft={onChangeDraft}
-              onCommit={onCommit}
-              onCancel={onCancel}
-              onDelete={onDelete}
-            />
-          </div>
-        );
-      })}
+          return (
+            <div
+              key={cellKey}
+              style={{
+                ...cellStyle,
+                position: 'absolute',
+                left: `${index * dateColumnWidth}px`,
+                top: 0,
+                width: `${dateColumnWidth}px`,
+                height: '100%',
+              }}
+            >
+              <AllocationCell
+                workCategoryId={workCategory.id}
+                date={date}
+                allocation={allocation}
+                draft={draft}
+                error={error}
+                onStartCreate={onStartCreate}
+                onStartEdit={onStartEdit}
+                onChangeDraft={onChangeDraft}
+                onCommit={onCommit}
+                onCancel={onCancel}
+                onDelete={onDelete}
+              />
+            </div>
+          );
+        })}
+      </div>
     </section>
   );
 }
