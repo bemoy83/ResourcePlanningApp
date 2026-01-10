@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { PlanningBoardGrid } from "../../../components/PlanningBoardGrid";
 
 interface Event {
   id: string;
@@ -57,7 +58,10 @@ export default function PlanningBoardPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorsByCellKey, setErrorsByCellKey] = useState<Record<string, string>>({});
-  const [visibleDateRange, setVisibleDateRange] = useState<VisibleDateRange | null>(null);
+  const [visibleDateRange, setVisibleDateRange] = useState<VisibleDateRange>({
+  startDate: "",
+  endDate: "",
+});
 
   useEffect(() => {
     if (!eventId) return;
@@ -133,21 +137,39 @@ export default function PlanningBoardPage() {
   }, [eventId, allocations]);
 
   function startEdit(workCategoryId: string, date: string) {
-    const draftKey = `${workCategoryId}-${date}`;
-    const existingDraft = drafts.find((d) => d.key === draftKey);
-    if (existingDraft) {
-      return;
-    }
+  const draftKey = `${workCategoryId}::${date}`;
 
-    const draft: AllocationDraft = {
-      key: draftKey,
-      workCategoryId,
-      date,
-      effortValue: 0,
-      effortUnit: "HOURS",
-    };
+  // Do not create duplicate drafts
+  const existingDraft = drafts.find((d) => d.key === draftKey);
+  if (existingDraft) {
+    return;
+  }
 
-    setDrafts([...drafts, draft]);
+  // Do not allow editing if an allocation already exists for this cell
+  const existingAllocation = allocations.find(
+    (a) => a.workCategoryId === workCategoryId && a.date === date
+  );
+  if (existingAllocation) {
+    return;
+  }
+
+  const draft: AllocationDraft = {
+    key: draftKey,
+    workCategoryId,
+    date,
+    effortValue: 0,
+    effortUnit: "HOURS",
+  };
+
+  setDrafts((prev) => [...prev, draft]);
+}
+
+  function changeDraft(draftKey: string, effortValue: number, effortUnit: "HOURS" | "FTE") {
+    setDrafts(drafts.map(d =>
+      d.key === draftKey
+        ? { ...d, effortValue, effortUnit }
+        : d
+    ));
   }
 
   async function commitDraft(draftKey: string) {
@@ -246,10 +268,38 @@ export default function PlanningBoardPage() {
     return <div>Event not found</div>;
   }
 
+  const dates: string[] = [];
+  const start = new Date(event.startDate);
+  const end = new Date(event.endDate);
+  const current = new Date(start);
+  while (current <= end) {
+    dates.push(current.toISOString().split('T')[0]);
+    current.setDate(current.getDate() + 1);
+  }
+
+  const eventSections = [
+    {
+      eventId: event.id,
+      eventName: event.name,
+      workCategories: workCategories,
+    },
+  ];
+
   return (
     <div>
-      {/* TODO: Render planning board UI */}
-      {/* TODO: Pass state and handlers to child components */}
+      <h1>{event.name}</h1>
+      <PlanningBoardGrid
+        dates={dates}
+        eventSections={eventSections}
+        allocations={allocations}
+        dailyDemand={dailyDemand}
+        drafts={drafts}
+        errorsByCellKey={errorsByCellKey}
+        onStartEdit={startEdit}
+        onChangeDraft={changeDraft}
+        onCommit={commitDraft}
+        onCancel={cancelDraft}
+      />
     </div>
   );
 }
