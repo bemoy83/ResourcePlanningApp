@@ -1,5 +1,42 @@
-import { Event, EventId } from "../domain/event";
+import { Event, EventId, EventPhase } from "../domain/event";
 import { prisma } from "@/lib/prisma";
+
+function mapPhaseRecord(record: {
+  id: string;
+  eventId: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+}): EventPhase {
+  return {
+    id: record.id,
+    eventId: record.eventId,
+    name: record.name as EventPhase["name"],
+    startDate: record.startDate,
+    endDate: record.endDate,
+  };
+}
+
+function mapEventRecord(
+  record: {
+    id: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+    status: string;
+  },
+  phases: EventPhase[]
+): Event {
+  return {
+    id: record.id,
+    name: record.name,
+    startDate: record.startDate,
+    endDate: record.endDate,
+    status: record.status as Event["status"],
+    // Event.startDate/endDate represents the "Event" phase; stored phases are additional metadata.
+    phases,
+  };
+}
 
 export async function saveEvent(event: Event): Promise<void> {
   await prisma.event.upsert({
@@ -29,23 +66,37 @@ export async function loadEventById(eventId: EventId): Promise<Event | null> {
     return null;
   }
 
-  return {
-    id: record.id,
-    name: record.name,
-    startDate: record.startDate,
-    endDate: record.endDate,
-    status: record.status as Event["status"],
-  };
+  const phaseRecords = await prisma.eventPhase.findMany({
+    where: { eventId: record.id },
+  });
+
+  return mapEventRecord(record, phaseRecords.map(mapPhaseRecord));
 }
 
 export async function listEvents(): Promise<Event[]> {
   const records = await prisma.event.findMany();
 
-  return records.map((record) => ({
-    id: record.id,
-    name: record.name,
-    startDate: record.startDate,
-    endDate: record.endDate,
-    status: record.status as Event["status"],
-  }));
+  if (records.length === 0) {
+    return [];
+  }
+
+  const eventIds = records.map((record) => record.id);
+  const phaseRecords = await prisma.eventPhase.findMany({
+    where: { eventId: { in: eventIds } },
+  });
+
+  const phasesByEventId = new Map<string, EventPhase[]>();
+  for (const phaseRecord of phaseRecords) {
+    const phase = mapPhaseRecord(phaseRecord);
+    const phases = phasesByEventId.get(phase.eventId);
+    if (phases) {
+      phases.push(phase);
+    } else {
+      phasesByEventId.set(phase.eventId, [phase]);
+    }
+  }
+
+  return records.map((record) =>
+    mapEventRecord(record, phasesByEventId.get(record.id) ?? [])
+  );
 }

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PlanningBoardGrid } from "../../components/PlanningBoardGrid";
 import { EvaluationLegend } from "../../components/EvaluationLegend";
 import { EvaluationSummary } from "../../components/EvaluationSummary";
+import { EventCalendar } from "../../components/EventCalendar";
 
 interface Event {
   id: string;
@@ -12,6 +13,14 @@ interface Event {
   startDate: string;
   endDate: string;
   status: string;
+  phases?: EventPhase[];
+}
+
+interface EventPhase {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
 }
 
 interface WorkCategory {
@@ -19,6 +28,21 @@ interface WorkCategory {
   eventId: string;
   name: string;
   estimatedEffortHours: number;
+}
+
+interface Location {
+  id: string;
+  name: string;
+}
+
+interface EventLocation {
+  id: string;
+  eventId: string;
+  locationId: string;
+}
+
+interface CalendarEvent extends Event {
+  locationIds: string[];
 }
 
 interface Allocation {
@@ -69,7 +93,47 @@ interface CrossEventEvaluation {
   crossEventCapacityComparison: DailyCapacityComparison[];
 }
 
-export default function PlanningBoardPage() {
+function PlanningToolbar({ children }: { children: ReactNode }) {
+  return <div>{children}</div>;
+}
+
+function TimelineViewport({ children }: { children: ReactNode }) {
+  return <div>{children}</div>;
+}
+
+function PlanningStatusFooter({ children }: { children: ReactNode }) {
+  return <div>{children}</div>;
+}
+
+function EventLocationCalendar({
+  locations,
+  events,
+}: {
+  locations: Location[];
+  events: CalendarEvent[];
+}) {
+  return <EventCalendar locations={locations} events={events} />;
+}
+
+function resolveVisibleDateRange(event: Event) {
+  let minDate = event.startDate;
+  let maxDate = event.endDate;
+
+  if (event.phases) {
+    for (const phase of event.phases) {
+      if (phase.startDate < minDate) {
+        minDate = phase.startDate;
+      }
+      if (phase.endDate > maxDate) {
+        maxDate = phase.endDate;
+      }
+    }
+  }
+
+  return { startDate: minDate, endDate: maxDate };
+}
+
+export default function PlanningWorkspacePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const eventIdFromUrl = searchParams.get("eventId");
@@ -78,6 +142,7 @@ export default function PlanningBoardPage() {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(eventIdFromUrl);
   const [event, setEvent] = useState<Event | null>(null);
   const [workCategories, setWorkCategories] = useState<WorkCategory[]>([]);
+  const [locationsForEvent, setLocationsForEvent] = useState<Location[]>([]);
   const [allocations, setAllocations] = useState<Allocation[]>([]);
   const [evaluation, setEvaluation] = useState<Evaluation>({
     dailyDemand: [],
@@ -135,11 +200,21 @@ export default function PlanningBoardPage() {
 
         setEvent(selectedEvent);
 
-        // Load work categories and allocations for this event
-        const [workCategoriesRes, allocationsRes, evaluationRes] = await Promise.all([
+        setLocationsForEvent([]);
+
+        // Load work categories, allocations, evaluation, and location assignments
+        const [
+          workCategoriesRes,
+          allocationsRes,
+          evaluationRes,
+          locationsRes,
+          eventLocationsRes,
+        ] = await Promise.all([
           fetch(`/api/events/${selectedEvent.id}/work-categories`),
           fetch(`/api/schedule/events/${selectedEvent.id}/allocations`),
           fetch(`/api/schedule/events/${selectedEvent.id}/evaluation`),
+          fetch("/api/locations"),
+          fetch("/api/event-locations"),
         ]);
 
         if (!workCategoriesRes.ok) {
@@ -153,10 +228,21 @@ export default function PlanningBoardPage() {
           dailyCapacityComparison: [],
           workCategoryPressure: [],
         };
+        const locationsData: Location[] = locationsRes.ok ? await locationsRes.json() : [];
+        const eventLocationsData: EventLocation[] = eventLocationsRes.ok
+          ? await eventLocationsRes.json()
+          : [];
+
+        const locationsById = new Map(locationsData.map((loc) => [loc.id, loc]));
+        const assignedLocations: Location[] = eventLocationsData
+          .filter((mapping) => mapping.eventId === selectedEvent.id)
+          .map((mapping) => locationsById.get(mapping.locationId))
+          .filter((loc): loc is Location => Boolean(loc));
 
         setWorkCategories(workCategoriesData);
         setAllocations(allocationsData);
         setEvaluation(evaluationData);
+        setLocationsForEvent(assignedLocations);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load data");
       } finally {
@@ -451,10 +537,19 @@ export default function PlanningBoardPage() {
     return null;
   }
 
+  const calendarEvents: CalendarEvent[] = [
+    {
+      ...event,
+      locationIds: locationsForEvent.map((location) => location.id),
+    },
+  ];
+
+  const visibleDateRange = resolveVisibleDateRange(event);
+
   // Calculate date range for grid
   const dates: string[] = [];
-  const start = new Date(event.startDate);
-  const end = new Date(event.endDate);
+  const start = new Date(visibleDateRange.startDate);
+  const end = new Date(visibleDateRange.endDate);
   const current = new Date(start);
   while (current <= end) {
     dates.push(current.toISOString().split("T")[0]);
@@ -463,95 +558,103 @@ export default function PlanningBoardPage() {
 
   return (
     <div style={{ padding: "20px", maxWidth: "100%", overflowX: "auto", backgroundColor: "#fafafa" }}>
-      <div style={{ marginBottom: "16px" }}>
-        <h1 style={{ marginBottom: "8px", color: "#000", borderBottom: "2px solid #333", paddingBottom: "8px" }}>
-          Planning Board
-        </h1>
+      <PlanningToolbar>
+        <div style={{ marginBottom: "16px" }}>
+          <h1 style={{ marginBottom: "8px", color: "#000", borderBottom: "2px solid #333", paddingBottom: "8px" }}>
+            Planning Board
+          </h1>
 
-        {/* Event Selector */}
-        <div style={{
-          padding: "12px",
-          backgroundColor: "#f5f5f5",
-          border: "2px solid #666",
-          marginBottom: "12px",
-        }}>
-          <label htmlFor="event-select" style={{
-            display: "block",
-            marginBottom: "8px",
-            fontSize: "14px",
-            fontWeight: "bold",
-            color: "#000",
+          {/* Event Selector */}
+          <div style={{
+            padding: "12px",
+            backgroundColor: "#f5f5f5",
+            border: "2px solid #666",
+            marginBottom: "12px",
           }}>
-            Select Event to Plan:
-          </label>
-          <select
-            id="event-select"
-            value={selectedEventId || ""}
-            onChange={(e) => handleEventChange(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "8px",
+            <label htmlFor="event-select" style={{
+              display: "block",
+              marginBottom: "8px",
               fontSize: "14px",
-              border: "2px solid #666",
-              backgroundColor: "#fff",
+              fontWeight: "bold",
               color: "#000",
-            }}
-          >
-            {availableEvents.map((evt) => (
-              <option key={evt.id} value={evt.id}>
-                {evt.name} ({evt.startDate} to {evt.endDate})
-              </option>
-            ))}
-          </select>
+            }}>
+              Select Event to Plan:
+            </label>
+            <select
+              id="event-select"
+              value={selectedEventId || ""}
+              onChange={(e) => handleEventChange(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "8px",
+                fontSize: "14px",
+                border: "2px solid #666",
+                backgroundColor: "#fff",
+                color: "#000",
+              }}
+            >
+              {availableEvents.map((evt) => (
+                <option key={evt.id} value={evt.id}>
+                  {evt.name} ({evt.startDate} to {evt.endDate})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ fontSize: "14px", color: "#333" }}>
+            <strong>Planning:</strong> {event.name}
+          </div>
+          <div style={{ marginBottom: "8px", fontSize: "12px", color: "#666" }}>
+            {event.startDate} to {event.endDate}
+          </div>
         </div>
 
-        <div style={{ fontSize: "14px", color: "#333" }}>
-          <strong>Planning:</strong> {event.name}
+        {error && (
+          <div style={{ padding: "10px", marginBottom: "10px", backgroundColor: "#f5f5f5", color: "#000", border: "2px solid #000" }}>
+            Error: {error}
+          </div>
+        )}
+
+        {isSaving && (
+          <div style={{ padding: "10px", marginBottom: "10px", backgroundColor: "#f5f5f5", border: "2px solid #666" }}>
+            Saving...
+          </div>
+        )}
+      </PlanningToolbar>
+
+      <TimelineViewport>
+        <EventLocationCalendar locations={locationsForEvent} events={calendarEvents} />
+
+        <div style={{ overflowX: "auto" }}>
+          <PlanningBoardGrid
+            eventName={event.name}
+            dates={dates}
+            workCategories={workCategories}
+            allocations={allocations}
+            evaluation={evaluation}
+            crossEventEvaluation={crossEventEvaluation}
+            drafts={drafts}
+            errorsByCellKey={errorsByCellKey}
+            onStartCreate={startCreateAllocation}
+            onStartEdit={startEditAllocation}
+            onChangeDraft={changeDraft}
+            onCommit={commitDraft}
+            onCancel={cancelDraft}
+            onDelete={deleteAllocation}
+          />
         </div>
-        <div style={{ marginBottom: "8px", fontSize: "12px", color: "#666" }}>
-          {event.startDate} to {event.endDate}
-        </div>
-      </div>
+      </TimelineViewport>
 
-      {error && (
-        <div style={{ padding: "10px", marginBottom: "10px", backgroundColor: "#f5f5f5", color: "#000", border: "2px solid #000" }}>
-          Error: {error}
-        </div>
-      )}
-
-      {isSaving && (
-        <div style={{ padding: "10px", marginBottom: "10px", backgroundColor: "#f5f5f5", border: "2px solid #666" }}>
-          Saving...
-        </div>
-      )}
-
-      <EvaluationSummary
-        workCategories={workCategories}
-        allocations={allocations}
-        workCategoryPressure={evaluation.workCategoryPressure}
-        dailyCapacityComparison={evaluation.dailyCapacityComparison}
-      />
-
-      <EvaluationLegend />
-
-      <div style={{ overflowX: "auto" }}>
-        <PlanningBoardGrid
-          eventName={event.name}
-          dates={dates}
+      <PlanningStatusFooter>
+        <EvaluationSummary
           workCategories={workCategories}
           allocations={allocations}
-          evaluation={evaluation}
-          crossEventEvaluation={crossEventEvaluation}
-          drafts={drafts}
-          errorsByCellKey={errorsByCellKey}
-          onStartCreate={startCreateAllocation}
-          onStartEdit={startEditAllocation}
-          onChangeDraft={changeDraft}
-          onCommit={commitDraft}
-          onCancel={cancelDraft}
-          onDelete={deleteAllocation}
+          workCategoryPressure={evaluation.workCategoryPressure}
+          dailyCapacityComparison={evaluation.dailyCapacityComparison}
         />
-      </div>
+
+        <EvaluationLegend />
+      </PlanningStatusFooter>
     </div>
   );
 }

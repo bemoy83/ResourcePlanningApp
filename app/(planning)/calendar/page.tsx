@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { EventCalendar } from "../../components/EventCalendar";
 
 interface Event {
   id: string;
@@ -10,104 +11,135 @@ interface Event {
   status: string;
 }
 
-export default function EventCalendarPage() {
-  const [events, setEvents] = useState<Event[]>([]);
+interface Location {
+  id: string;
+  name: string;
+}
+
+interface EventLocation {
+  id: string;
+  eventId: string;
+  locationId: string;
+}
+
+interface EventWithLocations extends Event {
+  locationIds: string[];
+}
+
+export default function CalendarPage() {
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [events, setEvents] = useState<EventWithLocations[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function loadEvents() {
+    async function loadData() {
       setIsLoading(true);
       setError(null);
 
       try {
-        const res = await fetch("/api/events");
-        if (!res.ok) {
-          throw new Error("Failed to load events");
+        // Load locations, events, and event-location mappings
+        const [locationsRes, eventsRes, eventLocationsRes] = await Promise.all([
+          fetch("/api/locations"),
+          fetch("/api/events"),
+          fetch("/api/event-locations"),
+        ]);
+
+        if (!locationsRes.ok || !eventsRes.ok || !eventLocationsRes.ok) {
+          throw new Error("Failed to load data");
         }
-        const data = await res.json();
-        setEvents(data);
+
+        const locationsData: Location[] = await locationsRes.json();
+        const eventsData: Event[] = await eventsRes.json();
+        const eventLocationsData: EventLocation[] = await eventLocationsRes.json();
+
+        // Filter to active events
+        const activeEvents = eventsData.filter((e) => e.status === "ACTIVE");
+
+        // Map event IDs to location IDs
+        const eventLocationMap = new Map<string, string[]>();
+        for (const el of eventLocationsData) {
+          if (!eventLocationMap.has(el.eventId)) {
+            eventLocationMap.set(el.eventId, []);
+          }
+          eventLocationMap.get(el.eventId)!.push(el.locationId);
+        }
+
+        // Attach location IDs to events
+        const eventsWithLocations: EventWithLocations[] = activeEvents.map((event) => ({
+          ...event,
+          locationIds: eventLocationMap.get(event.id) || [],
+        }));
+
+        setLocations(locationsData);
+        setEvents(eventsWithLocations);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load events");
+        setError(err instanceof Error ? err.message : "Failed to load data");
       } finally {
         setIsLoading(false);
       }
     }
 
-    loadEvents();
+    loadData();
   }, []);
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div style={{
+        padding: "20px",
+        backgroundColor: "#fafafa",
+        border: "2px solid #666",
+        margin: "20px",
+        color: "#000",
+        fontSize: "16px",
+      }}>
+        Loading...
+      </div>
+    );
   }
 
   if (error) {
-    return <div>Error: {error}</div>;
+    return (
+      <div style={{
+        padding: "20px",
+        backgroundColor: "#f5f5f5",
+        border: "2px solid #000",
+        margin: "20px",
+        color: "#000",
+        fontSize: "16px",
+      }}>
+        Error: {error}
+      </div>
+    );
   }
-
-  if (events.length === 0) {
-    return <div>No events</div>;
-  }
-
-  let minDate: string | null = null;
-  let maxDate: string | null = null;
-
-  for (const event of events) {
-    if (!minDate || event.startDate < minDate) {
-      minDate = event.startDate;
-    }
-    if (!maxDate || event.endDate > maxDate) {
-      maxDate = event.endDate;
-    }
-  }
-
-  const dates: string[] = [];
-  if (minDate && maxDate) {
-    const start = new Date(minDate);
-    const end = new Date(maxDate);
-    const current = new Date(start);
-    while (current <= end) {
-      dates.push(current.toISOString().split("T")[0]);
-      current.setDate(current.getDate() + 1);
-    }
-  }
-
-  const gridTemplateColumns = `200px repeat(${dates.length}, 100px)`;
-  const cellStyle = {
-    border: "1px solid #ccc",
-    padding: "8px",
-    textAlign: "center" as const,
-  };
 
   return (
-    <div>
-      <h1>Event Calendar</h1>
-      <section>
-        <header style={{ display: "grid", gridTemplateColumns }}>
-          <div style={cellStyle}>Event</div>
-          {dates.map((date) => (
-            <div key={date} style={cellStyle}>
-              {date}
-            </div>
-          ))}
-        </header>
+    <div style={{ padding: "20px", maxWidth: "100%", overflowX: "auto", backgroundColor: "#fafafa" }}>
+      <div style={{ marginBottom: "12px" }}>
+        <a
+          href="/planning"
+          style={{
+            padding: "8px 12px",
+            backgroundColor: "#f5f5f5",
+            border: "2px solid #666",
+            color: "#000",
+            textDecoration: "none",
+            fontSize: "12px",
+            display: "inline-block",
+          }}
+        >
+          Back to Planning Board
+        </a>
+      </div>
 
-        <div>
-          {events.map((event) => (
-            <div key={event.id} style={{ display: "grid", gridTemplateColumns }}>
-              <div style={cellStyle}>{event.name}</div>
-              {dates.map((date) => {
-                const isInRange = date >= event.startDate && date <= event.endDate;
-                return (
-                  <div key={date} style={cellStyle}>
-                    {isInRange ? "▬" : ""}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      </section>
+      <h1 style={{ marginBottom: "8px", color: "#000", borderBottom: "2px solid #333", paddingBottom: "8px" }}>
+        Event Calendar
+      </h1>
+      <div style={{ marginBottom: "16px", fontSize: "14px", color: "#333" }}>
+        Read-only view of events grouped by location
+      </div>
+
+      <EventCalendar locations={locations} events={events} />
     </div>
   );
 }
