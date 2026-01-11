@@ -1,9 +1,10 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useState, useRef, useCallback } from "react";
 import { PlanningBoardGrid } from "../../components/PlanningBoardGrid";
 import { EventCalendar } from "../../components/EventCalendar";
 import { CrossEventContext } from "../../components/CrossEventContext";
+import { UnifiedEvent } from "../../types/calendar";
 
 interface Event {
   id: string;
@@ -37,10 +38,6 @@ interface EventLocation {
   id: string;
   eventId: string;
   locationId: string;
-}
-
-interface CalendarEvent extends Event {
-  locationIds: string[];
 }
 
 interface Allocation {
@@ -106,55 +103,6 @@ function PlanningToolbar({ children }: { children: ReactNode }) {
   return <div>{children}</div>;
 }
 
-function HorizontalScrollContainer({ children }: { children: ReactNode }) {
-  return (
-    <div
-      className="timeline-scroll-x"
-      style={{
-        overflowX: "auto",
-        overflowY: "auto",
-        position: "relative",
-        display: "flex",
-        flexDirection: "column",
-        flex: 1,
-        minHeight: 0,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function EventLocationCalendar({
-  locations,
-  events,
-  timeline,
-}: {
-  locations: Location[];
-  events: CalendarEvent[];
-  timeline: TimelineLayout;
-}) {
-  // Transform CalendarEvent to UnifiedEvent for the refactored EventCalendar
-  const locationMap = new Map(locations.map((loc) => [loc.id, loc]));
-
-  const unifiedEvents = events.map((event) => ({
-    id: event.id,
-    name: event.name,
-    startDate: event.startDate,
-    endDate: event.endDate,
-    locations: event.locationIds
-      .map((locId) => locationMap.get(locId))
-      .filter((loc): loc is Location => loc !== undefined),
-    phases: (event.phases || []).map((phase) => ({
-      name: phase.name,
-      startDate: phase.startDate,
-      endDate: phase.endDate,
-    })),
-  }));
-
-  return <EventCalendar events={unifiedEvents} timeline={timeline} />;
-}
-
 function resolveVisibleDateRange(event: Event) {
   let minDate = event.startDate;
   let maxDate = event.endDate;
@@ -173,8 +121,7 @@ function resolveVisibleDateRange(event: Event) {
   return { startDate: minDate, endDate: maxDate };
 }
 
-
-export default function PlanningWorkspacePage() {
+export default function WorkspacePage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [workCategories, setWorkCategories] = useState<WorkCategory[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -194,6 +141,19 @@ export default function PlanningWorkspacePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorsByCellKey, setErrorsByCellKey] = useState<Record<string, string>>({});
+
+  // Refs for synchronized horizontal scrolling
+  const eventCalendarScrollRef = useRef<HTMLDivElement>(null);
+  const crossEventScrollRef = useRef<HTMLDivElement>(null);
+  const planningGridHeaderScrollRef = useRef<HTMLDivElement>(null);
+  const planningGridScrollRef = useRef<HTMLDivElement>(null);
+  const isSyncingRef = useRef(false);
+
+  // Refs for measuring sticky header heights
+  const eventCalendarContainerRef = useRef<HTMLDivElement>(null);
+  const crossEventContainerRef = useRef<HTMLDivElement>(null);
+  const [crossEventTop, setCrossEventTop] = useState(0);
+  const [planningGridHeaderTop, setPlanningGridHeaderTop] = useState(0);
 
   // Load all data (events, work categories, allocations, locations)
   useEffect(() => {
@@ -266,6 +226,40 @@ export default function PlanningWorkspacePage() {
     loadCrossEventEvaluation();
   }, [allocations]); // Refresh when allocations change
 
+  // Calculate sticky top offsets based on header heights
+  useEffect(() => {
+    function updateStickyOffsets() {
+      let top = 0;
+
+      // Measure EventCalendar height
+      if (eventCalendarContainerRef.current) {
+        top += eventCalendarContainerRef.current.offsetHeight;
+      }
+
+      setCrossEventTop(top);
+
+      // Measure CrossEventContext height if visible
+      if (crossEventContainerRef.current && crossEventEvaluation.crossEventDailyDemand.length > 0) {
+        top += crossEventContainerRef.current.offsetHeight;
+      }
+
+      // PlanningBoardGrid header sticks below CrossEventContext
+      setPlanningGridHeaderTop(top);
+    }
+
+    updateStickyOffsets();
+    // Recalculate when cross-event evaluation changes (affects layout)
+    const timeoutId = setTimeout(updateStickyOffsets, 100);
+
+    // Recalculate on window resize
+    window.addEventListener('resize', updateStickyOffsets);
+
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', updateStickyOffsets);
+    };
+  }, [crossEventEvaluation.crossEventDailyDemand.length, events.length]);
+
   // Refresh evaluation after allocations change
   async function refreshEvaluation() {
     try {
@@ -279,6 +273,75 @@ export default function PlanningWorkspacePage() {
       console.warn("Failed to refresh evaluation:", err);
     }
   }
+
+  // Inject CSS to hide horizontal scrollbars (except EventCalendar)
+  useEffect(() => {
+    const styleId = 'workspace-hide-scrollbar-style';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = `
+        /* Hide all scrollbars for containers that should not show scrollbars */
+        .hide-all-scrollbars {
+          scrollbar-width: none; /* Firefox */
+          -ms-overflow-style: none; /* IE/Edge */
+        }
+        .hide-all-scrollbars::-webkit-scrollbar {
+          display: none; /* Chrome, Safari, Opera */
+          width: 0;
+          height: 0;
+        }
+        .hide-all-scrollbars::-webkit-scrollbar-track {
+          display: none;
+        }
+        .hide-all-scrollbars::-webkit-scrollbar-thumb {
+          display: none;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }, []);
+
+  // Synchronized horizontal scroll handlers
+  const syncScrollToOthers = useCallback((sourceRef: React.RefObject<HTMLDivElement>, scrollLeft: number) => {
+    if (isSyncingRef.current) return;
+
+    isSyncingRef.current = true;
+
+    // Sync to all other scroll containers
+    if (sourceRef !== eventCalendarScrollRef && eventCalendarScrollRef.current) {
+      eventCalendarScrollRef.current.scrollLeft = scrollLeft;
+    }
+    if (sourceRef !== crossEventScrollRef && crossEventScrollRef.current) {
+      crossEventScrollRef.current.scrollLeft = scrollLeft;
+    }
+    if (sourceRef !== planningGridHeaderScrollRef && planningGridHeaderScrollRef.current) {
+      planningGridHeaderScrollRef.current.scrollLeft = scrollLeft;
+    }
+    if (sourceRef !== planningGridScrollRef && planningGridScrollRef.current) {
+      planningGridScrollRef.current.scrollLeft = scrollLeft;
+    }
+
+    requestAnimationFrame(() => {
+      isSyncingRef.current = false;
+    });
+  }, []);
+
+  const onCalendarScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    syncScrollToOthers(eventCalendarScrollRef, e.currentTarget.scrollLeft);
+  }, [syncScrollToOthers]);
+
+  const onCrossEventScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    syncScrollToOthers(crossEventScrollRef, e.currentTarget.scrollLeft);
+  }, [syncScrollToOthers]);
+
+  const onGridHeaderScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    syncScrollToOthers(planningGridHeaderScrollRef, e.currentTarget.scrollLeft);
+  }, [syncScrollToOthers]);
+
+  const onGridScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    syncScrollToOthers(planningGridScrollRef, e.currentTarget.scrollLeft);
+  }, [syncScrollToOthers]);
 
   // Start editing a new allocation
   function startCreateAllocation(workCategoryId: string, date: string) {
@@ -526,9 +589,21 @@ export default function PlanningWorkspacePage() {
     eventLocationMap.get(el.eventId)!.push(el.locationId);
   }
 
-  const calendarEvents: CalendarEvent[] = events.map((event) => ({
-    ...event,
-    locationIds: eventLocationMap.get(event.id) || [],
+  // Transform events to UnifiedEvent format
+  const locationMap = new Map(locations.map((loc) => [loc.id, loc]));
+  const unifiedEvents: UnifiedEvent[] = events.map((event) => ({
+    id: event.id,
+    name: event.name,
+    startDate: event.startDate,
+    endDate: event.endDate,
+    locations: (eventLocationMap.get(event.id) || [])
+      .map((locId) => locationMap.get(locId))
+      .filter((loc): loc is Location => loc !== undefined),
+    phases: (event.phases || []).map((phase) => ({
+      name: phase.name,
+      startDate: phase.startDate,
+      endDate: phase.endDate,
+    })),
   }));
 
   // Calculate date range spanning all events
@@ -557,12 +632,50 @@ export default function PlanningWorkspacePage() {
     }
   }
 
-  // Timeline layout contract
+  // Timeline layout contract - shared between all components
   const timeline: TimelineLayout = {
     dates,
     dateColumnWidth: TIMELINE_DATE_COLUMN_WIDTH,
     timelineOriginPx: TIMELINE_ORIGIN_PX,
   };
+
+  // Calculate scroll width for horizontal scroll containers
+  const timelineWidth = dates.length * TIMELINE_DATE_COLUMN_WIDTH;
+  const scrollWidth = TIMELINE_ORIGIN_PX + timelineWidth;
+
+  // PlanningBoardGrid header configuration (matching PlanningBoardGrid component)
+  const leftColumns = [
+    { key: "event", width: 200 },
+    { key: "workCategory", width: 200 },
+    { key: "estimate", width: 100 },
+    { key: "allocated", width: 100 },
+    { key: "remaining", width: 100 },
+  ];
+  const leftColumnOffsets: number[] = [];
+  let leftColumnsWidth = 0;
+  for (const col of leftColumns) {
+    leftColumnOffsets.push(leftColumnsWidth);
+    leftColumnsWidth += col.width;
+  }
+  const leftColumnsTemplate = leftColumns.map((col) => `${col.width}px`).join(" ");
+  const gridTemplateColumns = leftColumnsTemplate;
+  const rowMinHeight = 46;
+  const cellStyle = {
+    border: '1px solid #999',
+    padding: '8px',
+    textAlign: 'center' as const,
+    fontSize: '12px',
+    backgroundColor: '#fff',
+    color: '#000',
+    minHeight: `${rowMinHeight}px`,
+    boxSizing: 'border-box' as const,
+  };
+  const stickyColumnStyle = (offset: number): React.CSSProperties => ({
+    position: 'sticky',
+    left: `${offset}px`,
+    zIndex: 3,
+    backgroundColor: '#fff',
+  });
 
   return (
     <div
@@ -580,11 +693,11 @@ export default function PlanningWorkspacePage() {
       <PlanningToolbar>
         <div style={{ marginBottom: "16px" }}>
           <h1 style={{ marginBottom: "8px", color: "#000", borderBottom: "2px solid #333", paddingBottom: "8px" }}>
-            Planning Board
+            Planning Workspace
           </h1>
 
           <div style={{ fontSize: "14px", color: "#333", marginBottom: "8px" }}>
-            <strong>Multi-Event Planning</strong> - All active events
+            <strong>Unified Planning View</strong> - Event calendar and planning grid synchronized
           </div>
           <div style={{ marginBottom: "8px", fontSize: "12px", color: "#666" }}>
             {events.length} event{events.length !== 1 ? 's' : ''} | {workCategories.length} work categor{workCategories.length !== 1 ? 'ies' : 'y'} | {locations.length} location{locations.length !== 1 ? 's' : ''}
@@ -598,32 +711,193 @@ export default function PlanningWorkspacePage() {
         )}
       </PlanningToolbar>
 
-      <HorizontalScrollContainer>
-        <EventLocationCalendar locations={locations} events={calendarEvents} timeline={timeline} />
+      {/* Workspace Viewport - scrolling context for sticky positioning */}
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: "auto",
+          overflowX: "hidden",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {/* Content Wrapper - contains EventCalendar and PlanningBoardGrid */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {/* EventCalendar Container - sticky at top */}
+          <div
+            ref={eventCalendarContainerRef}
+            style={{
+              position: "sticky",
+              top: 0,
+              zIndex: 10,
+              backgroundColor: "#fafafa",
+            }}
+          >
+            {/* Horizontal Scroll Wrapper for EventCalendar */}
+            <div
+              ref={eventCalendarScrollRef}
+              onScroll={onCalendarScroll}
+              style={{
+                overflowX: "auto",
+                overflowY: "hidden",
+                width: "100%",
+              }}
+            >
+              <EventCalendar events={unifiedEvents} timeline={timeline} />
+            </div>
+          </div>
 
-        <CrossEventContext crossEventEvaluation={crossEventEvaluation} timeline={timeline} />
+          {/* CrossEventContext - sticky below EventCalendar, synchronized horizontally */}
+          {crossEventEvaluation.crossEventDailyDemand.length > 0 && (
+            <div
+              ref={crossEventContainerRef}
+              style={{
+                position: "sticky",
+                top: `${crossEventTop}px`,
+                zIndex: 9,
+                backgroundColor: "#fafafa",
+                flexShrink: 0,
+              }}
+            >
+              <div
+                ref={crossEventScrollRef}
+                onScroll={onCrossEventScroll}
+                style={{
+                  overflowX: "auto",
+                  overflowY: "hidden",
+                  width: "100%",
+                }}
+                className="hide-all-scrollbars"
+              >
+                <CrossEventContext crossEventEvaluation={crossEventEvaluation} timeline={timeline} />
+              </div>
+            </div>
+          )}
 
-        <PlanningBoardGrid
-          events={events}
-          locations={locations}
-          eventLocations={eventLocations}
-          dates={dates}
-          timeline={timeline}
-          workCategories={workCategories}
-          allocations={allocations}
-          evaluation={evaluation}
-          drafts={drafts}
-          errorsByCellKey={errorsByCellKey}
-          onStartCreate={startCreateAllocation}
-          onStartEdit={startEditAllocation}
-          onChangeDraft={changeDraft}
-          onCommit={commitDraft}
-          onCancel={cancelDraft}
-          onDelete={deleteAllocation}
-        />
-      </HorizontalScrollContainer>
-      {/* TODO: Reintroduce planning summary on /planning/results */}
-      {/* TODO: Reintroduce advisory legend when capacity overlays are implemented */}
+          {/* PlanningBoardGrid Header - sticky duplicate below CrossEventContext */}
+          <div
+            style={{
+              position: "sticky",
+              top: `${planningGridHeaderTop}px`,
+              zIndex: 8,
+              backgroundColor: "#fafafa",
+              flexShrink: 0,
+            }}
+          >
+            <div
+              ref={planningGridHeaderScrollRef}
+              onScroll={onGridHeaderScroll}
+              style={{
+                overflowX: "auto",
+                overflowY: "hidden",
+                width: "100%",
+              }}
+              className="hide-all-scrollbars"
+            >
+              <header
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns,
+                  backgroundColor: '#fff',
+                  fontWeight: 'bold',
+                  border: '2px solid #666',
+                  minWidth: `${scrollWidth}px`,
+                  position: 'relative',
+                }}
+              >
+                <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0]) }}>
+                  <div>Event</div>
+                </div>
+                <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[1]) }}>
+                  <div>Work Category</div>
+                </div>
+                <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[2]) }}>
+                  <div>Estimate</div>
+                  <div style={{ fontSize: '10px', fontWeight: 'normal' }}>total hours</div>
+                </div>
+                <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[3]) }}>
+                  <div>Allocated</div>
+                  <div style={{ fontSize: '10px', fontWeight: 'normal' }}>total hours</div>
+                </div>
+                <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[4]) }}>
+                  <div>Remaining</div>
+                  <div style={{ fontSize: '10px', fontWeight: 'normal' }}>to allocate</div>
+                </div>
+                <div style={{
+                  position: 'absolute',
+                  left: `${TIMELINE_ORIGIN_PX}px`,
+                  top: 0,
+                  height: '100%',
+                  width: `${timelineWidth}px`,
+                }}>
+                  {dates.map((date, index) => (
+                    <div
+                      key={date}
+                      style={{
+                        ...cellStyle,
+                        position: 'absolute',
+                        left: `${index * TIMELINE_DATE_COLUMN_WIDTH}px`,
+                        top: 0,
+                        width: `${TIMELINE_DATE_COLUMN_WIDTH}px`,
+                        height: '100%',
+                      }}
+                    >
+                      <div>{new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+                    </div>
+                  ))}
+                </div>
+              </header>
+            </div>
+          </div>
+
+          {/* PlanningBoardGrid Container - scrolls vertically, handles its own overflow */}
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+            }}
+          >
+            {/* Horizontal Scroll Wrapper for PlanningBoardGrid */}
+            <div
+              ref={planningGridScrollRef}
+              onScroll={onGridScroll}
+              style={{
+                overflowX: "auto",
+                overflowY: "auto",
+                height: "100%",
+                width: "100%",
+              }}
+              className="hide-all-scrollbars"
+            >
+              <PlanningBoardGrid
+                hideHeader={true}
+                events={events}
+                locations={locations}
+                eventLocations={eventLocations}
+                dates={dates}
+                timeline={timeline}
+                workCategories={workCategories}
+                allocations={allocations}
+                evaluation={evaluation}
+                drafts={drafts}
+                errorsByCellKey={errorsByCellKey}
+                onStartCreate={startCreateAllocation}
+                onStartEdit={startEditAllocation}
+                onChangeDraft={changeDraft}
+                onCommit={commitDraft}
+                onCancel={cancelDraft}
+                onDelete={deleteAllocation}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

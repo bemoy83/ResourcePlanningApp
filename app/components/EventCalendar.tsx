@@ -188,8 +188,8 @@ export function EventCalendar({ events, timeline }: EventCalendarProps) {
           ...cellStyle,
           position: 'sticky',
           left: 0,
-          zIndex: 5,
-          backgroundColor: '#e0e0e0',
+          zIndex: 3,
+          backgroundColor: '#fff',
         }}>Location</div>
         <div style={{
           position: 'absolute',
@@ -242,10 +242,10 @@ export function EventCalendar({ events, timeline }: EventCalendarProps) {
                 textAlign: 'left',
                 fontWeight: 'bold',
                 fontSize: '12px',
-                backgroundColor: '#f5f5f5',
+                backgroundColor: '#fff',
                 position: 'sticky',
                 left: 0,
-                zIndex: 2,
+                zIndex: 3,
                 height: '100%',
               }}>
                 {location.name}
@@ -332,19 +332,6 @@ export function EventCalendar({ events, timeline }: EventCalendarProps) {
             </div>
           );
         })}
-      </div>
-
-      {/* Legend */}
-      <div style={{
-        marginTop: '12px',
-        padding: '12px',
-        backgroundColor: '#f5f5f5',
-        border: '2px solid #666',
-        fontSize: '11px',
-        color: '#000',
-      }}>
-        <strong>About this view:</strong> Each event occupies one row per location, and every phase renders as a labeled span on that row.
-        Rows are only stacked within a location when events overlap in time. This is a read-only view for understanding phase placement across locations and time.
       </div>
     </section>
   );

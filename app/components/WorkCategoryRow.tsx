@@ -88,7 +88,8 @@ export function WorkCategoryRow({
   const stickyColumnStyle = (offset: number): React.CSSProperties => ({
     position: 'sticky',
     left: `${offset}px`,
-    zIndex: 2,
+    zIndex: 4,
+    backgroundColor: '#fff',
   });
 
   return (
