@@ -2,22 +2,22 @@
 
 import { useState, useRef, useEffect } from "react";
 
-interface Location {
+interface Event {
   id: string;
   name: string;
 }
 
-interface LocationFilterProps {
-  locations: Location[];
-  selectedLocationIds: Set<string>;
+interface EventFilterProps {
+  events: Event[];
+  selectedEventIds: Set<string>;
   onSelectionChange: (selectedIds: Set<string>) => void;
 }
 
-export function LocationFilter({
-  locations,
-  selectedLocationIds,
+export function EventFilter({
+  events,
+  selectedEventIds,
   onSelectionChange,
-}: LocationFilterProps) {
+}: EventFilterProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -53,13 +53,13 @@ export function LocationFilter({
     }
   }, [isOpen]);
 
-  // Filter locations based on search query
-  const filteredLocations = locations.filter((location) =>
-    location.name.toLowerCase().includes(searchQuery.toLowerCase())
+  // Filter events based on search query
+  const filteredEvents = events.filter((event) =>
+    event.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const allSelected = selectedLocationIds.size === locations.length;
-  const noneSelected = selectedLocationIds.size === 0;
+  const allSelected = selectedEventIds.size === events.length;
+  const noneSelected = selectedEventIds.size === 0;
   const someSelected = !allSelected && !noneSelected;
 
   const toggleAll = () => {
@@ -68,28 +68,28 @@ export function LocationFilter({
       onSelectionChange(new Set());
     } else {
       // Check all - select everything (from full list, not filtered)
-      onSelectionChange(new Set(locations.map((loc) => loc.id)));
+      onSelectionChange(new Set(events.map((evt) => evt.id)));
     }
   };
 
-  const toggleLocation = (locationId: string) => {
-    const newSelection = new Set(selectedLocationIds);
-    if (newSelection.has(locationId)) {
-      newSelection.delete(locationId);
+  const toggleEvent = (eventId: string) => {
+    const newSelection = new Set(selectedEventIds);
+    if (newSelection.has(eventId)) {
+      newSelection.delete(eventId);
     } else {
-      newSelection.add(locationId);
+      newSelection.add(eventId);
     }
     onSelectionChange(newSelection);
   };
 
   const displayText = () => {
     if (noneSelected) {
-      return `Location (0 of ${locations.length})`;
+      return `Event (0 of ${events.length})`;
     }
     if (allSelected) {
-      return `Location (All ${locations.length})`;
+      return `Event (All ${events.length})`;
     }
-    return `Location (${selectedLocationIds.size} of ${locations.length})`;
+    return `Event (${selectedEventIds.size} of ${events.length})`;
   };
 
   return (
@@ -150,7 +150,7 @@ export function LocationFilter({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search locations..."
+              placeholder="Search events..."
               style={{
                 width: "100%",
                 padding: "6px 8px",
@@ -175,7 +175,7 @@ export function LocationFilter({
                   marginTop: "4px",
                 }}
               >
-                Showing {filteredLocations.length} of {locations.length} locations
+                Showing {filteredEvents.length} of {events.length} events
               </div>
             )}
           </div>
@@ -209,13 +209,13 @@ export function LocationFilter({
                 width: "16px",
                 height: "16px",
               }}
-              aria-label="Select all locations"
+              aria-label="Select all events"
             />
-            <span>All Locations</span>
+            <span>All Events</span>
           </label>
 
-          {/* Individual Location Checkboxes */}
-          {filteredLocations.length === 0 ? (
+          {/* Individual Event Checkboxes */}
+          {filteredEvents.length === 0 ? (
             <div
               style={{
                 padding: "16px 12px",
@@ -224,14 +224,14 @@ export function LocationFilter({
                 color: "#666",
               }}
             >
-              No locations match &quot;{searchQuery}&quot;
+              No events match &quot;{searchQuery}&quot;
             </div>
           ) : (
-            filteredLocations.map((location) => {
-              const isChecked = selectedLocationIds.has(location.id);
+            filteredEvents.map((event) => {
+              const isChecked = selectedEventIds.has(event.id);
               return (
                 <label
-                  key={location.id}
+                  key={event.id}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -252,16 +252,16 @@ export function LocationFilter({
                   <input
                     type="checkbox"
                     checked={isChecked}
-                    onChange={() => toggleLocation(location.id)}
+                    onChange={() => toggleEvent(event.id)}
                     style={{
                       marginRight: "8px",
                       cursor: "pointer",
                       width: "16px",
                       height: "16px",
                     }}
-                    aria-label={`Select ${location.name}`}
+                    aria-label={`Select ${event.name}`}
                   />
-                  <span>{location.name}</span>
+                  <span>{event.name}</span>
                 </label>
               );
             })

@@ -6,6 +6,7 @@ import { EventCalendar } from "../../components/EventCalendar";
 import { CrossEventContext } from "../../components/CrossEventContext";
 import { FilterBar } from "../../components/FilterBar";
 import { LocationFilter } from "../../components/LocationFilter";
+import { EventFilter } from "../../components/EventFilter";
 import { UnifiedEvent } from "@/types/calendar";
 
 interface Event {
@@ -144,6 +145,7 @@ export default function WorkspacePage() {
   const [error, setError] = useState<string | null>(null);
   const [errorsByCellKey, setErrorsByCellKey] = useState<Record<string, string>>({});
   const [selectedLocationIds, setSelectedLocationIds] = useState<Set<string>>(new Set());
+  const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set());
 
   // Refs for synchronized horizontal scrolling
   const eventCalendarScrollRef = useRef<HTMLDivElement>(null);
@@ -261,7 +263,7 @@ export default function WorkspacePage() {
       clearTimeout(timeoutId);
       window.removeEventListener('resize', updateStickyOffsets);
     };
-  }, [crossEventEvaluation.crossEventDailyDemand.length, events.length, selectedLocationIds.size]);
+  }, [crossEventEvaluation.crossEventDailyDemand.length, events.length, selectedLocationIds.size, selectedEventIds.size]);
 
   // Refresh evaluation after allocations change
   async function refreshEvaluation() {
@@ -609,15 +611,27 @@ export default function WorkspacePage() {
     })),
   }));
 
-  // Filter events by selected locations (when filter is active)
-  const filteredEvents: UnifiedEvent[] = selectedLocationIds.size === 0
-    ? unifiedEvents // No filter active - show all events
-    : unifiedEvents
-      .map((event) => ({
-        ...event,
-        locations: event.locations.filter((loc: Location) => selectedLocationIds.has(loc.id)),
-      }))
-      .filter((event) => event.locations.length > 0); // Only show events with at least one matching location
+  // Filter events by selected events and locations (when filters are active)
+  const filteredEvents: UnifiedEvent[] = (() => {
+    let filtered = unifiedEvents;
+
+    // Apply event filter
+    if (selectedEventIds.size > 0) {
+      filtered = filtered.filter((event) => selectedEventIds.has(event.id));
+    }
+
+    // Apply location filter
+    if (selectedLocationIds.size > 0) {
+      filtered = filtered
+        .map((event) => ({
+          ...event,
+          locations: event.locations.filter((loc: Location) => selectedLocationIds.has(loc.id)),
+        }))
+        .filter((event) => event.locations.length > 0); // Only show events with at least one matching location
+    }
+
+    return filtered;
+  })();
 
   // Calculate date range spanning all events
   let minDate: string | null = null;
@@ -717,13 +731,22 @@ export default function WorkspacePage() {
           </div>
         </div>
 
-        {locations.length > 0 && (
+        {(events.length > 0 || locations.length > 0) && (
           <FilterBar>
-            <LocationFilter
-              locations={locations}
-              selectedLocationIds={selectedLocationIds}
-              onSelectionChange={setSelectedLocationIds}
-            />
+            {events.length > 0 && (
+              <EventFilter
+                events={events}
+                selectedEventIds={selectedEventIds}
+                onSelectionChange={setSelectedEventIds}
+              />
+            )}
+            {locations.length > 0 && (
+              <LocationFilter
+                locations={locations}
+                selectedLocationIds={selectedLocationIds}
+                onSelectionChange={setSelectedLocationIds}
+              />
+            )}
           </FilterBar>
         )}
 
