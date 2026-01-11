@@ -1,22 +1,4 @@
-interface Event {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  status: string;
-  locationIds: string[];
-  phases?: {
-    id: string;
-    name: string;
-    startDate: string;
-    endDate: string;
-  }[];
-}
-
-interface Location {
-  id: string;
-  name: string;
-}
+import { UnifiedEvent } from "../../types/calendar";
 
 interface TimelineLayout {
   dates: string[];
@@ -25,51 +7,49 @@ interface TimelineLayout {
 }
 
 interface EventCalendarProps {
-  locations: Location[];
-  events: Event[];
+  events: UnifiedEvent[];
   timeline: TimelineLayout;
 }
 
-// Unified calendar span (event or phase)
 interface CalendarSpan {
-  id: string;
+  eventId: string;
+  locationId: string;
   label: string;
   startDate: string;
   endDate: string;
-  isPhase: boolean;
+}
+
+interface EventRow {
+  eventId: string;
+  eventName: string;
+  locationId: string;
+  spans: CalendarSpan[];
+  row: number;
+  rangeStartMs: number;
+  rangeEndMs: number;
 }
 
 const CELL_BORDER_WIDTH = 1;
-const ROW_LAYER_HEIGHT = 40;
+const ROW_LAYER_HEIGHT = 32;
 
-export function EventCalendar({ locations, events, timeline }: EventCalendarProps) {
+export function EventCalendar({ events, timeline }: EventCalendarProps) {
+  // Filter events to only those with locations
+  const eventsWithLocations = events.filter((e) => e.locations.length > 0);
+
+  // Extract unique locations from all events
+  const locationMap = new Map<string, { id: string; name: string }>();
+  for (const event of eventsWithLocations) {
+    for (const location of event.locations) {
+      locationMap.set(location.id, location);
+    }
+  }
+  const locations = Array.from(locationMap.values());
+
+  // Strict rendering: if no locations exist, render nothing
   if (locations.length === 0) {
-    return (
-      <div style={{
-        padding: '20px',
-        backgroundColor: '#fafafa',
-        border: '2px solid #666',
-        color: '#000',
-      }}>
-        No locations to display
-      </div>
-    );
+    return null;
   }
 
-  if (events.length === 0) {
-    return (
-      <div style={{
-        padding: '20px',
-        backgroundColor: '#fafafa',
-        border: '2px solid #666',
-        color: '#000',
-      }}>
-        No events to display
-      </div>
-    );
-  }
-
-  // Use dates from timeline contract (computed by parent)
   const dates = timeline.dates;
   const DAY_COL_FULL_WIDTH = timeline.dateColumnWidth;
   const timelineOriginPx = timeline.timelineOriginPx;
@@ -78,55 +58,76 @@ export function EventCalendar({ locations, events, timeline }: EventCalendarProp
   const timelineWidth = dates.length * DAY_COL_FULL_WIDTH;
   const scrollWidth = timelineOriginPx + timelineWidth;
 
-  // Build calendar spans: events + phases as peer spans
-  const locationSpanRows: Record<string, { span: CalendarSpan; row: number }[]> = {};
+  const isEventPhaseName = (name: string) => name.trim().toUpperCase() === "EVENT";
+
+  // Build calendar rows: one row per event-location, spans from phases only
+  const locationEventRows: Record<string, EventRow[]> = {};
 
   for (const location of locations) {
-    const eventsInLocation = events.filter((e) => e.locationIds.includes(location.id));
+    const eventsInLocation = eventsWithLocations.filter((e) =>
+      e.locations.some((loc) => loc.id === location.id)
+    );
 
-    // Collect all spans (events + their phases) for this location
-    const allSpans: CalendarSpan[] = [];
+    const eventRows: EventRow[] = [];
     for (const event of eventsInLocation) {
-      // Add event itself as a span
-      allSpans.push({
-        id: event.id,
-        label: event.name,
-        startDate: event.startDate,
-        endDate: event.endDate,
-        isPhase: false,
+      const spans: CalendarSpan[] = event.phases.map((phase) => ({
+        eventId: event.id,
+        locationId: location.id,
+        label: isEventPhaseName(phase.name) ? event.name : phase.name,
+        startDate: phase.startDate,
+        endDate: phase.endDate,
+      }));
+
+      if (spans.length === 0) {
+        continue;
+      }
+
+      spans.sort((a, b) => {
+        const startDelta = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+        if (startDelta !== 0) return startDelta;
+        const endDelta = new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
+        if (endDelta !== 0) return endDelta;
+        return a.label.localeCompare(b.label);
       });
 
-      // Add event phases as peer spans
-      if (event.phases) {
-        for (const phase of event.phases) {
-          allSpans.push({
-            id: phase.id,
-            label: phase.name,
-            startDate: phase.startDate,
-            endDate: phase.endDate,
-            isPhase: true,
-          });
+      let rangeStart = spans[0].startDate;
+      let rangeEnd = spans[0].endDate;
+      for (const span of spans) {
+        if (span.startDate < rangeStart) {
+          rangeStart = span.startDate;
+        }
+        if (span.endDate > rangeEnd) {
+          rangeEnd = span.endDate;
         }
       }
+
+      eventRows.push({
+        eventId: event.id,
+        eventName: event.name,
+        locationId: location.id,
+        spans,
+        row: 0,
+        rangeStartMs: new Date(rangeStart).getTime(),
+        rangeEndMs: new Date(rangeEnd).getTime(),
+      });
     }
 
-    // Apply overlap detection to all spans uniformly
-    const spanRows: { span: CalendarSpan; row: number }[] = [];
-    for (const span of allSpans) {
+    eventRows.sort((a, b) => {
+      const startDelta = a.rangeStartMs - b.rangeStartMs;
+      if (startDelta !== 0) return startDelta;
+      return a.eventName.localeCompare(b.eventName);
+    });
+
+    // Assign rows based on event-level overlap within each location
+    const placedRows: { row: number; rangeStartMs: number; rangeEndMs: number }[] = [];
+    for (const eventRow of eventRows) {
       let assignedRow = 0;
       let foundRow = false;
 
       while (!foundRow) {
-        const rowHasConflict = spanRows.some((sr) => {
-          if (sr.row !== assignedRow) return false;
-
-          const existing = sr.span;
-          const spanStart = new Date(span.startDate);
-          const spanEnd = new Date(span.endDate);
-          const existingStart = new Date(existing.startDate);
-          const existingEnd = new Date(existing.endDate);
-
-          return !(spanEnd < existingStart || spanStart > existingEnd);
+        const rowHasConflict = placedRows.some((placed) => {
+          if (placed.row !== assignedRow) return false;
+          return !(eventRow.rangeEndMs < placed.rangeStartMs || eventRow.rangeStartMs > placed.rangeEndMs);
         });
 
         if (!rowHasConflict) {
@@ -136,10 +137,15 @@ export function EventCalendar({ locations, events, timeline }: EventCalendarProp
         }
       }
 
-      spanRows.push({ span, row: assignedRow });
+      eventRow.row = assignedRow;
+      placedRows.push({
+        row: assignedRow,
+        rangeStartMs: eventRow.rangeStartMs,
+        rangeEndMs: eventRow.rangeEndMs,
+      });
     }
 
-    locationSpanRows[location.id] = spanRows;
+    locationEventRows[location.id] = eventRows;
   }
 
   // Grid styling
@@ -164,7 +170,7 @@ export function EventCalendar({ locations, events, timeline }: EventCalendarProp
         fontSize: '12px',
         color: '#000',
       }}>
-        <strong>Event Calendar:</strong> Read-only view of events grouped by location. Overlapping events are stacked within each location.
+        <strong>Event Calendar:</strong> Read-only view grouped by location. Each event renders as a single row with phases displayed as contiguous spans.
       </div>
 
       {/* Header row with dates */}
@@ -210,13 +216,13 @@ export function EventCalendar({ locations, events, timeline }: EventCalendarProp
         </div>
       </header>
 
-      {/* Location rows - one row per location, spans stacked vertically within */}
+      {/* Location groups with event rows stacked only when overlapping */}
       <div style={{ border: '1px solid #666' }}>
         {locations.map((location) => {
-          const spanRows = locationSpanRows[location.id] || [];
+          const eventRows = locationEventRows[location.id] || [];
 
           // Calculate row height based on number of vertical stacks needed
-          const maxRows = spanRows.length > 0 ? Math.max(...spanRows.map((sr) => sr.row)) + 1 : 0;
+          const maxRows = eventRows.length > 0 ? Math.max(...eventRows.map((sr) => sr.row)) + 1 : 0;
           const rowHeight = Math.max(maxRows, 1) * ROW_LAYER_HEIGHT + 2; // Add 2px for bottom border
 
           return (
@@ -269,57 +275,59 @@ export function EventCalendar({ locations, events, timeline }: EventCalendarProp
                   </div>
                 ))}
 
-                {/* Calendar spans (events + phases) positioned as peers */}
-                {spanRows.map((sr) => {
-                  // Normalize DateTime to YYYY-MM-DD format to match dates array
-                  const normalizedStart = sr.span.startDate.split('T')[0];
-                  const normalizedEnd = sr.span.endDate.split('T')[0];
+                {/* Calendar spans (phases only) positioned by event row */}
+                {eventRows.flatMap((eventRow) =>
+                  eventRow.spans.map((span, spanIndex) => {
+                    // Normalize DateTime to YYYY-MM-DD format to match dates array
+                    const normalizedStart = span.startDate.split('T')[0];
+                    const normalizedEnd = span.endDate.split('T')[0];
 
-                  // Find where this span starts and ends in the visible date range
-                  const startIndex = dates.indexOf(normalizedStart);
-                  const endIndex = dates.indexOf(normalizedEnd);
+                    // Find where this span starts and ends in the visible date range
+                    const startIndex = dates.indexOf(normalizedStart);
+                    const endIndex = dates.indexOf(normalizedEnd);
 
-                  // Skip spans completely outside visible range
-                  if (startIndex === -1 && endIndex === -1) return null;
+                    // Skip spans completely outside visible range
+                    if (startIndex === -1 && endIndex === -1) return null;
 
-                  // Clamp to visible range
-                  const spanStart = Math.max(startIndex, 0);
-                  const spanEnd = Math.min(endIndex === -1 ? dates.length - 1 : endIndex, dates.length - 1);
-                  const spanLength = spanEnd - spanStart + 1;
+                    // Clamp to visible range
+                    const spanStart = Math.max(startIndex, 0);
+                    const spanEnd = Math.min(endIndex === -1 ? dates.length - 1 : endIndex, dates.length - 1);
+                    const spanLength = spanEnd - spanStart + 1;
 
-                  // Horizontal positioning: same logic for all spans
-                  const leftOffset = spanStart * DAY_COL_FULL_WIDTH;
-                  const blockWidth = spanLength * DAY_COL_FULL_WIDTH;
+                    // Horizontal positioning: same logic for all spans
+                    const leftOffset = spanStart * DAY_COL_FULL_WIDTH;
+                    const blockWidth = spanLength * DAY_COL_FULL_WIDTH;
 
-                  // Vertical positioning: uniform stacking for all spans
-                  const topOffset = sr.row * ROW_LAYER_HEIGHT;
+                    // Vertical positioning: one row per event-location
+                    const topOffset = eventRow.row * ROW_LAYER_HEIGHT;
 
-                  return (
-                    <div
-                      key={sr.span.id}
-                      style={{
-                        position: 'absolute',
-                        top: `${topOffset}px`,
-                        left: `${leftOffset}px`,
-                        width: `${blockWidth}px`,
-                        height: `${ROW_LAYER_HEIGHT}px`,
-                        backgroundColor: sr.span.isPhase ? '#d0d0d0' : '#e0e0e0',
-                        border: `${CELL_BORDER_WIDTH}px solid #999`,
-                        padding: '8px 12px',
-                        fontWeight: 'bold',
-                        fontSize: '11px',
-                        color: '#000',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        boxSizing: 'border-box',
-                        zIndex: 1,
-                      }}
-                    >
-                      {sr.span.label}
-                    </div>
-                  );
-                })}
+                    return (
+                      <div
+                        key={`${eventRow.eventId}-${eventRow.locationId}-${spanIndex}-${span.startDate}-${span.endDate}`}
+                        style={{
+                          position: 'absolute',
+                          top: `${topOffset}px`,
+                          left: `${leftOffset}px`,
+                          width: `${blockWidth}px`,
+                          height: `${ROW_LAYER_HEIGHT}px`,
+                          backgroundColor: '#e0e0e0',
+                          border: `${CELL_BORDER_WIDTH}px solid #999`,
+                          padding: '6px 10px',
+                          fontWeight: 'bold',
+                          fontSize: '11px',
+                          color: '#000',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          boxSizing: 'border-box',
+                          zIndex: 1,
+                        }}
+                      >
+                        {span.label}
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
           );
@@ -335,8 +343,8 @@ export function EventCalendar({ locations, events, timeline }: EventCalendarProp
         fontSize: '11px',
         color: '#000',
       }}>
-        <strong>About this view:</strong> Each location is shown as a single row. Events and event phases are displayed as peer horizontal spans across dates.
-        Overlapping spans are stacked vertically within the same row. This is a read-only view for understanding event and phase placement across locations and time.
+        <strong>About this view:</strong> Each event occupies one row per location, and every phase renders as a labeled span on that row.
+        Rows are only stacked within a location when events overlap in time. This is a read-only view for understanding phase placement across locations and time.
       </div>
     </section>
   );

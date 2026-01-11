@@ -2,41 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { EventCalendar } from "../../components/EventCalendar";
-
-interface Event {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  status: string;
-}
-
-interface Location {
-  id: string;
-  name: string;
-}
-
-interface EventLocation {
-  id: string;
-  eventId: string;
-  locationId: string;
-}
-
-interface EventWithLocations extends Event {
-  locationIds: string[];
-  phases?: {
-    id: string;
-    name: string;
-    startDate: string;
-    endDate: string;
-  }[];
-}
+import { UnifiedEvent } from "../../../types/calendar";
 
 // Timeline constants (matching planning workspace)
 const TIMELINE_COLUMN_WIDTH = 100;
 const TIMELINE_ORIGIN_PX = 500;
 
-function computeDateRange(events: EventWithLocations[]): string[] {
+function computeDateRange(events: UnifiedEvent[]): string[] {
   if (events.length === 0) return [];
 
   let minDate: string | null = null;
@@ -51,14 +23,12 @@ function computeDateRange(events: EventWithLocations[]): string[] {
     }
 
     // Include phases
-    if (event.phases) {
-      for (const phase of event.phases) {
-        if (!minDate || phase.startDate < minDate) {
-          minDate = phase.startDate;
-        }
-        if (!maxDate || phase.endDate > maxDate) {
-          maxDate = phase.endDate;
-        }
+    for (const phase of event.phases) {
+      if (!minDate || phase.startDate < minDate) {
+        minDate = phase.startDate;
+      }
+      if (!maxDate || phase.endDate > maxDate) {
+        maxDate = phase.endDate;
       }
     }
   }
@@ -79,8 +49,7 @@ function computeDateRange(events: EventWithLocations[]): string[] {
 }
 
 export default function CalendarPage() {
-  const [locations, setLocations] = useState<Location[]>([]);
-  const [events, setEvents] = useState<EventWithLocations[]>([]);
+  const [events, setEvents] = useState<UnifiedEvent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -90,41 +59,14 @@ export default function CalendarPage() {
       setError(null);
 
       try {
-        // Load locations, events, and event-location mappings
-        const [locationsRes, eventsRes, eventLocationsRes] = await Promise.all([
-          fetch("/api/locations"),
-          fetch("/api/events"),
-          fetch("/api/event-locations"),
-        ]);
+        const response = await fetch("/api/calendar/events");
 
-        if (!locationsRes.ok || !eventsRes.ok || !eventLocationsRes.ok) {
-          throw new Error("Failed to load data");
+        if (!response.ok) {
+          throw new Error("Failed to load calendar data");
         }
 
-        const locationsData: Location[] = await locationsRes.json();
-        const eventsData: Event[] = await eventsRes.json();
-        const eventLocationsData: EventLocation[] = await eventLocationsRes.json();
-
-        // Filter to active events
-        const activeEvents = eventsData.filter((e) => e.status === "ACTIVE");
-
-        // Map event IDs to location IDs
-        const eventLocationMap = new Map<string, string[]>();
-        for (const el of eventLocationsData) {
-          if (!eventLocationMap.has(el.eventId)) {
-            eventLocationMap.set(el.eventId, []);
-          }
-          eventLocationMap.get(el.eventId)!.push(el.locationId);
-        }
-
-        // Attach location IDs to events
-        const eventsWithLocations: EventWithLocations[] = activeEvents.map((event) => ({
-          ...event,
-          locationIds: eventLocationMap.get(event.id) || [],
-        }));
-
-        setLocations(locationsData);
-        setEvents(eventsWithLocations);
+        const unifiedEvents: UnifiedEvent[] = await response.json();
+        setEvents(unifiedEvents);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load data");
       } finally {
@@ -192,7 +134,6 @@ export default function CalendarPage() {
       </div>
 
       <EventCalendar
-        locations={locations}
         events={events}
         timeline={{
           dates: computeDateRange(events),

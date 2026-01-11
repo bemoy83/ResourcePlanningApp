@@ -10,11 +10,14 @@
   "dependencies": {
     "@prisma/client": "^6.19.1",
     "next": "^14.0.0",
+    "papaparse": "^5.5.3",
     "react": "^18.0.0",
-    "react-dom": "^18.0.0"
+    "react-dom": "^18.0.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/node": "^25.0.3",
+    "@types/papaparse": "^5.5.2",
     "@types/react": "^18.3.27",
     "@types/react-dom": "^18.3.7",
     "prisma": "^6.19.1",

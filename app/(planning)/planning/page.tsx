@@ -129,7 +129,25 @@ function EventLocationCalendar({
   events: CalendarEvent[];
   timeline: TimelineLayout;
 }) {
-  return <EventCalendar locations={locations} events={events} timeline={timeline} />;
+  // Transform CalendarEvent to UnifiedEvent for the refactored EventCalendar
+  const locationMap = new Map(locations.map((loc) => [loc.id, loc]));
+
+  const unifiedEvents = events.map((event) => ({
+    id: event.id,
+    name: event.name,
+    startDate: event.startDate,
+    endDate: event.endDate,
+    locations: event.locationIds
+      .map((locId) => locationMap.get(locId))
+      .filter((loc): loc is Location => loc !== undefined),
+    phases: (event.phases || []).map((phase) => ({
+      name: phase.name,
+      startDate: phase.startDate,
+      endDate: phase.endDate,
+    })),
+  }));
+
+  return <EventCalendar events={unifiedEvents} timeline={timeline} />;
 }
 
 function resolveVisibleDateRange(event: Event) {
@@ -571,6 +589,8 @@ export default function PlanningWorkspacePage() {
 
         <PlanningBoardGrid
           events={events}
+          locations={locations}
+          eventLocations={eventLocations}
           dates={dates}
           timeline={timeline}
           workCategories={workCategories}

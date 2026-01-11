@@ -5,6 +5,17 @@ interface Event {
   name: string;
 }
 
+interface Location {
+  id: string;
+  name: string;
+}
+
+interface EventLocation {
+  id: string;
+  eventId: string;
+  locationId: string;
+}
+
 interface WorkCategory {
   id: string;
   eventId: string;
@@ -62,6 +73,8 @@ interface TimelineLayout {
 
 interface PlanningBoardGridProps {
   events: Event[];
+  locations?: Location[];
+  eventLocations?: EventLocation[];
   dates: string[];
   timeline?: TimelineLayout;
   workCategories: WorkCategory[];
@@ -79,6 +92,8 @@ interface PlanningBoardGridProps {
 
 export function PlanningBoardGrid({
   events,
+  locations,
+  eventLocations,
   dates,
   timeline,
   workCategories,
@@ -97,6 +112,16 @@ export function PlanningBoardGrid({
   const eventMap = new Map<string, Event>();
   for (const event of events) {
     eventMap.set(event.id, event);
+  }
+
+  const workCategoriesByEvent = new Map<string, WorkCategory[]>();
+  for (const workCategory of workCategories) {
+    const existing = workCategoriesByEvent.get(workCategory.eventId);
+    if (existing) {
+      existing.push(workCategory);
+    } else {
+      workCategoriesByEvent.set(workCategory.eventId, [workCategory]);
+    }
   }
 
   // Use timeline contract if provided, otherwise use legacy values
@@ -148,6 +173,47 @@ export function PlanningBoardGrid({
     left: `${offset}px`,
     zIndex,
   });
+
+  const emptyRows = (() => {
+    if (!locations || !eventLocations) return [];
+
+    const locationMap = new Map<string, Location>();
+    for (const location of locations) {
+      locationMap.set(location.id, location);
+    }
+
+    const locationsByEvent = new Map<string, Set<string>>();
+    for (const eventLocation of eventLocations) {
+      if (!locationMap.has(eventLocation.locationId)) continue;
+      const existing = locationsByEvent.get(eventLocation.eventId);
+      if (existing) {
+        existing.add(eventLocation.locationId);
+      } else {
+        locationsByEvent.set(eventLocation.eventId, new Set([eventLocation.locationId]));
+      }
+    }
+
+    const rows: { eventId: string; eventName: string; locationId: string; locationName: string }[] = [];
+    for (const event of events) {
+      const eventWorkCategories = workCategoriesByEvent.get(event.id);
+      if (eventWorkCategories && eventWorkCategories.length > 0) continue;
+
+      const locationIds = locationsByEvent.get(event.id);
+      if (!locationIds || locationIds.size === 0) continue;
+
+      for (const location of locations) {
+        if (!locationIds.has(location.id)) continue;
+        rows.push({
+          eventId: event.id,
+          eventName: event.name,
+          locationId: location.id,
+          locationName: location.name,
+        });
+      }
+    }
+
+    return rows;
+  })();
 
   return (
     <section style={{ minWidth: `${scrollWidth}px` }}>
@@ -246,6 +312,56 @@ export function PlanningBoardGrid({
             />
           );
         })}
+
+        {emptyRows.map((row) => (
+          <section
+            key={`${row.eventId}-${row.locationId}`}
+            style={{ display: 'grid', gridTemplateColumns, position: 'relative' }}
+          >
+            <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0], 2) }}>
+              <div>{row.eventName}</div>
+              <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
+                {row.locationName}
+              </div>
+            </div>
+
+            <div style={{
+              ...cellStyle,
+              ...stickyColumnStyle(leftColumnOffsets[1], 2),
+              fontStyle: 'italic',
+              color: '#666',
+            }}>
+              (No work defined yet)
+            </div>
+
+            <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[2], 2), color: '#999' }}>—</div>
+            <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[3], 2), color: '#999' }}>—</div>
+            <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[4], 2), color: '#999' }}>—</div>
+
+            <div style={{
+              position: 'absolute',
+              left: `${timelineOriginPx}px`,
+              top: 0,
+              height: '100%',
+              width: `${timelineWidth}px`,
+            }}>
+              {dates.map((date, index) => (
+                <div
+                  key={`${row.eventId}-${row.locationId}-${date}`}
+                  style={{
+                    ...cellStyle,
+                    position: 'absolute',
+                    left: `${index * dateColumnWidth}px`,
+                    top: 0,
+                    width: `${dateColumnWidth}px`,
+                    height: '100%',
+                    backgroundColor: '#fff',
+                  }}
+                />
+              ))}
+            </div>
+          </section>
+        ))}
       </div>
 
       {/* Capacity comparison row */}

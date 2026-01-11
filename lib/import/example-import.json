@@ -1,0 +1,37 @@
+[
+  {
+    "eventName": "Spring Trade Fair 2026",
+    "locationName": "Hall A",
+    "phase": "ASSEMBLY",
+    "startDate": "2026-03-01",
+    "endDate": "2026-03-05"
+  },
+  {
+    "eventName": "Spring Trade Fair 2026",
+    "locationName": "Hall A",
+    "phase": "EVENT",
+    "startDate": "2026-03-06",
+    "endDate": "2026-03-10"
+  },
+  {
+    "eventName": "Spring Trade Fair 2026",
+    "locationName": "Hall A",
+    "phase": "DISMANTLE",
+    "startDate": "2026-03-11",
+    "endDate": "2026-03-15"
+  },
+  {
+    "eventName": "Autumn Trade Fair 2026",
+    "locationName": "Hall B",
+    "phase": "MOVE_IN",
+    "startDate": "2026-09-01",
+    "endDate": "2026-09-03"
+  },
+  {
+    "eventName": "Autumn Trade Fair 2026",
+    "locationName": "Hall B",
+    "phase": "EVENT",
+    "startDate": "2026-09-04",
+    "endDate": "2026-09-08"
+  }
+]
