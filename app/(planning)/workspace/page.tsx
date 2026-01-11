@@ -4,7 +4,9 @@ import { ReactNode, useEffect, useState, useRef, useCallback } from "react";
 import { PlanningBoardGrid } from "../../components/PlanningBoardGrid";
 import { EventCalendar } from "../../components/EventCalendar";
 import { CrossEventContext } from "../../components/CrossEventContext";
-import { UnifiedEvent } from "../../types/calendar";
+import { FilterBar } from "../../components/FilterBar";
+import { LocationFilter } from "../../components/LocationFilter";
+import { UnifiedEvent } from "@/types/calendar";
 
 interface Event {
   id: string;
@@ -141,6 +143,7 @@ export default function WorkspacePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorsByCellKey, setErrorsByCellKey] = useState<Record<string, string>>({});
+  const [selectedLocationIds, setSelectedLocationIds] = useState<Set<string>>(new Set());
 
   // Refs for synchronized horizontal scrolling
   const eventCalendarScrollRef = useRef<HTMLDivElement>(null);
@@ -258,7 +261,7 @@ export default function WorkspacePage() {
       clearTimeout(timeoutId);
       window.removeEventListener('resize', updateStickyOffsets);
     };
-  }, [crossEventEvaluation.crossEventDailyDemand.length, events.length]);
+  }, [crossEventEvaluation.crossEventDailyDemand.length, events.length, selectedLocationIds.size]);
 
   // Refresh evaluation after allocations change
   async function refreshEvaluation() {
@@ -606,6 +609,16 @@ export default function WorkspacePage() {
     })),
   }));
 
+  // Filter events by selected locations (when filter is active)
+  const filteredEvents: UnifiedEvent[] = selectedLocationIds.size === 0
+    ? unifiedEvents // No filter active - show all events
+    : unifiedEvents
+      .map((event) => ({
+        ...event,
+        locations: event.locations.filter((loc: Location) => selectedLocationIds.has(loc.id)),
+      }))
+      .filter((event) => event.locations.length > 0); // Only show events with at least one matching location
+
   // Calculate date range spanning all events
   let minDate: string | null = null;
   let maxDate: string | null = null;
@@ -704,6 +717,16 @@ export default function WorkspacePage() {
           </div>
         </div>
 
+        {locations.length > 0 && (
+          <FilterBar>
+            <LocationFilter
+              locations={locations}
+              selectedLocationIds={selectedLocationIds}
+              onSelectionChange={setSelectedLocationIds}
+            />
+          </FilterBar>
+        )}
+
         {isSaving && (
           <div style={{ padding: "10px", marginBottom: "10px", backgroundColor: "#f5f5f5", border: "2px solid #666" }}>
             Saving...
@@ -749,7 +772,7 @@ export default function WorkspacePage() {
                 width: "100%",
               }}
             >
-              <EventCalendar events={unifiedEvents} timeline={timeline} />
+              <EventCalendar events={filteredEvents} timeline={timeline} />
             </div>
           </div>
 
