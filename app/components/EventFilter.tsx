@@ -20,8 +20,10 @@ export function EventFilter({
 }: EventFilterProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [focusedIndex, setFocusedIndex] = useState(-1); // -1 = search input, 0+ = list items
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const listItemRefs = useRef<Map<number, HTMLLabelElement>>(new Map());
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -39,19 +41,33 @@ export function EventFilter({
     }
   }, [isOpen]);
 
-  // Focus search input when dropdown opens
+  // Focus search input when dropdown opens and reset focused index
   useEffect(() => {
-    if (isOpen && searchInputRef.current) {
-      searchInputRef.current.focus();
+    if (isOpen) {
+      setFocusedIndex(-1);
+      if (searchInputRef.current) {
+        searchInputRef.current.focus();
+      }
     }
   }, [isOpen]);
 
-  // Clear search when dropdown closes
+  // Clear search and reset focus when dropdown closes
   useEffect(() => {
     if (!isOpen) {
       setSearchQuery("");
+      setFocusedIndex(-1);
     }
   }, [isOpen]);
+
+  // Scroll focused item into view
+  useEffect(() => {
+    if (focusedIndex >= 0) {
+      const item = listItemRefs.current.get(focusedIndex);
+      if (item) {
+        item.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }
+    }
+  }, [focusedIndex]);
 
   // Filter events based on search query
   const filteredEvents = events.filter((event) =>
@@ -80,6 +96,36 @@ export function EventFilter({
       newSelection.add(eventId);
     }
     onSelectionChange(newSelection);
+  };
+
+  // Keyboard navigation handler
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setFocusedIndex((prev) => Math.min(prev + 1, filteredEvents.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setFocusedIndex((prev) => Math.max(prev - 1, -1));
+      if (focusedIndex === 0) {
+        // Going back to search input
+        searchInputRef.current?.focus();
+      }
+    } else if (e.key === "Enter" && focusedIndex >= 0) {
+      e.preventDefault();
+      const event = filteredEvents[focusedIndex];
+      if (event) {
+        toggleEvent(event.id);
+      }
+    } else if (e.key === "Escape") {
+      if (searchQuery) {
+        e.preventDefault();
+        setSearchQuery("");
+        setFocusedIndex(-1);
+        searchInputRef.current?.focus();
+      } else {
+        setIsOpen(false);
+      }
+    }
   };
 
   const displayText = () => {
@@ -122,6 +168,7 @@ export function EventFilter({
         <div
           role="listbox"
           aria-multiselectable="true"
+          onKeyDown={handleKeyDown}
           style={{
             position: "absolute",
             top: "100%",
@@ -159,12 +206,6 @@ export function EventFilter({
                 borderRadius: "3px",
                 boxSizing: "border-box",
                 outline: "none",
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") {
-                  setSearchQuery("");
-                  e.preventDefault();
-                }
               }}
             />
             {searchQuery && (
@@ -227,26 +268,40 @@ export function EventFilter({
               No events match &quot;{searchQuery}&quot;
             </div>
           ) : (
-            filteredEvents.map((event) => {
+            filteredEvents.map((event, index) => {
               const isChecked = selectedEventIds.has(event.id);
+              const isFocused = focusedIndex === index;
               return (
                 <label
                   key={event.id}
+                  ref={(el) => {
+                    if (el) {
+                      listItemRefs.current.set(index, el);
+                    } else {
+                      listItemRefs.current.delete(index);
+                    }
+                  }}
                   style={{
                     display: "flex",
                     alignItems: "center",
                     padding: "8px 12px",
                     cursor: "pointer",
                     fontSize: "12px",
-                    backgroundColor: isChecked ? "#f0f0f0" : "#fff",
+                    backgroundColor: isFocused ? "#d0e8ff" : isChecked ? "#f0f0f0" : "#fff",
                     color: "#000",
                     borderBottom: "1px solid #eee",
+                    outline: isFocused ? "2px solid #0066cc" : "none",
+                    outlineOffset: "-2px",
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = isChecked ? "#e8e8e8" : "#f9f9f9";
+                    if (!isFocused) {
+                      e.currentTarget.style.backgroundColor = isChecked ? "#e8e8e8" : "#f9f9f9";
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = isChecked ? "#f0f0f0" : "#fff";
+                    if (!isFocused) {
+                      e.currentTarget.style.backgroundColor = isChecked ? "#f0f0f0" : "#fff";
+                    }
                   }}
                 >
                   <input
