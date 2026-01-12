@@ -1,4 +1,11 @@
 import { WorkCategoryRow } from './WorkCategoryRow';
+import {
+  LEFT_COLUMNS,
+  TIMELINE_DATE_COLUMN_WIDTH,
+  TIMELINE_ORIGIN_PX,
+  calculateLeftColumnOffsets,
+  generateLeftColumnsTemplate,
+} from './layoutConstants';
 
 interface Event {
   id: string;
@@ -126,24 +133,11 @@ export function PlanningBoardGrid({
     }
   }
 
-  // Use timeline contract if provided, otherwise use legacy values
-  const dateColumnWidth = timeline?.dateColumnWidth ?? 100;
-  const leftColumns = [
-    { key: "event", width: 200 },
-    { key: "workCategory", width: 200 },
-    { key: "estimate", width: 100 },
-    { key: "allocated", width: 100 },
-    { key: "remaining", width: 100 },
-  ];
-  const leftColumnOffsets: number[] = [];
-  let leftColumnsWidth = 0;
-  for (const col of leftColumns) {
-    leftColumnOffsets.push(leftColumnsWidth);
-    leftColumnsWidth += col.width;
-  }
-  const timelineOriginPx = timeline?.timelineOriginPx ?? leftColumnsWidth;
-  const leftColumnsTemplate = leftColumns.map((col) => `${col.width}px`).join(" ");
-  const gridTemplateColumns = leftColumnsTemplate;
+  // Use timeline contract if provided, otherwise use shared constants
+  const dateColumnWidth = timeline?.dateColumnWidth ?? TIMELINE_DATE_COLUMN_WIDTH;
+  const timelineOriginPx = timeline?.timelineOriginPx ?? TIMELINE_ORIGIN_PX;
+  const leftColumnOffsets = calculateLeftColumnOffsets(LEFT_COLUMNS);
+  const gridTemplateColumns = generateLeftColumnsTemplate(LEFT_COLUMNS);
   const timelineWidth = dates.length * dateColumnWidth;
   const scrollWidth = timelineOriginPx + timelineWidth;
   const rowMinHeight = 46;

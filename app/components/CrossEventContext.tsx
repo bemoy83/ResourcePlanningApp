@@ -1,3 +1,9 @@
+import {
+  LEFT_COLUMNS,
+  calculateLeftColumnOffsets,
+  generateLeftColumnsTemplate,
+} from './layoutConstants';
+
 interface DailyDemand {
   date: string;
   totalEffortHours: number;
@@ -38,23 +44,8 @@ export function CrossEventContext({ crossEventEvaluation, timeline }: CrossEvent
   const dateColumnWidth = timeline.dateColumnWidth;
   const timelineOriginPx = timeline.timelineOriginPx;
 
-  const leftColumns = [
-    { key: "event", width: 200 },
-    { key: "workCategory", width: 200 },
-    { key: "estimate", width: 100 },
-    { key: "allocated", width: 100 },
-    { key: "remaining", width: 100 },
-  ];
-
-  const leftColumnOffsets: number[] = [];
-  let leftColumnsWidth = 0;
-  for (const col of leftColumns) {
-    leftColumnOffsets.push(leftColumnsWidth);
-    leftColumnsWidth += col.width;
-  }
-
-  const leftColumnsTemplate = leftColumns.map((col) => `${col.width}px`).join(" ");
-  const gridTemplateColumns = leftColumnsTemplate;
+  const leftColumnOffsets = calculateLeftColumnOffsets(LEFT_COLUMNS);
+  const gridTemplateColumns = generateLeftColumnsTemplate(LEFT_COLUMNS);
   const timelineWidth = dates.length * dateColumnWidth;
   const scrollWidth = timelineOriginPx + timelineWidth;
   const rowMinHeight = 46;

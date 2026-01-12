@@ -9,6 +9,14 @@ import { LocationFilter } from "../../components/LocationFilter";
 import { EventFilter } from "../../components/EventFilter";
 import { DateRangeChipFilter, DateRangePreset, DateRange, getDateRangeFromPreset } from "../../components/DateRangeChipFilter";
 import { UnifiedEvent } from "@/types/calendar";
+import {
+  LEFT_COLUMNS,
+  TIMELINE_DATE_COLUMN_WIDTH,
+  TIMELINE_ORIGIN_PX,
+  calculateLeftColumnOffsets,
+  generateLeftColumnsTemplate,
+} from "../../components/layoutConstants";
+import { useElementHeight } from "../../components/useElementHeight";
 
 interface Event {
   id: string;
@@ -99,9 +107,7 @@ interface TimelineLayout {
   timelineOriginPx: number;
 }
 
-// Timeline constants
-const TIMELINE_DATE_COLUMN_WIDTH = 100;
-const TIMELINE_ORIGIN_PX = 700;
+// Timeline constants are imported from layoutConstants.ts
 
 function PlanningToolbar({ children }: { children: ReactNode }) {
   return <div>{children}</div>;
@@ -161,8 +167,21 @@ export default function WorkspacePage() {
   // Refs for measuring sticky header heights
   const eventCalendarContainerRef = useRef<HTMLDivElement>(null);
   const crossEventContainerRef = useRef<HTMLDivElement>(null);
-  const [crossEventTop, setCrossEventTop] = useState(0);
-  const [planningGridHeaderTop, setPlanningGridHeaderTop] = useState(0);
+  
+  // Use ResizeObserver to reactively measure element heights
+  const eventCalendarHeight = useElementHeight(eventCalendarContainerRef, 0);
+  const crossEventHeight = useElementHeight(
+    crossEventContainerRef,
+    0,
+    crossEventEvaluation.crossEventDailyDemand.length > 0
+  );
+  
+  // Calculate sticky top offsets based on measured heights (with validation)
+  const crossEventTop = Math.max(0, eventCalendarHeight);
+  const planningGridHeaderTop = Math.max(
+    0,
+    eventCalendarHeight + (crossEventEvaluation.crossEventDailyDemand.length > 0 ? crossEventHeight : 0)
+  );
 
   // Load all data (events, work categories, allocations, locations)
   useEffect(() => {
@@ -235,40 +254,6 @@ export default function WorkspacePage() {
     loadCrossEventEvaluation();
   }, [allocations]); // Refresh when allocations change
 
-  // Calculate sticky top offsets based on header heights
-  useEffect(() => {
-    function updateStickyOffsets() {
-      let top = 0;
-
-      // Measure EventCalendar height
-      if (eventCalendarContainerRef.current) {
-        top += eventCalendarContainerRef.current.offsetHeight;
-      }
-
-      setCrossEventTop(top);
-
-      // Measure CrossEventContext height if visible
-      if (crossEventContainerRef.current && crossEventEvaluation.crossEventDailyDemand.length > 0) {
-        top += crossEventContainerRef.current.offsetHeight;
-      }
-
-      // PlanningBoardGrid header sticks below CrossEventContext
-      setPlanningGridHeaderTop(top);
-    }
-
-    updateStickyOffsets();
-    // Recalculate when cross-event evaluation changes (affects layout)
-    const timeoutId = setTimeout(updateStickyOffsets, 100);
-
-    // Recalculate on window resize
-    window.addEventListener('resize', updateStickyOffsets);
-
-    return () => {
-      clearTimeout(timeoutId);
-      window.removeEventListener('resize', updateStickyOffsets);
-    };
-  }, [crossEventEvaluation.crossEventDailyDemand.length, events.length, selectedLocationIds.size, selectedEventIds.size, dateRangePreset, customDateRange]);
-
   // Refresh evaluation after allocations change
   async function refreshEvaluation() {
     try {
@@ -322,35 +307,81 @@ export default function WorkspacePage() {
     };
   }, []);
 
-  // Synchronized horizontal scroll handlers - Safari-compatible version
+  // Synchronized horizontal scroll handlers - Safari-compatible version with improved reliability
   const syncScrollToOthers = useCallback((sourceRef: React.RefObject<HTMLDivElement>, scrollLeft: number) => {
+    // Validate input
+    if (typeof scrollLeft !== 'number' || isNaN(scrollLeft) || !isFinite(scrollLeft)) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Invalid scrollLeft value:', scrollLeft);
+      }
+      return;
+    }
+
     // Skip if this container is already syncing (prevents feedback loops)
     if (syncingContainersRef.current.has(sourceRef)) return;
 
-    // Mark all target containers as syncing
+    // Validate source ref exists
+    if (!sourceRef.current) {
+      return;
+    }
+
+    // Collect all target refs, filtering out the source and ensuring they exist
     const targetRefs = [
       eventCalendarScrollRef,
       crossEventScrollRef,
       planningGridHeaderScrollRef,
       planningGridScrollRef,
-    ].filter(ref => ref !== sourceRef && ref.current);
+    ].filter(ref => {
+      // Exclude source ref
+      if (ref === sourceRef) return false;
+      // Ensure ref and element exist
+      return ref.current !== null && ref.current !== undefined;
+    });
 
+    // If no valid targets, nothing to sync
+    if (targetRefs.length === 0) {
+      return;
+    }
+
+    // Mark all target containers as syncing
     targetRefs.forEach(ref => syncingContainersRef.current.add(ref));
 
     // Use requestAnimationFrame for smoother updates and better Safari compatibility
     requestAnimationFrame(() => {
-      targetRefs.forEach(ref => {
-        if (ref.current && Math.abs(ref.current.scrollLeft - scrollLeft) > 0.5) {
-          // Use scrollTo instead of direct assignment to avoid triggering scroll events
-          ref.current.scrollTo({
-            left: scrollLeft,
-            behavior: 'auto' as ScrollBehavior,
-          });
+      // Double-check refs still exist (component might have unmounted)
+      const validRefs = targetRefs.filter(ref => ref.current !== null && ref.current !== undefined);
+      
+      validRefs.forEach(ref => {
+        const element = ref.current;
+        if (!element) return;
+
+        // Only update if scroll position differs significantly (avoids unnecessary updates)
+        const currentScrollLeft = element.scrollLeft;
+        if (Math.abs(currentScrollLeft - scrollLeft) > 0.5) {
+          try {
+            // Use scrollTo instead of direct assignment to avoid triggering scroll events
+            element.scrollTo({
+              left: scrollLeft,
+              behavior: 'auto' as ScrollBehavior,
+            });
+          } catch (error) {
+            // Fallback to direct assignment if scrollTo fails
+            if (process.env.NODE_ENV === 'development') {
+              console.warn('scrollTo failed, using fallback:', error);
+            }
+            try {
+              element.scrollLeft = scrollLeft;
+            } catch (fallbackError) {
+              if (process.env.NODE_ENV === 'development') {
+                console.warn('Direct scrollLeft assignment also failed:', fallbackError);
+              }
+            }
+          }
         }
       });
 
       // Clear syncing flags after a small delay to handle Safari's momentum scrolling
-      if (scrollTimeoutRef.current) {
+      if (scrollTimeoutRef.current !== null) {
         clearTimeout(scrollTimeoutRef.current);
       }
       scrollTimeoutRef.current = window.setTimeout(() => {
@@ -361,19 +392,31 @@ export default function WorkspacePage() {
   }, []);
 
   const onCalendarScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    syncScrollToOthers(eventCalendarScrollRef, e.currentTarget.scrollLeft);
+    const target = e.currentTarget;
+    if (target && typeof target.scrollLeft === 'number') {
+      syncScrollToOthers(eventCalendarScrollRef, target.scrollLeft);
+    }
   }, [syncScrollToOthers]);
 
   const onCrossEventScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    syncScrollToOthers(crossEventScrollRef, e.currentTarget.scrollLeft);
+    const target = e.currentTarget;
+    if (target && typeof target.scrollLeft === 'number') {
+      syncScrollToOthers(crossEventScrollRef, target.scrollLeft);
+    }
   }, [syncScrollToOthers]);
 
   const onGridHeaderScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    syncScrollToOthers(planningGridHeaderScrollRef, e.currentTarget.scrollLeft);
+    const target = e.currentTarget;
+    if (target && typeof target.scrollLeft === 'number') {
+      syncScrollToOthers(planningGridHeaderScrollRef, target.scrollLeft);
+    }
   }, [syncScrollToOthers]);
 
   const onGridScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    syncScrollToOthers(planningGridScrollRef, e.currentTarget.scrollLeft);
+    const target = e.currentTarget;
+    if (target && typeof target.scrollLeft === 'number') {
+      syncScrollToOthers(planningGridScrollRef, target.scrollLeft);
+    }
   }, [syncScrollToOthers]);
 
   // Start editing a new allocation
@@ -775,22 +818,9 @@ export default function WorkspacePage() {
   const timelineWidth = dates.length * TIMELINE_DATE_COLUMN_WIDTH;
   const scrollWidth = TIMELINE_ORIGIN_PX + timelineWidth;
 
-  // PlanningBoardGrid header configuration (matching PlanningBoardGrid component)
-  const leftColumns = [
-    { key: "event", width: 200 },
-    { key: "workCategory", width: 200 },
-    { key: "estimate", width: 100 },
-    { key: "allocated", width: 100 },
-    { key: "remaining", width: 100 },
-  ];
-  const leftColumnOffsets: number[] = [];
-  let leftColumnsWidth = 0;
-  for (const col of leftColumns) {
-    leftColumnOffsets.push(leftColumnsWidth);
-    leftColumnsWidth += col.width;
-  }
-  const leftColumnsTemplate = leftColumns.map((col) => `${col.width}px`).join(" ");
-  const gridTemplateColumns = leftColumnsTemplate;
+  // PlanningBoardGrid header configuration (using shared constants)
+  const leftColumnOffsets = calculateLeftColumnOffsets(LEFT_COLUMNS);
+  const gridTemplateColumns = generateLeftColumnsTemplate(LEFT_COLUMNS);
   const rowMinHeight = 46;
   const cellStyle = {
     border: '1px solid #999',
@@ -889,6 +919,7 @@ export default function WorkspacePage() {
           style={{
             display: "flex",
             flexDirection: "column",
+            minHeight: "100%", // Ensure wrapper has height for sticky positioning context
           }}
         >
           {/* EventCalendar Container - sticky at top */}
@@ -899,6 +930,7 @@ export default function WorkspacePage() {
               top: 0,
               zIndex: 10,
               backgroundColor: "#fafafa",
+              flexShrink: 0, // Prevent compression to ensure accurate height measurement
             }}
           >
             {/* Horizontal Scroll Wrapper for EventCalendar */}
