@@ -12,13 +12,25 @@ export interface LeftColumn {
 /**
  * Left-side column configuration for planning grid.
  * These columns appear before the timeline and are sticky when scrolling horizontally.
+ * 
+ * Total width must remain constant (currently 700px) to keep TIMELINE_ORIGIN_PX consistent.
+ * Adjust individual widths as needed, but ensure the sum stays the same.
  */
 export const LEFT_COLUMNS: LeftColumn[] = [
-  { key: "event", width: 200 },
-  { key: "workCategory", width: 200 },
-  { key: "estimate", width: 100 },
-  { key: "allocated", width: 100 },
-  { key: "remaining", width: 100 },
+  { key: "event", width: 220 },
+  { key: "workCategory", width: 120 },
+  { key: "estimate", width: 120 },
+  { key: "allocated", width: 120 },
+  { key: "remaining", width: 120 },
+];
+
+/**
+ * Left-side column configuration for CrossEventContext.
+ * Single 700px column for labels - simpler since first 4 columns are empty.
+ * Total width must match LEFT_COLUMNS (700px) to keep date columns aligned.
+ */
+export const CROSS_EVENT_LEFT_COLUMNS: LeftColumn[] = [
+  { key: "label", width: 700 }, // Single column for "Total Demand" and "Total Capacity" labels
 ];
 
 /**

@@ -70,9 +70,11 @@ export function LocationFilter({
   }, [focusedIndex]);
 
   // Filter locations based on search query
-  const filteredLocations = locations.filter((location) =>
-    location.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredLocations = locations
+    .filter((location) =>
+      location.name.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   const allSelected = selectedLocationIds.size === locations.length;
   const noneSelected = selectedLocationIds.size === 0;

@@ -43,7 +43,9 @@ export function EventCalendar({ events, timeline }: EventCalendarProps) {
       locationMap.set(location.id, location);
     }
   }
-  const locations = Array.from(locationMap.values());
+  const locations = Array.from(locationMap.values()).sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
 
   // Strict rendering: if no locations exist, render nothing
   if (locations.length === 0) {
@@ -187,21 +189,31 @@ export function EventCalendar({ events, timeline }: EventCalendarProps) {
           height: '100%',
           width: `${timelineWidth}px`,
         }}>
-          {dates.map((date, index) => (
-            <div
-              key={date}
-              style={{
-                ...cellStyle,
-                position: 'absolute',
-                left: `${index * DAY_COL_FULL_WIDTH}px`,
-                top: 0,
-                width: `${DAY_COL_FULL_WIDTH}px`,
-                height: '100%',
-              }}
-            >
-              {date}
-            </div>
-          ))}
+          {dates.map((date, index) => {
+            const dateObj = new Date(date);
+            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+            return (
+              <div
+                key={date}
+                style={{
+                  ...cellStyle,
+                  position: 'absolute',
+                  left: `${index * DAY_COL_FULL_WIDTH}px`,
+                  top: 0,
+                  width: `${DAY_COL_FULL_WIDTH}px`,
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: '2px',
+                }}
+              >
+                <div style={{ fontWeight: 'bold', fontSize: '10px' }}>{dayName}</div>
+                <div style={{ fontSize: '10px' }}>{date}</div>
+              </div>
+            );
+          })}
         </div>
       </header>
 
@@ -213,6 +225,10 @@ export function EventCalendar({ events, timeline }: EventCalendarProps) {
           // Calculate row height based on number of vertical stacks needed
           const maxRows = eventRows.length > 0 ? Math.max(...eventRows.map((sr) => sr.row)) + 1 : 0;
           const rowHeight = Math.max(maxRows, 1) * ROW_LAYER_HEIGHT + 2; // Add 2px for bottom border
+          // With box-sizing: border-box, parent's borderBottom (2px) is included in rowHeight
+          // Content area (above border) = rowHeight - 2px
+          // Cells with borders need height = contentArea to fill it (borders included in height)
+          const cellHeight = rowHeight - 2;
 
           return (
             <div
@@ -228,14 +244,17 @@ export function EventCalendar({ events, timeline }: EventCalendarProps) {
             >
               <div style={{
                 ...cellStyle,
-                textAlign: 'left',
+                textAlign: 'right',
                 fontWeight: 'bold',
                 fontSize: '11px',
                 backgroundColor: '#fff',
                 position: 'sticky',
                 left: 0,
                 zIndex: 3,
-                height: `${rowHeight}px`,
+                height: `${cellHeight}px`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
               }}>
                 {location.name}
               </div>
@@ -244,7 +263,7 @@ export function EventCalendar({ events, timeline }: EventCalendarProps) {
                 position: 'absolute',
                 left: `${timelineOriginPx}px`,
                 top: 0,
-                height: `${rowHeight}px`,
+                height: `${cellHeight}px`,
                 width: `${timelineWidth}px`,
               }}>
                 {dates.map((date, index) => (
@@ -289,6 +308,8 @@ export function EventCalendar({ events, timeline }: EventCalendarProps) {
 
                     // Vertical positioning: one row per event-location
                     const topOffset = eventRow.row * ROW_LAYER_HEIGHT;
+                    // Calculate span height: if it's the only row, match the cell height; otherwise use layer height
+                    const spanHeight = maxRows === 1 ? cellHeight : ROW_LAYER_HEIGHT;
 
                     return (
                       <div
@@ -298,7 +319,7 @@ export function EventCalendar({ events, timeline }: EventCalendarProps) {
                           top: `${topOffset}px`,
                           left: `${leftOffset}px`,
                           width: `${blockWidth}px`,
-                          height: `${ROW_LAYER_HEIGHT}px`,
+                          height: `${spanHeight}px`,
                           backgroundColor: '#e0e0e0',
                           border: `${CELL_BORDER_WIDTH}px solid #999`,
                           padding: '8px',
@@ -310,6 +331,9 @@ export function EventCalendar({ events, timeline }: EventCalendarProps) {
                           whiteSpace: 'nowrap',
                           boxSizing: 'border-box',
                           zIndex: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                         }}
                       >
                         {span.label}

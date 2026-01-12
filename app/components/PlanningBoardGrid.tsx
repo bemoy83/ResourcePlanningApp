@@ -198,7 +198,7 @@ export function PlanningBoardGrid({
       const locationIds = locationsByEvent.get(event.id);
       if (!locationIds || locationIds.size === 0) continue;
 
-      for (const location of locations) {
+      for (const location of [...locations].sort((a, b) => a.name.localeCompare(b.name))) {
         if (!locationIds.has(location.id)) continue;
         rows.push({
           eventId: event.id,
@@ -388,13 +388,13 @@ export function PlanningBoardGrid({
           {evaluation.dailyCapacityComparison.length > 0 && (
             <footer style={{ display: 'grid', gridTemplateColumns, backgroundColor: '#e0e0e0', marginTop: '2px', border: '2px solid #666', position: 'relative' }}>
               <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0]) }}></div>
-              <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[1]), fontWeight: 'bold' }}>
+              <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[1]) }}></div>
+              <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[2]) }}></div>
+              <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[3]) }}></div>
+              <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[4]), fontWeight: 'bold' }}>
                 <div>Capacity</div>
                 <div style={{ fontSize: '10px', fontWeight: 'normal', color: '#666' }}>available per day</div>
               </div>
-              <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[2]) }}></div>
-              <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[3]) }}></div>
-              <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[4]) }}></div>
               <div style={{
                 position: 'absolute',
                 left: `${timelineOriginPx}px`,

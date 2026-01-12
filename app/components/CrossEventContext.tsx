@@ -1,5 +1,5 @@
 import {
-  LEFT_COLUMNS,
+  CROSS_EVENT_LEFT_COLUMNS,
   calculateLeftColumnOffsets,
   generateLeftColumnsTemplate,
 } from './layoutConstants';
@@ -44,8 +44,8 @@ export function CrossEventContext({ crossEventEvaluation, timeline }: CrossEvent
   const dateColumnWidth = timeline.dateColumnWidth;
   const timelineOriginPx = timeline.timelineOriginPx;
 
-  const leftColumnOffsets = calculateLeftColumnOffsets(LEFT_COLUMNS);
-  const gridTemplateColumns = generateLeftColumnsTemplate(LEFT_COLUMNS);
+  const leftColumnOffsets = calculateLeftColumnOffsets(CROSS_EVENT_LEFT_COLUMNS);
+  const gridTemplateColumns = generateLeftColumnsTemplate(CROSS_EVENT_LEFT_COLUMNS);
   const timelineWidth = dates.length * dateColumnWidth;
   const scrollWidth = timelineOriginPx + timelineWidth;
   const rowMinHeight = 46;
@@ -72,14 +72,10 @@ export function CrossEventContext({ crossEventEvaluation, timeline }: CrossEvent
     <section style={{ minWidth: `${scrollWidth}px`, marginBottom: '20px' }}>
       {/* Cross-event demand row */}
       <footer style={{ display: 'grid', gridTemplateColumns, backgroundColor: '#e0e0e0', border: '2px solid #666', position: 'relative' }}>
-        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0]) }}></div>
-        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[1]), fontWeight: 'bold' }}>
-            <div>Total Demand (All Events)</div>
-            <div style={{ fontSize: '10px', fontWeight: 'normal', color: '#666' }}>aggregated</div>
+        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0]), fontWeight: 'bold', textAlign: 'right' }}>
+            <div style={{ textAlign: 'right' }}>Total Demand (All Events)</div>
+            <div style={{ fontSize: '10px', fontWeight: 'normal', color: '#666', textAlign: 'right' }}>aggregated</div>
           </div>
-        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[2]) }}></div>
-        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[3]) }}></div>
-        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[4]) }}></div>
           <div style={{
             position: 'absolute',
             left: `${timelineOriginPx}px`,
@@ -116,14 +112,10 @@ export function CrossEventContext({ crossEventEvaluation, timeline }: CrossEvent
         {/* Cross-event capacity comparison row */}
         {crossEventEvaluation.crossEventCapacityComparison.length > 0 && (
           <footer style={{ display: 'grid', gridTemplateColumns, backgroundColor: '#e0e0e0', marginTop: '2px', border: '2px solid #666', position: 'relative' }}>
-          <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0]) }}></div>
-          <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[1]), fontWeight: 'bold' }}>
-              <div>Total Capacity Status</div>
-              <div style={{ fontSize: '10px', fontWeight: 'normal', color: '#666' }}>demand vs capacity</div>
+          <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0]), fontWeight: 'bold', textAlign: 'right' }}>
+              <div style={{ textAlign: 'right' }}>Total Capacity Status</div>
+              <div style={{ fontSize: '10px', fontWeight: 'normal', color: '#666', textAlign: 'right' }}>demand vs capacity</div>
             </div>
-          <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[2]) }}></div>
-          <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[3]) }}></div>
-          <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[4]) }}></div>
             <div style={{
               position: 'absolute',
               left: `${timelineOriginPx}px`,
