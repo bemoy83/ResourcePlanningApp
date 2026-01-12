@@ -7,6 +7,7 @@ import { CrossEventContext } from "../../components/CrossEventContext";
 import { FilterBar } from "../../components/FilterBar";
 import { LocationFilter } from "../../components/LocationFilter";
 import { EventFilter } from "../../components/EventFilter";
+import { DateRangeChipFilter, DateRangePreset, DateRange, getDateRangeFromPreset } from "../../components/DateRangeChipFilter";
 import { UnifiedEvent } from "@/types/calendar";
 
 interface Event {
@@ -146,6 +147,8 @@ export default function WorkspacePage() {
   const [errorsByCellKey, setErrorsByCellKey] = useState<Record<string, string>>({});
   const [selectedLocationIds, setSelectedLocationIds] = useState<Set<string>>(new Set());
   const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set());
+  const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>("next-3-months");
+  const [customDateRange, setCustomDateRange] = useState<DateRange>({ startDate: null, endDate: null });
 
   // Refs for synchronized horizontal scrolling
   const eventCalendarScrollRef = useRef<HTMLDivElement>(null);
@@ -263,7 +266,7 @@ export default function WorkspacePage() {
       clearTimeout(timeoutId);
       window.removeEventListener('resize', updateStickyOffsets);
     };
-  }, [crossEventEvaluation.crossEventDailyDemand.length, events.length, selectedLocationIds.size, selectedEventIds.size]);
+  }, [crossEventEvaluation.crossEventDailyDemand.length, events.length, selectedLocationIds.size, selectedEventIds.size, dateRangePreset, customDateRange]);
 
   // Refresh evaluation after allocations change
   async function refreshEvaluation() {
@@ -611,7 +614,10 @@ export default function WorkspacePage() {
     })),
   }));
 
-  // Filter events by selected events and locations (when filters are active)
+  // Calculate active date range from preset
+  const activeDateRange = getDateRangeFromPreset(dateRangePreset, customDateRange);
+
+  // Filter events by selected events, locations, and date range (when filters are active)
   const filteredEvents: UnifiedEvent[] = (() => {
     let filtered = unifiedEvents;
 
@@ -630,20 +636,37 @@ export default function WorkspacePage() {
         .filter((event) => event.locations.length > 0); // Only show events with at least one matching location
     }
 
+    // Apply date range filter
+    if (activeDateRange.startDate && activeDateRange.endDate) {
+      filtered = filtered.filter((event) => {
+        // Check if event overlaps with the date range
+        const eventStart = event.startDate;
+        const eventEnd = event.endDate;
+        return eventEnd >= activeDateRange.startDate! && eventStart <= activeDateRange.endDate!;
+      });
+    }
+
     return filtered;
   })();
 
-  // Calculate date range spanning all events
+  // Calculate date range spanning all events, constrained by date range filter
   let minDate: string | null = null;
   let maxDate: string | null = null;
 
-  for (const event of events) {
-    const range = resolveVisibleDateRange(event);
-    if (!minDate || range.startDate < minDate) {
-      minDate = range.startDate;
-    }
-    if (!maxDate || range.endDate > maxDate) {
-      maxDate = range.endDate;
+  if (activeDateRange.startDate && activeDateRange.endDate) {
+    // Use the date range filter as the bounds
+    minDate = activeDateRange.startDate;
+    maxDate = activeDateRange.endDate;
+  } else {
+    // No date range filter - calculate from events
+    for (const event of events) {
+      const range = resolveVisibleDateRange(event);
+      if (!minDate || range.startDate < minDate) {
+        minDate = range.startDate;
+      }
+      if (!maxDate || range.endDate > maxDate) {
+        maxDate = range.endDate;
+      }
     }
   }
 
@@ -732,22 +755,33 @@ export default function WorkspacePage() {
         </div>
 
         {(events.length > 0 || locations.length > 0) && (
-          <FilterBar>
-            {events.length > 0 && (
-              <EventFilter
-                events={events}
-                selectedEventIds={selectedEventIds}
-                onSelectionChange={setSelectedEventIds}
+          <>
+            <FilterBar>
+              {events.length > 0 && (
+                <EventFilter
+                  events={events}
+                  selectedEventIds={selectedEventIds}
+                  onSelectionChange={setSelectedEventIds}
+                />
+              )}
+              {locations.length > 0 && (
+                <LocationFilter
+                  locations={locations}
+                  selectedLocationIds={selectedLocationIds}
+                  onSelectionChange={setSelectedLocationIds}
+                />
+              )}
+            </FilterBar>
+
+            <div style={{ marginBottom: "12px" }}>
+              <DateRangeChipFilter
+                selectedPreset={dateRangePreset}
+                customRange={customDateRange}
+                onPresetChange={setDateRangePreset}
+                onCustomRangeChange={setCustomDateRange}
               />
-            )}
-            {locations.length > 0 && (
-              <LocationFilter
-                locations={locations}
-                selectedLocationIds={selectedLocationIds}
-                onSelectionChange={setSelectedLocationIds}
-              />
-            )}
-          </FilterBar>
+            </div>
+          </>
         )}
 
         {isSaving && (
