@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react';
 import { WorkCategoryRow } from './WorkCategoryRow';
 import {
   LEFT_COLUMNS,
@@ -98,7 +99,8 @@ interface PlanningBoardGridProps {
   hideHeader?: boolean;
 }
 
-export function PlanningBoardGrid({
+// Phase 2.2: Memoize component to prevent unnecessary re-renders
+export const PlanningBoardGrid = memo(function PlanningBoardGrid({
   events,
   locations,
   eventLocations,
@@ -117,21 +119,28 @@ export function PlanningBoardGrid({
   onDelete,
   hideHeader = false,
 }: PlanningBoardGridProps) {
-  // Build event lookup map
-  const eventMap = new Map<string, Event>();
-  for (const event of events) {
-    eventMap.set(event.id, event);
-  }
-
-  const workCategoriesByEvent = new Map<string, WorkCategory[]>();
-  for (const workCategory of workCategories) {
-    const existing = workCategoriesByEvent.get(workCategory.eventId);
-    if (existing) {
-      existing.push(workCategory);
-    } else {
-      workCategoriesByEvent.set(workCategory.eventId, [workCategory]);
+  // Memoize event lookup map (Phase 2.2)
+  const eventMap = useMemo(() => {
+    const map = new Map<string, Event>();
+    for (const event of events) {
+      map.set(event.id, event);
     }
-  }
+    return map;
+  }, [events]);
+
+  // Memoize work categories by event map (Phase 2.2)
+  const workCategoriesByEvent = useMemo(() => {
+    const map = new Map<string, WorkCategory[]>();
+    for (const workCategory of workCategories) {
+      const existing = map.get(workCategory.eventId);
+      if (existing) {
+        existing.push(workCategory);
+      } else {
+        map.set(workCategory.eventId, [workCategory]);
+      }
+    }
+    return map;
+  }, [workCategories]);
 
   // Use timeline contract if provided, otherwise use shared constants
   const dateColumnWidth = timeline?.dateColumnWidth ?? TIMELINE_DATE_COLUMN_WIDTH;
@@ -152,17 +161,23 @@ export function PlanningBoardGrid({
     boxSizing: 'border-box' as const,
   };
 
-  // Build pressure map for quick lookup
-  const pressureMap = new Map<string, WorkCategoryPressure>();
-  for (const pressure of evaluation.workCategoryPressure) {
-    pressureMap.set(pressure.workCategoryId, pressure);
-  }
+  // Memoize pressure map for quick lookup (Phase 2.2)
+  const pressureMap = useMemo(() => {
+    const map = new Map<string, WorkCategoryPressure>();
+    for (const pressure of evaluation.workCategoryPressure) {
+      map.set(pressure.workCategoryId, pressure);
+    }
+    return map;
+  }, [evaluation.workCategoryPressure]);
 
-  // Build capacity comparison map for quick lookup
-  const capacityMap = new Map<string, DailyCapacityComparison>();
-  for (const comparison of evaluation.dailyCapacityComparison) {
-    capacityMap.set(comparison.date, comparison);
-  }
+  // Memoize capacity comparison map for quick lookup (Phase 2.2)
+  const capacityMap = useMemo(() => {
+    const map = new Map<string, DailyCapacityComparison>();
+    for (const comparison of evaluation.dailyCapacityComparison) {
+      map.set(comparison.date, comparison);
+    }
+    return map;
+  }, [evaluation.dailyCapacityComparison]);
 
   const stickyColumnStyle = (offset: number): React.CSSProperties => ({
     position: 'sticky',
@@ -458,4 +473,4 @@ export function PlanningBoardGrid({
       </div>
     </section>
   );
-}
+});

@@ -1,3 +1,4 @@
+import { useMemo, memo } from "react";
 import { UnifiedEvent } from "../../types/calendar";
 
 interface TimelineLayout {
@@ -32,20 +33,26 @@ interface EventRow {
 const CELL_BORDER_WIDTH = 1;
 const ROW_LAYER_HEIGHT = 24;
 
-export function EventCalendar({ events, timeline }: EventCalendarProps) {
-  // Filter events to only those with locations
-  const eventsWithLocations = events.filter((e) => e.locations.length > 0);
-
-  // Extract unique locations from all events
-  const locationMap = new Map<string, { id: string; name: string }>();
-  for (const event of eventsWithLocations) {
-    for (const location of event.locations) {
-      locationMap.set(location.id, location);
-    }
-  }
-  const locations = Array.from(locationMap.values()).sort((a, b) =>
-    a.name.localeCompare(b.name)
+// Phase 2.1: Memoize component to prevent unnecessary re-renders
+export const EventCalendar = memo(function EventCalendar({ events, timeline }: EventCalendarProps) {
+  // Memoize events with locations (Phase 2.1)
+  const eventsWithLocations = useMemo(() =>
+    events.filter((e) => e.locations.length > 0),
+    [events]
   );
+
+  // Memoize locations extraction and sorting (Phase 2.1)
+  const locations = useMemo(() => {
+    const locationMap = new Map<string, { id: string; name: string }>();
+    for (const event of eventsWithLocations) {
+      for (const location of event.locations) {
+        locationMap.set(location.id, location);
+      }
+    }
+    return Array.from(locationMap.values()).sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
+  }, [eventsWithLocations]);
 
   // Strict rendering: if no locations exist, render nothing
   if (locations.length === 0) {
@@ -62,93 +69,97 @@ export function EventCalendar({ events, timeline }: EventCalendarProps) {
 
   const isEventPhaseName = (name: string) => name.trim().toUpperCase() === "EVENT";
 
-  // Build calendar rows: one row per event-location, spans from phases only
-  const locationEventRows: Record<string, EventRow[]> = {};
+  // Memoize calendar rows calculation (Phase 2.1) - expensive O(n³) operation
+  const locationEventRows: Record<string, EventRow[]> = useMemo(() => {
+    const rows: Record<string, EventRow[]> = {};
 
-  for (const location of locations) {
-    const eventsInLocation = eventsWithLocations.filter((e) =>
-      e.locations.some((loc) => loc.id === location.id)
-    );
+    for (const location of locations) {
+      const eventsInLocation = eventsWithLocations.filter((e) =>
+        e.locations.some((loc) => loc.id === location.id)
+      );
 
-    const eventRows: EventRow[] = [];
-    for (const event of eventsInLocation) {
-      const spans: CalendarSpan[] = event.phases.map((phase) => ({
-        eventId: event.id,
-        locationId: location.id,
-        label: isEventPhaseName(phase.name) ? event.name : phase.name,
-        startDate: phase.startDate,
-        endDate: phase.endDate,
-      }));
+      const eventRows: EventRow[] = [];
+      for (const event of eventsInLocation) {
+        const spans: CalendarSpan[] = event.phases.map((phase) => ({
+          eventId: event.id,
+          locationId: location.id,
+          label: isEventPhaseName(phase.name) ? event.name : phase.name,
+          startDate: phase.startDate,
+          endDate: phase.endDate,
+        }));
 
-      if (spans.length === 0) {
-        continue;
-      }
-
-      spans.sort((a, b) => {
-        const startDelta = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
-        if (startDelta !== 0) return startDelta;
-        const endDelta = new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
-        if (endDelta !== 0) return endDelta;
-        return a.label.localeCompare(b.label);
-      });
-
-      let rangeStart = spans[0].startDate;
-      let rangeEnd = spans[0].endDate;
-      for (const span of spans) {
-        if (span.startDate < rangeStart) {
-          rangeStart = span.startDate;
+        if (spans.length === 0) {
+          continue;
         }
-        if (span.endDate > rangeEnd) {
-          rangeEnd = span.endDate;
-        }
-      }
 
-      eventRows.push({
-        eventId: event.id,
-        eventName: event.name,
-        locationId: location.id,
-        spans,
-        row: 0,
-        rangeStartMs: new Date(rangeStart).getTime(),
-        rangeEndMs: new Date(rangeEnd).getTime(),
-      });
-    }
-
-    eventRows.sort((a, b) => {
-      const startDelta = a.rangeStartMs - b.rangeStartMs;
-      if (startDelta !== 0) return startDelta;
-      return a.eventName.localeCompare(b.eventName);
-    });
-
-    // Assign rows based on event-level overlap within each location
-    const placedRows: { row: number; rangeStartMs: number; rangeEndMs: number }[] = [];
-    for (const eventRow of eventRows) {
-      let assignedRow = 0;
-      let foundRow = false;
-
-      while (!foundRow) {
-        const rowHasConflict = placedRows.some((placed) => {
-          if (placed.row !== assignedRow) return false;
-          return !(eventRow.rangeEndMs < placed.rangeStartMs || eventRow.rangeStartMs > placed.rangeEndMs);
+        spans.sort((a, b) => {
+          const startDelta = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+          if (startDelta !== 0) return startDelta;
+          const endDelta = new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
+          if (endDelta !== 0) return endDelta;
+          return a.label.localeCompare(b.label);
         });
 
-        if (!rowHasConflict) {
-          foundRow = true;
-        } else {
-          assignedRow++;
+        let rangeStart = spans[0].startDate;
+        let rangeEnd = spans[0].endDate;
+        for (const span of spans) {
+          if (span.startDate < rangeStart) {
+            rangeStart = span.startDate;
+          }
+          if (span.endDate > rangeEnd) {
+            rangeEnd = span.endDate;
+          }
         }
+
+        eventRows.push({
+          eventId: event.id,
+          eventName: event.name,
+          locationId: location.id,
+          spans,
+          row: 0,
+          rangeStartMs: new Date(rangeStart).getTime(),
+          rangeEndMs: new Date(rangeEnd).getTime(),
+        });
       }
 
-      eventRow.row = assignedRow;
-      placedRows.push({
-        row: assignedRow,
-        rangeStartMs: eventRow.rangeStartMs,
-        rangeEndMs: eventRow.rangeEndMs,
+      eventRows.sort((a, b) => {
+        const startDelta = a.rangeStartMs - b.rangeStartMs;
+        if (startDelta !== 0) return startDelta;
+        return a.eventName.localeCompare(b.eventName);
       });
+
+      // Assign rows based on event-level overlap within each location
+      const placedRows: { row: number; rangeStartMs: number; rangeEndMs: number }[] = [];
+      for (const eventRow of eventRows) {
+        let assignedRow = 0;
+        let foundRow = false;
+
+        while (!foundRow) {
+          const rowHasConflict = placedRows.some((placed) => {
+            if (placed.row !== assignedRow) return false;
+            return !(eventRow.rangeEndMs < placed.rangeStartMs || eventRow.rangeStartMs > placed.rangeEndMs);
+          });
+
+          if (!rowHasConflict) {
+            foundRow = true;
+          } else {
+            assignedRow++;
+          }
+        }
+
+        eventRow.row = assignedRow;
+        placedRows.push({
+          row: assignedRow,
+          rangeStartMs: eventRow.rangeStartMs,
+          rangeEndMs: eventRow.rangeEndMs,
+        });
+      }
+
+      rows[location.id] = eventRows;
     }
 
-    locationEventRows[location.id] = eventRows;
-  }
+    return rows;
+  }, [locations, eventsWithLocations]);
 
   // Grid styling
   const gridTemplateColumns = leftColumnsTemplate;
@@ -338,4 +349,12 @@ export function EventCalendar({ events, timeline }: EventCalendarProps) {
       </div>
     </section>
   );
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison to prevent re-renders when props haven't changed (Phase 2.1)
+  return (
+    prevProps.events === nextProps.events &&
+    prevProps.timeline.dates === nextProps.timeline.dates &&
+    prevProps.timeline.dateColumnWidth === nextProps.timeline.dateColumnWidth &&
+    prevProps.timeline.timelineOriginPx === nextProps.timeline.timelineOriginPx
+  );
+});

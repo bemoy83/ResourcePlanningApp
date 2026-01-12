@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react';
 import {
   CROSS_EVENT_LEFT_COLUMNS,
   calculateLeftColumnOffsets,
@@ -35,7 +36,8 @@ interface CrossEventContextProps {
 
 const CELL_BORDER_WIDTH = 1;
 
-export function CrossEventContext({ crossEventEvaluation, timeline }: CrossEventContextProps) {
+// Phase 2.3: Memoize component to prevent unnecessary re-renders
+export const CrossEventContext = memo(function CrossEventContext({ crossEventEvaluation, timeline }: CrossEventContextProps) {
   if (crossEventEvaluation.crossEventDailyDemand.length === 0) {
     return null;
   }
@@ -68,6 +70,24 @@ export function CrossEventContext({ crossEventEvaluation, timeline }: CrossEvent
     backgroundColor: '#fff',
   });
 
+  // Memoize demand map for O(1) lookups (Phase 2.3)
+  const demandMap = useMemo(() => {
+    const map = new Map<string, DailyDemand>();
+    for (const demand of crossEventEvaluation.crossEventDailyDemand) {
+      map.set(demand.date, demand);
+    }
+    return map;
+  }, [crossEventEvaluation.crossEventDailyDemand]);
+
+  // Memoize comparison map for O(1) lookups (Phase 2.3)
+  const comparisonMap = useMemo(() => {
+    const map = new Map<string, DailyCapacityComparison>();
+    for (const comparison of crossEventEvaluation.crossEventCapacityComparison) {
+      map.set(comparison.date, comparison);
+    }
+    return map;
+  }, [crossEventEvaluation.crossEventCapacityComparison]);
+
   return (
     <section style={{ minWidth: `${scrollWidth}px`, marginBottom: '20px' }}>
       {/* Cross-event demand row */}
@@ -84,8 +104,8 @@ export function CrossEventContext({ crossEventEvaluation, timeline }: CrossEvent
             width: `${timelineWidth}px`,
           }}>
             {dates.map((date, index) => {
-              const crossDemand = crossEventEvaluation.crossEventDailyDemand.find((d) => d.date === date);
-              const crossComparison = crossEventEvaluation.crossEventCapacityComparison.find((c) => c.date === date);
+              const crossDemand = demandMap.get(date);
+              const crossComparison = comparisonMap.get(date);
 
               // Color code based on cross-event pressure
               const hasIssue = crossComparison?.isOverAllocated;
@@ -124,7 +144,7 @@ export function CrossEventContext({ crossEventEvaluation, timeline }: CrossEvent
               width: `${timelineWidth}px`,
             }}>
               {dates.map((date, index) => {
-                const crossComparison = crossEventEvaluation.crossEventCapacityComparison.find((c) => c.date === date);
+                const crossComparison = comparisonMap.get(date);
                 if (!crossComparison || crossComparison.capacityHours === 0) {
                   return (
                     <div key={date} style={{
@@ -172,4 +192,4 @@ export function CrossEventContext({ crossEventEvaluation, timeline }: CrossEvent
         )}
     </section>
   );
-}
+});
