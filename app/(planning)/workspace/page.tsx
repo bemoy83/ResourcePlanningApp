@@ -17,6 +17,7 @@ import {
   generateLeftColumnsTemplate,
 } from "../../components/layoutConstants";
 import { useElementHeight } from "../../components/useElementHeight";
+import { buildDateFlags, DateFlags, nextDateString } from "../../utils/date";
 
 interface Event {
   id: string;
@@ -105,6 +106,7 @@ interface TimelineLayout {
   dates: string[];
   dateColumnWidth: number;
   timelineOriginPx: number;
+  dateMeta?: DateFlags[];
 }
 
 // Timeline constants are imported from layoutConstants.ts
@@ -773,24 +775,27 @@ export default function WorkspacePage() {
     // Generate dates array
     const datesArray: string[] = [];
     if (min && max) {
-      const start = new Date(min);
-      const end = new Date(max);
-      const current = new Date(start);
-      while (current <= end) {
-        datesArray.push(current.toISOString().split("T")[0]);
-        current.setDate(current.getDate() + 1);
+      let current = min;
+      while (current <= max) {
+        datesArray.push(current);
+        current = nextDateString(current);
       }
     }
 
     return { dates: datesArray, minDate: min, maxDate: max };
   }, [activeDateRange, filteredData.eventsArray]);
 
+  const holidayDates = useMemo(() => new Set<string>(), []);
+
+  const dateMeta = useMemo(() => buildDateFlags(dates, holidayDates), [dates, holidayDates]);
+
   // Memoize timeline layout object for performance (Phase 1.3)
   const timeline: TimelineLayout = useMemo(() => ({
     dates,
     dateColumnWidth: TIMELINE_DATE_COLUMN_WIDTH,
     timelineOriginPx: TIMELINE_ORIGIN_PX,
-  }), [dates]);
+    dateMeta,
+  }), [dates, dateMeta]);
 
   // Calculate scroll width for horizontal scroll containers
   const timelineWidth = dates.length * TIMELINE_DATE_COLUMN_WIDTH;

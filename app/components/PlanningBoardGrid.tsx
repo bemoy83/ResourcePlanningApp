@@ -7,6 +7,7 @@ import {
   calculateLeftColumnOffsets,
   generateLeftColumnsTemplate,
 } from './layoutConstants';
+import { buildDateFlags, DateFlags } from '../utils/date';
 
 interface Event {
   id: string;
@@ -77,6 +78,7 @@ interface TimelineLayout {
   dates: string[];
   dateColumnWidth: number;
   timelineOriginPx: number;
+  dateMeta?: DateFlags[];
 }
 
 interface PlanningBoardGridProps {
@@ -179,6 +181,16 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
     return map;
   }, [evaluation.dailyCapacityComparison]);
 
+  const dateMeta = useMemo(() => {
+    if (timeline?.dateMeta && timeline.dateMeta.length === dates.length) {
+      return timeline.dateMeta;
+    }
+    return buildDateFlags(dates);
+  }, [dates, timeline?.dateMeta]);
+
+  const weekendBackground = "#f7f7f7";
+  const holidayBackground = "#ffe7e7";
+
   const stickyColumnStyle = (offset: number): React.CSSProperties => ({
     position: 'sticky',
     left: `${offset}px`,
@@ -278,21 +290,30 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
               height: '100%',
               width: `${timelineWidth}px`,
             }}>
-              {dates.map((date, index) => (
-                <div
-                  key={date}
-                  style={{
-                    ...cellStyle,
-                    position: 'absolute',
-                    left: `${index * dateColumnWidth}px`,
-                    top: 0,
-                    width: `${dateColumnWidth}px`,
-                    height: '100%',
-                  }}
-                >
-                  <div>{date}</div>
-                </div>
-              ))}
+              {dates.map((date, index) => {
+                const dateFlags = dateMeta[index];
+                const backgroundColor = dateFlags?.isHoliday
+                  ? holidayBackground
+                  : dateFlags?.isWeekend
+                  ? weekendBackground
+                  : '#fff';
+                return (
+                  <div
+                    key={date}
+                    style={{
+                      ...cellStyle,
+                      position: 'absolute',
+                      left: `${index * dateColumnWidth}px`,
+                      top: 0,
+                      width: `${dateColumnWidth}px`,
+                      height: '100%',
+                      backgroundColor,
+                    }}
+                  >
+                    <div>{date}</div>
+                  </div>
+                );
+              })}
             </div>
           </header>
         )}
@@ -344,6 +365,7 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
                   onDelete={onDelete}
                   gridTemplateColumns={gridTemplateColumns}
                   cellStyle={cellStyle}
+                  dateMeta={dateMeta}
                 />
               );
             })}
@@ -380,20 +402,28 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
                   height: '100%',
                   width: `${timelineWidth}px`,
                 }}>
-                  {dates.map((date, index) => (
-                    <div
-                      key={`${row.eventId}-${row.locationId}-${date}`}
-                      style={{
-                        ...cellStyle,
-                        position: 'absolute',
-                        left: `${index * dateColumnWidth}px`,
-                        top: 0,
-                        width: `${dateColumnWidth}px`,
-                        height: '100%',
-                        backgroundColor: '#fff',
-                      }}
-                    />
-                  ))}
+                  {dates.map((date, index) => {
+                    const dateFlags = dateMeta[index];
+                    const backgroundColor = dateFlags?.isHoliday
+                      ? holidayBackground
+                      : dateFlags?.isWeekend
+                      ? weekendBackground
+                      : '#fff';
+                    return (
+                      <div
+                        key={`${row.eventId}-${row.locationId}-${date}`}
+                        style={{
+                          ...cellStyle,
+                          position: 'absolute',
+                          left: `${index * dateColumnWidth}px`,
+                          top: 0,
+                          width: `${dateColumnWidth}px`,
+                          height: '100%',
+                          backgroundColor,
+                        }}
+                      />
+                    );
+                  })}
                 </div>
               </section>
             ))}
@@ -419,6 +449,12 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
               }}>
                 {dates.map((date, index) => {
                   const comparison = capacityMap.get(date);
+                  const dateFlags = dateMeta[index];
+                  const baseBackground = dateFlags?.isHoliday
+                    ? holidayBackground
+                    : dateFlags?.isWeekend
+                    ? weekendBackground
+                    : '#fff';
                   if (!comparison || comparison.capacityHours === 0) {
                     return (
                       <div
@@ -430,6 +466,7 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
                           top: 0,
                           width: `${dateColumnWidth}px`,
                           height: '100%',
+                          backgroundColor: baseBackground,
                         }}
                       >
                         —
@@ -441,7 +478,7 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
                     ? { ...cellStyle, backgroundColor: '#fee', color: 'red' }
                     : comparison.isUnderAllocated
                       ? { ...cellStyle, backgroundColor: '#efe', color: 'green' }
-                      : cellStyle;
+                      : { ...cellStyle, backgroundColor: baseBackground };
 
                   return (
                     <div key={date} style={{

@@ -1,10 +1,12 @@
 import { useMemo, memo } from "react";
 import { UnifiedEvent } from "../../types/calendar";
+import { buildDateFlags, DateFlags } from "../utils/date";
 
 interface TimelineLayout {
   dates: string[];
   dateColumnWidth: number;
   timelineOriginPx: number;
+  dateMeta?: DateFlags[];
 }
 
 interface EventCalendarProps {
@@ -68,6 +70,16 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline }: E
   const scrollWidth = timelineOriginPx + timelineWidth;
 
   const isEventPhaseName = (name: string) => name.trim().toUpperCase() === "EVENT";
+
+  const dateMeta = useMemo(() => {
+    if (timeline.dateMeta && timeline.dateMeta.length === dates.length) {
+      return timeline.dateMeta;
+    }
+    return buildDateFlags(dates);
+  }, [dates, timeline.dateMeta]);
+
+  const weekendBackground = "#f7f7f7";
+  const holidayBackground = "#ffe7e7";
 
   // Memoize calendar rows calculation (Phase 2.1) - expensive O(n³) operation
   const locationEventRows: Record<string, EventRow[]> = useMemo(() => {
@@ -200,21 +212,30 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline }: E
           height: '100%',
           width: `${timelineWidth}px`,
         }}>
-          {dates.map((date, index) => (
-            <div
-              key={date}
-              style={{
-                ...cellStyle,
-                position: 'absolute',
-                left: `${index * DAY_COL_FULL_WIDTH}px`,
-                top: 0,
-                width: `${DAY_COL_FULL_WIDTH}px`,
-                height: '100%',
-              }}
-            >
-              {date}
-            </div>
-          ))}
+          {dates.map((date, index) => {
+            const dateFlags = dateMeta[index];
+            const backgroundColor = dateFlags?.isHoliday
+              ? holidayBackground
+              : dateFlags?.isWeekend
+              ? weekendBackground
+              : "#fff";
+            return (
+              <div
+                key={date}
+                style={{
+                  ...cellStyle,
+                  position: 'absolute',
+                  left: `${index * DAY_COL_FULL_WIDTH}px`,
+                  top: 0,
+                  width: `${DAY_COL_FULL_WIDTH}px`,
+                  height: '100%',
+                  backgroundColor,
+                }}
+              >
+                {date}
+              </div>
+            );
+          })}
         </div>
       </header>
 
@@ -267,22 +288,30 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline }: E
                 height: `${cellHeight}px`,
                 width: `${timelineWidth}px`,
               }}>
-                {dates.map((date, index) => (
-                  <div
-                    key={date}
-                    style={{
-                      ...cellStyle,
-                      position: 'absolute',
-                      left: `${index * DAY_COL_FULL_WIDTH}px`,
-                      top: 0,
-                      width: `${DAY_COL_FULL_WIDTH}px`,
-                      height: '100%',
-                      backgroundColor: '#fff',
-                    }}
-                  >
-                    —
-                  </div>
-                ))}
+                {dates.map((date, index) => {
+                  const dateFlags = dateMeta[index];
+                  const backgroundColor = dateFlags?.isHoliday
+                    ? holidayBackground
+                    : dateFlags?.isWeekend
+                    ? weekendBackground
+                    : "#fff";
+                  return (
+                    <div
+                      key={date}
+                      style={{
+                        ...cellStyle,
+                        position: 'absolute',
+                        left: `${index * DAY_COL_FULL_WIDTH}px`,
+                        top: 0,
+                        width: `${DAY_COL_FULL_WIDTH}px`,
+                        height: '100%',
+                        backgroundColor,
+                      }}
+                    >
+                      —
+                    </div>
+                  );
+                })}
 
                 {/* Calendar spans (phases only) positioned by event row */}
                 {eventRows.flatMap((eventRow) =>

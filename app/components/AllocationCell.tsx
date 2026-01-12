@@ -128,7 +128,7 @@ export function AllocationCell({
         cursor: 'pointer',
         padding: '4px',
         color: '#666',
-        backgroundColor: '#fff',
+        backgroundColor: 'transparent',
         border: '1px solid #ccc',
         minHeight: '30px',
         display: 'flex',

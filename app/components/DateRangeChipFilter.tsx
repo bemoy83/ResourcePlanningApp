@@ -1,6 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import {
+  addDays,
+  daysInMonth,
+  formatDateLocal,
+  formatDateParts,
+  formatLabelDate,
+  getDayOfWeek,
+  parseDateParts,
+} from "../utils/date";
 
 export type DateRangePreset =
   | "all-time"
@@ -72,8 +81,8 @@ export function DateRangeChipFilter({
 
   const getChipLabel = (preset: DateRangePreset): string => {
     if (preset === "custom" && selectedPreset === "custom" && customRange.startDate && customRange.endDate) {
-      const start = new Date(customRange.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-      const end = new Date(customRange.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      const start = formatLabelDate(customRange.startDate);
+      const end = formatLabelDate(customRange.endDate);
       return `${start} - ${end}`;
     }
     return presets.find((p) => p.id === preset)?.label || preset;
@@ -279,67 +288,63 @@ export function DateRangeChipFilter({
 
 // Utility function to calculate date range from preset
 export function getDateRangeFromPreset(preset: DateRangePreset, customRange: DateRange): DateRange {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = formatDateLocal(new Date());
 
   switch (preset) {
     case "all-time":
       return { startDate: null, endDate: null };
 
     case "this-week": {
-      const dayOfWeek = today.getDay();
-      const monday = new Date(today);
-      monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-      const sunday = new Date(monday);
-      sunday.setDate(monday.getDate() + 6);
+      const dayOfWeek = getDayOfWeek(today);
+      const monday = addDays(today, dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
+      const sunday = addDays(monday, 6);
       return {
-        startDate: monday.toISOString().split("T")[0],
-        endDate: sunday.toISOString().split("T")[0],
+        startDate: monday,
+        endDate: sunday,
       };
     }
 
     case "next-2-weeks": {
-      const endDate = new Date(today);
-      endDate.setDate(today.getDate() + 14);
+      const endDate = addDays(today, 14);
       return {
-        startDate: today.toISOString().split("T")[0],
-        endDate: endDate.toISOString().split("T")[0],
+        startDate: today,
+        endDate,
       };
     }
 
     case "this-month": {
-      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-      const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      const { year, month } = parseDateParts(today);
+      const firstDay = formatDateParts(year, month, 1);
+      const lastDay = formatDateParts(year, month, daysInMonth(year, month));
       return {
-        startDate: firstDay.toISOString().split("T")[0],
-        endDate: lastDay.toISOString().split("T")[0],
+        startDate: firstDay,
+        endDate: lastDay,
       };
     }
 
     case "next-3-months": {
-      const endDate = new Date(today);
-      endDate.setDate(today.getDate() + 90);
+      const endDate = addDays(today, 90);
       return {
-        startDate: today.toISOString().split("T")[0],
-        endDate: endDate.toISOString().split("T")[0],
+        startDate: today,
+        endDate,
       };
     }
 
     case "next-6-months": {
-      const endDate = new Date(today);
-      endDate.setDate(today.getDate() + 180);
+      const endDate = addDays(today, 180);
       return {
-        startDate: today.toISOString().split("T")[0],
-        endDate: endDate.toISOString().split("T")[0],
+        startDate: today,
+        endDate,
       };
     }
 
     case "this-year": {
-      const firstDay = new Date(today.getFullYear(), 0, 1);
-      const lastDay = new Date(today.getFullYear(), 11, 31);
+      const { year } = parseDateParts(today);
+      const firstDay = formatDateParts(year, 1, 1);
+      const lastDay = formatDateParts(year, 12, 31);
       return {
-        startDate: firstDay.toISOString().split("T")[0],
-        endDate: lastDay.toISOString().split("T")[0],
+        startDate: firstDay,
+        endDate: lastDay,
       };
     }
 

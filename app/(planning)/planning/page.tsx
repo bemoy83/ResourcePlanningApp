@@ -4,6 +4,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { PlanningBoardGrid } from "../../components/PlanningBoardGrid";
 import { EventCalendar } from "../../components/EventCalendar";
 import { CrossEventContext } from "../../components/CrossEventContext";
+import { nextDateString } from "../../utils/date";
 
 interface Event {
   id: string;
@@ -548,12 +549,10 @@ export default function PlanningWorkspacePage() {
   // Generate dates array
   const dates: string[] = [];
   if (minDate && maxDate) {
-    const start = new Date(minDate);
-    const end = new Date(maxDate);
-    const current = new Date(start);
-    while (current <= end) {
-      dates.push(current.toISOString().split("T")[0]);
-      current.setDate(current.getDate() + 1);
+    let current = minDate;
+    while (current <= maxDate) {
+      dates.push(current);
+      current = nextDateString(current);
     }
   }
 

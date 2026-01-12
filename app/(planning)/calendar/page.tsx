@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { EventCalendar } from "../../components/EventCalendar";
 import { UnifiedEvent } from "../../../types/calendar";
+import { nextDateString } from "../../utils/date";
 
 // Timeline constants (matching planning workspace)
 const TIMELINE_COLUMN_WIDTH = 100;
@@ -36,13 +37,10 @@ function computeDateRange(events: UnifiedEvent[]): string[] {
   if (!minDate || !maxDate) return [];
 
   const dates: string[] = [];
-  const start = new Date(minDate);
-  const end = new Date(maxDate);
-  const current = new Date(start);
-
-  while (current <= end) {
-    dates.push(current.toISOString().split('T')[0]);
-    current.setDate(current.getDate() + 1);
+  let current = minDate;
+  while (current <= maxDate) {
+    dates.push(current);
+    current = nextDateString(current);
   }
 
   return dates;

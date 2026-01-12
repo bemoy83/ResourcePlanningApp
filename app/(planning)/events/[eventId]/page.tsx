@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { PlanningBoardGrid } from "../../../components/PlanningBoardGrid";
+import { nextDateString } from "../../../utils/date";
 
 interface Event {
   id: string;
@@ -269,12 +270,10 @@ export default function PlanningBoardPage() {
   }
 
   const dates: string[] = [];
-  const start = new Date(event.startDate);
-  const end = new Date(event.endDate);
-  const current = new Date(start);
-  while (current <= end) {
-    dates.push(current.toISOString().split('T')[0]);
-    current.setDate(current.getDate() + 1);
+  let current = event.startDate;
+  while (current <= event.endDate) {
+    dates.push(current);
+    current = nextDateString(current);
   }
 
   const eventSections = [

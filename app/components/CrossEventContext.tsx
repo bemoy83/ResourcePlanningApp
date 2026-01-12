@@ -4,6 +4,7 @@ import {
   calculateLeftColumnOffsets,
   generateLeftColumnsTemplate,
 } from './layoutConstants';
+import { buildDateFlags, DateFlags } from '../utils/date';
 
 interface DailyDemand {
   date: string;
@@ -27,6 +28,7 @@ interface TimelineLayout {
   dates: string[];
   dateColumnWidth: number;
   timelineOriginPx: number;
+  dateMeta?: DateFlags[];
 }
 
 interface CrossEventContextProps {
@@ -88,6 +90,16 @@ export const CrossEventContext = memo(function CrossEventContext({ crossEventEva
     return map;
   }, [crossEventEvaluation.crossEventCapacityComparison]);
 
+  const dateMeta = useMemo(() => {
+    if (timeline.dateMeta && timeline.dateMeta.length === dates.length) {
+      return timeline.dateMeta;
+    }
+    return buildDateFlags(dates);
+  }, [dates, timeline.dateMeta]);
+
+  const weekendBackground = "#f7f7f7";
+  const holidayBackground = "#ffe7e7";
+
   return (
     <section style={{ minWidth: `${scrollWidth}px`, marginBottom: '20px' }}>
       {/* Cross-event demand row */}
@@ -109,6 +121,12 @@ export const CrossEventContext = memo(function CrossEventContext({ crossEventEva
 
               // Color code based on cross-event pressure
               const hasIssue = crossComparison?.isOverAllocated;
+              const dateFlags = dateMeta[index];
+              const baseBackground = dateFlags?.isHoliday
+                ? holidayBackground
+                : dateFlags?.isWeekend
+                ? weekendBackground
+                : '#fff';
 
               return (
                 <div key={date} style={{
@@ -120,7 +138,7 @@ export const CrossEventContext = memo(function CrossEventContext({ crossEventEva
                   height: '100%',
                   fontWeight: 'bold',
                   color: hasIssue ? 'red' : 'inherit',
-                  backgroundColor: hasIssue ? '#fee' : '#fff',
+                  backgroundColor: hasIssue ? '#fee' : baseBackground,
                 }}>
                   {crossDemand && crossDemand.totalEffortHours > 0 ? `${crossDemand.totalEffortHours}h` : '—'}
                 </div>
@@ -145,6 +163,12 @@ export const CrossEventContext = memo(function CrossEventContext({ crossEventEva
             }}>
               {dates.map((date, index) => {
                 const crossComparison = comparisonMap.get(date);
+                const dateFlags = dateMeta[index];
+                const baseBackground = dateFlags?.isHoliday
+                  ? holidayBackground
+                  : dateFlags?.isWeekend
+                  ? weekendBackground
+                  : '#fff';
                 if (!crossComparison || crossComparison.capacityHours === 0) {
                   return (
                     <div key={date} style={{
@@ -154,6 +178,7 @@ export const CrossEventContext = memo(function CrossEventContext({ crossEventEva
                       top: 0,
                       width: `${dateColumnWidth}px`,
                       height: '100%',
+                      backgroundColor: baseBackground,
                     }}>—</div>
                   );
                 }
@@ -162,7 +187,7 @@ export const CrossEventContext = memo(function CrossEventContext({ crossEventEva
                   ? { ...cellStyle, backgroundColor: '#fee', color: 'red' }
                   : crossComparison.isUnderAllocated
                   ? { ...cellStyle, backgroundColor: '#efe', color: 'green' }
-                  : cellStyle;
+                  : { ...cellStyle, backgroundColor: baseBackground };
 
                 return (
                   <div key={date} style={{

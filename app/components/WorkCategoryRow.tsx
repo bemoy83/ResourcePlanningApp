@@ -1,4 +1,5 @@
 import { AllocationCell } from './AllocationCell';
+import { DateFlags } from '../utils/date';
 
 interface WorkCategory {
   id: string;
@@ -36,6 +37,7 @@ interface WorkCategoryRowProps {
   remaining: number;
   pressure?: WorkCategoryPressure;
   dates: string[];
+  dateMeta: DateFlags[];
   dateColumnWidth: number;
   timelineOriginPx: number;
   leftColumnOffsets: number[];
@@ -59,6 +61,7 @@ export function WorkCategoryRow({
   remaining,
   pressure,
   dates,
+  dateMeta,
   dateColumnWidth,
   timelineOriginPx,
   leftColumnOffsets,
@@ -84,6 +87,8 @@ export function WorkCategoryRow({
     : 0;
 
   const timelineWidth = dates.length * dateColumnWidth;
+  const weekendBackground = "#f7f7f7";
+  const holidayBackground = "#ffe7e7";
 
   const stickyColumnStyle = (offset: number): React.CSSProperties => ({
     position: 'sticky',
@@ -161,6 +166,12 @@ export function WorkCategoryRow({
             (d) => d.workCategoryId === workCategory.id && d.date === date
           );
           const error = errorsByCellKey[cellKey];
+          const dateFlags = dateMeta[index];
+          const backgroundColor = dateFlags?.isHoliday
+            ? holidayBackground
+            : dateFlags?.isWeekend
+            ? weekendBackground
+            : '#fff';
 
           return (
             <div
@@ -172,6 +183,7 @@ export function WorkCategoryRow({
                 top: 0,
                 width: `${dateColumnWidth}px`,
                 height: '100%',
+                backgroundColor,
               }}
             >
               <AllocationCell
