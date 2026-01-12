@@ -230,12 +230,12 @@ export function EventCalendar({ events, timeline }: EventCalendarProps) {
                 ...cellStyle,
                 textAlign: 'left',
                 fontWeight: 'bold',
-                fontSize: '12px',
+                fontSize: '11px',
                 backgroundColor: '#fff',
                 position: 'sticky',
                 left: 0,
                 zIndex: 3,
-                height: '100%',
+                height: `${rowHeight}px`,
               }}>
                 {location.name}
               </div>
@@ -244,7 +244,7 @@ export function EventCalendar({ events, timeline }: EventCalendarProps) {
                 position: 'absolute',
                 left: `${timelineOriginPx}px`,
                 top: 0,
-                height: '100%',
+                height: `${rowHeight}px`,
                 width: `${timelineWidth}px`,
               }}>
                 {dates.map((date, index) => (
@@ -301,7 +301,7 @@ export function EventCalendar({ events, timeline }: EventCalendarProps) {
                           height: `${ROW_LAYER_HEIGHT}px`,
                           backgroundColor: '#e0e0e0',
                           border: `${CELL_BORDER_WIDTH}px solid #999`,
-                          padding: '4px 8px',
+                          padding: '8px',
                           fontWeight: 'bold',
                           fontSize: '11px',
                           color: '#000',
