@@ -1045,21 +1045,27 @@ export default function WorkspacePage() {
                   height: '100%',
                   width: `${timelineWidth}px`,
                 }}>
-                  {dates.map((date, index) => (
-                    <div
-                      key={date}
-                      style={{
-                        ...cellStyle,
-                        position: 'absolute',
-                        left: `${index * TIMELINE_DATE_COLUMN_WIDTH}px`,
-                        top: 0,
-                        width: `${TIMELINE_DATE_COLUMN_WIDTH}px`,
-                        height: '100%',
-                      }}
-                    >
-                      <div>{new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
-                    </div>
-                  ))}
+                  {dates.map((date, index) => {
+                    const dateObj = new Date(date);
+                    const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+                    const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    return (
+                      <div
+                        key={date}
+                        style={{
+                          ...cellStyle,
+                          position: 'absolute',
+                          left: `${index * TIMELINE_DATE_COLUMN_WIDTH}px`,
+                          top: 0,
+                          width: `${TIMELINE_DATE_COLUMN_WIDTH}px`,
+                          height: '100%',
+                        }}
+                      >
+                        <div>{dayName}</div>
+                        <div style={{ fontSize: '10px', fontWeight: 'normal' }}>{dateStr}</div>
+                      </div>
+                    );
+                  })}
                 </div>
               </header>
             </div>

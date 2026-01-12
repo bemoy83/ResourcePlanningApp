@@ -189,31 +189,21 @@ export function EventCalendar({ events, timeline }: EventCalendarProps) {
           height: '100%',
           width: `${timelineWidth}px`,
         }}>
-          {dates.map((date, index) => {
-            const dateObj = new Date(date);
-            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
-            return (
-              <div
-                key={date}
-                style={{
-                  ...cellStyle,
-                  position: 'absolute',
-                  left: `${index * DAY_COL_FULL_WIDTH}px`,
-                  top: 0,
-                  width: `${DAY_COL_FULL_WIDTH}px`,
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  gap: '2px',
-                }}
-              >
-                <div style={{ fontWeight: 'bold', fontSize: '10px' }}>{dayName}</div>
-                <div style={{ fontSize: '10px' }}>{date}</div>
-              </div>
-            );
-          })}
+          {dates.map((date, index) => (
+            <div
+              key={date}
+              style={{
+                ...cellStyle,
+                position: 'absolute',
+                left: `${index * DAY_COL_FULL_WIDTH}px`,
+                top: 0,
+                width: `${DAY_COL_FULL_WIDTH}px`,
+                height: '100%',
+              }}
+            >
+              {date}
+            </div>
+          ))}
         </div>
       </header>
 
