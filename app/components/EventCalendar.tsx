@@ -30,7 +30,7 @@ interface EventRow {
 }
 
 const CELL_BORDER_WIDTH = 1;
-const ROW_LAYER_HEIGHT = 32;
+const ROW_LAYER_HEIGHT = 24;
 
 export function EventCalendar({ events, timeline }: EventCalendarProps) {
   // Filter events to only those with locations
@@ -162,17 +162,6 @@ export function EventCalendar({ events, timeline }: EventCalendarProps) {
 
   return (
     <section style={{ minWidth: `${scrollWidth}px` }}>
-      <div style={{
-        marginBottom: '8px',
-        padding: '8px',
-        backgroundColor: '#f5f5f5',
-        border: '2px solid #666',
-        fontSize: '12px',
-        color: '#000',
-      }}>
-        <strong>Event Calendar:</strong> Read-only view grouped by location. Each event renders as a single row with phases displayed as contiguous spans.
-      </div>
-
       {/* Header row with dates */}
       <header style={{
         display: 'grid',
@@ -312,7 +301,7 @@ export function EventCalendar({ events, timeline }: EventCalendarProps) {
                           height: `${ROW_LAYER_HEIGHT}px`,
                           backgroundColor: '#e0e0e0',
                           border: `${CELL_BORDER_WIDTH}px solid #999`,
-                          padding: '6px 10px',
+                          padding: '4px 8px',
                           fontWeight: 'bold',
                           fontSize: '11px',
                           color: '#000',
