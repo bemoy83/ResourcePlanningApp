@@ -155,7 +155,8 @@ export default function WorkspacePage() {
   const crossEventScrollRef = useRef<HTMLDivElement>(null);
   const planningGridHeaderScrollRef = useRef<HTMLDivElement>(null);
   const planningGridScrollRef = useRef<HTMLDivElement>(null);
-  const isSyncingRef = useRef(false);
+  const syncingContainersRef = useRef<Set<React.RefObject<HTMLDivElement>>>(new Set());
+  const scrollTimeoutRef = useRef<number | null>(null);
 
   // Refs for measuring sticky header heights
   const eventCalendarContainerRef = useRef<HTMLDivElement>(null);
@@ -310,28 +311,52 @@ export default function WorkspacePage() {
     }
   }, []);
 
-  // Synchronized horizontal scroll handlers
+  // Cleanup scroll timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+        scrollTimeoutRef.current = null;
+      }
+      syncingContainersRef.current.clear();
+    };
+  }, []);
+
+  // Synchronized horizontal scroll handlers - Safari-compatible version
   const syncScrollToOthers = useCallback((sourceRef: React.RefObject<HTMLDivElement>, scrollLeft: number) => {
-    if (isSyncingRef.current) return;
+    // Skip if this container is already syncing (prevents feedback loops)
+    if (syncingContainersRef.current.has(sourceRef)) return;
 
-    isSyncingRef.current = true;
+    // Mark all target containers as syncing
+    const targetRefs = [
+      eventCalendarScrollRef,
+      crossEventScrollRef,
+      planningGridHeaderScrollRef,
+      planningGridScrollRef,
+    ].filter(ref => ref !== sourceRef && ref.current);
 
-    // Sync to all other scroll containers
-    if (sourceRef !== eventCalendarScrollRef && eventCalendarScrollRef.current) {
-      eventCalendarScrollRef.current.scrollLeft = scrollLeft;
-    }
-    if (sourceRef !== crossEventScrollRef && crossEventScrollRef.current) {
-      crossEventScrollRef.current.scrollLeft = scrollLeft;
-    }
-    if (sourceRef !== planningGridHeaderScrollRef && planningGridHeaderScrollRef.current) {
-      planningGridHeaderScrollRef.current.scrollLeft = scrollLeft;
-    }
-    if (sourceRef !== planningGridScrollRef && planningGridScrollRef.current) {
-      planningGridScrollRef.current.scrollLeft = scrollLeft;
-    }
+    targetRefs.forEach(ref => syncingContainersRef.current.add(ref));
 
+    // Use requestAnimationFrame for smoother updates and better Safari compatibility
     requestAnimationFrame(() => {
-      isSyncingRef.current = false;
+      targetRefs.forEach(ref => {
+        if (ref.current && Math.abs(ref.current.scrollLeft - scrollLeft) > 0.5) {
+          // Use scrollTo instead of direct assignment to avoid triggering scroll events
+          ref.current.scrollTo({
+            left: scrollLeft,
+            behavior: 'auto' as ScrollBehavior,
+          });
+        }
+      });
+
+      // Clear syncing flags after a small delay to handle Safari's momentum scrolling
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      scrollTimeoutRef.current = window.setTimeout(() => {
+        syncingContainersRef.current.clear();
+        scrollTimeoutRef.current = null;
+      }, 50);
     });
   }, []);
 
@@ -649,6 +674,63 @@ export default function WorkspacePage() {
     return filtered;
   })();
 
+  // Get filtered event IDs for filtering other data
+  const filteredEventIds = new Set(filteredEvents.map((e) => e.id));
+
+  // Filter work categories to only include those belonging to filtered events
+  const filteredWorkCategories = workCategories.filter((wc) =>
+    filteredEventIds.has(wc.eventId)
+  );
+
+  // Filter allocations to only include those belonging to filtered events
+  const filteredAllocations = allocations.filter((a) =>
+    filteredEventIds.has(a.eventId)
+  );
+
+  // Filter evaluation data to only include work categories in the filtered set
+  const filteredWorkCategoryIds = new Set(filteredWorkCategories.map((wc) => wc.id));
+  const filteredEvaluation: Evaluation = {
+    dailyDemand: evaluation.dailyDemand.filter((dd) => {
+      // Filter daily demand by date range if active
+      if (activeDateRange.startDate && activeDateRange.endDate) {
+        return dd.date >= activeDateRange.startDate && dd.date <= activeDateRange.endDate;
+      }
+      return true;
+    }),
+    dailyCapacityComparison: evaluation.dailyCapacityComparison.filter((dcc) => {
+      // Filter daily capacity comparison by date range if active
+      if (activeDateRange.startDate && activeDateRange.endDate) {
+        return dcc.date >= activeDateRange.startDate && dcc.date <= activeDateRange.endDate;
+      }
+      return true;
+    }),
+    workCategoryPressure: evaluation.workCategoryPressure.filter((wcp) =>
+      filteredWorkCategoryIds.has(wcp.workCategoryId)
+    ),
+  };
+
+  // Filter events array to match filteredEvents (for PlanningBoardGrid which expects Event[])
+  const filteredEventsArray = events.filter((e) => filteredEventIds.has(e.id));
+
+  // Filter eventLocations to only include those for filtered events
+  const filteredEventLocations = eventLocations.filter((el) =>
+    filteredEventIds.has(el.eventId)
+  );
+
+  // Filter drafts to only include those for filtered work categories
+  const filteredDrafts = drafts.filter((d) =>
+    filteredWorkCategoryIds.has(d.workCategoryId)
+  );
+
+  // Filter errorsByCellKey to only include those for filtered work categories
+  const filteredErrorsByCellKey: Record<string, string> = {};
+  for (const [cellKey, error] of Object.entries(errorsByCellKey)) {
+    const [workCategoryId] = cellKey.split('::');
+    if (filteredWorkCategoryIds.has(workCategoryId)) {
+      filteredErrorsByCellKey[cellKey] = error;
+    }
+  }
+
   // Calculate date range spanning all events, constrained by date range filter
   let minDate: string | null = null;
   let maxDate: string | null = null;
@@ -658,8 +740,8 @@ export default function WorkspacePage() {
     minDate = activeDateRange.startDate;
     maxDate = activeDateRange.endDate;
   } else {
-    // No date range filter - calculate from events
-    for (const event of events) {
+    // No date range filter - calculate from filtered events
+    for (const event of filteredEventsArray) {
       const range = resolveVisibleDateRange(event);
       if (!minDate || range.startDate < minDate) {
         minDate = range.startDate;
@@ -827,6 +909,11 @@ export default function WorkspacePage() {
                 overflowX: "auto",
                 overflowY: "hidden",
                 width: "100%",
+                // CSS performance optimizations for smoother scrolling
+                willChange: "scroll-position",
+                WebkitOverflowScrolling: "touch" as any,
+                transform: "translateZ(0)",
+                scrollBehavior: "auto" as const,
               }}
             >
               <EventCalendar events={filteredEvents} timeline={timeline} />
@@ -852,6 +939,11 @@ export default function WorkspacePage() {
                   overflowX: "auto",
                   overflowY: "hidden",
                   width: "100%",
+                  // CSS performance optimizations for smoother scrolling
+                  willChange: "scroll-position",
+                  WebkitOverflowScrolling: "touch" as any,
+                  transform: "translateZ(0)",
+                  scrollBehavior: "auto" as const,
                 }}
                 className="hide-all-scrollbars"
               >
@@ -877,6 +969,11 @@ export default function WorkspacePage() {
                 overflowX: "auto",
                 overflowY: "hidden",
                 width: "100%",
+                // CSS performance optimizations for smoother scrolling
+                willChange: "scroll-position",
+                WebkitOverflowScrolling: "touch" as any,
+                transform: "translateZ(0)",
+                scrollBehavior: "auto" as const,
               }}
               className="hide-all-scrollbars"
             >
@@ -952,21 +1049,26 @@ export default function WorkspacePage() {
                 overflowY: "auto",
                 height: "100%",
                 width: "100%",
+                // CSS performance optimizations for smoother scrolling
+                willChange: "scroll-position",
+                WebkitOverflowScrolling: "touch" as any,
+                transform: "translateZ(0)",
+                scrollBehavior: "auto" as const,
               }}
               className="hide-all-scrollbars"
             >
               <PlanningBoardGrid
                 hideHeader={true}
-                events={events}
+                events={filteredEventsArray}
                 locations={locations}
-                eventLocations={eventLocations}
+                eventLocations={filteredEventLocations}
                 dates={dates}
                 timeline={timeline}
-                workCategories={workCategories}
-                allocations={allocations}
-                evaluation={evaluation}
-                drafts={drafts}
-                errorsByCellKey={errorsByCellKey}
+                workCategories={filteredWorkCategories}
+                allocations={filteredAllocations}
+                evaluation={filteredEvaluation}
+                drafts={filteredDrafts}
+                errorsByCellKey={filteredErrorsByCellKey}
                 onStartCreate={startCreateAllocation}
                 onStartEdit={startEditAllocation}
                 onChangeDraft={changeDraft}
