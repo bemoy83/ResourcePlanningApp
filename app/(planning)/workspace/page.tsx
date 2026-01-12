@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useState, useRef, useCallback } from "react";
+import { ReactNode, useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { PlanningBoardGrid } from "../../components/PlanningBoardGrid";
 import { EventCalendar } from "../../components/EventCalendar";
 import { CrossEventContext } from "../../components/CrossEventContext";
@@ -608,55 +608,7 @@ export default function WorkspacePage() {
     }
   }
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div style={{
-        padding: "20px",
-        backgroundColor: "#fafafa",
-        border: "2px solid #666",
-        margin: "20px",
-        color: "#000",
-        fontSize: "16px",
-      }}>
-        Loading...
-      </div>
-    );
-  }
-
-  // Error state (non-blocking)
-  if (error) {
-    return (
-      <div style={{
-        padding: "20px",
-        backgroundColor: "#f5f5f5",
-        border: "2px solid #000",
-        margin: "20px",
-        color: "#000",
-        fontSize: "16px",
-      }}>
-        Error: {error}
-      </div>
-    );
-  }
-
-  // No events available
-  if (events.length === 0 && !isLoading) {
-    return (
-      <div style={{
-        padding: "20px",
-        backgroundColor: "#fafafa",
-        border: "2px solid #666",
-        margin: "20px",
-        color: "#000",
-        fontSize: "16px",
-      }}>
-        No active events
-      </div>
-    );
-  }
-
-  // Build calendar events with location IDs
+  // Build calendar events with location IDs (must be before hooks)
   const eventLocationMap = new Map<string, string[]>();
   for (const el of eventLocations) {
     if (!eventLocationMap.has(el.eventId)) {
@@ -665,7 +617,7 @@ export default function WorkspacePage() {
     eventLocationMap.get(el.eventId)!.push(el.locationId);
   }
 
-  // Transform events to UnifiedEvent format
+  // Transform events to UnifiedEvent format (must be before hooks)
   const locationMap = new Map(locations.map((loc) => [loc.id, loc]));
   const unifiedEvents: UnifiedEvent[] = events.map((event) => ({
     id: event.id,
@@ -682,11 +634,12 @@ export default function WorkspacePage() {
     })),
   }));
 
-  // Calculate active date range from preset
+  // Calculate active date range from preset (must be before hooks)
   const activeDateRange = getDateRangeFromPreset(dateRangePreset, customDateRange);
 
-  // Filter events by selected events, locations, and date range (when filters are active)
-  const filteredEvents: UnifiedEvent[] = (() => {
+  // Memoize all filtering operations for performance (Phase 1.1)
+  const filteredData = useMemo(() => {
+    // Filter events by selected events, locations, and date range
     let filtered = unifiedEvents;
 
     // Apply event filter
@@ -714,105 +667,130 @@ export default function WorkspacePage() {
       });
     }
 
-    return filtered;
-  })();
+    // Get filtered event IDs for filtering other data
+    const filteredEventIds = new Set(filtered.map((e) => e.id));
 
-  // Get filtered event IDs for filtering other data
-  const filteredEventIds = new Set(filteredEvents.map((e) => e.id));
+    // Filter work categories to only include those belonging to filtered events
+    const filteredWorkCategories = workCategories.filter((wc) =>
+      filteredEventIds.has(wc.eventId)
+    );
 
-  // Filter work categories to only include those belonging to filtered events
-  const filteredWorkCategories = workCategories.filter((wc) =>
-    filteredEventIds.has(wc.eventId)
-  );
+    // Filter allocations to only include those belonging to filtered events
+    const filteredAllocations = allocations.filter((a) =>
+      filteredEventIds.has(a.eventId)
+    );
 
-  // Filter allocations to only include those belonging to filtered events
-  const filteredAllocations = allocations.filter((a) =>
-    filteredEventIds.has(a.eventId)
-  );
+    // Filter evaluation data to only include work categories in the filtered set
+    const filteredWorkCategoryIds = new Set(filteredWorkCategories.map((wc) => wc.id));
+    const filteredEvaluation: Evaluation = {
+      dailyDemand: evaluation.dailyDemand.filter((dd) => {
+        // Filter daily demand by date range if active
+        if (activeDateRange.startDate && activeDateRange.endDate) {
+          return dd.date >= activeDateRange.startDate && dd.date <= activeDateRange.endDate;
+        }
+        return true;
+      }),
+      dailyCapacityComparison: evaluation.dailyCapacityComparison.filter((dcc) => {
+        // Filter daily capacity comparison by date range if active
+        if (activeDateRange.startDate && activeDateRange.endDate) {
+          return dcc.date >= activeDateRange.startDate && dcc.date <= activeDateRange.endDate;
+        }
+        return true;
+      }),
+      workCategoryPressure: evaluation.workCategoryPressure.filter((wcp) =>
+        filteredWorkCategoryIds.has(wcp.workCategoryId)
+      ),
+    };
 
-  // Filter evaluation data to only include work categories in the filtered set
-  const filteredWorkCategoryIds = new Set(filteredWorkCategories.map((wc) => wc.id));
-  const filteredEvaluation: Evaluation = {
-    dailyDemand: evaluation.dailyDemand.filter((dd) => {
-      // Filter daily demand by date range if active
-      if (activeDateRange.startDate && activeDateRange.endDate) {
-        return dd.date >= activeDateRange.startDate && dd.date <= activeDateRange.endDate;
-      }
-      return true;
-    }),
-    dailyCapacityComparison: evaluation.dailyCapacityComparison.filter((dcc) => {
-      // Filter daily capacity comparison by date range if active
-      if (activeDateRange.startDate && activeDateRange.endDate) {
-        return dcc.date >= activeDateRange.startDate && dcc.date <= activeDateRange.endDate;
-      }
-      return true;
-    }),
-    workCategoryPressure: evaluation.workCategoryPressure.filter((wcp) =>
-      filteredWorkCategoryIds.has(wcp.workCategoryId)
-    ),
-  };
+    // Filter events array to match filteredEvents (for PlanningBoardGrid which expects Event[])
+    const filteredEventsArray = events.filter((e) => filteredEventIds.has(e.id));
 
-  // Filter events array to match filteredEvents (for PlanningBoardGrid which expects Event[])
-  const filteredEventsArray = events.filter((e) => filteredEventIds.has(e.id));
+    // Filter eventLocations to only include those for filtered events
+    const filteredEventLocations = eventLocations.filter((el) =>
+      filteredEventIds.has(el.eventId)
+    );
 
-  // Filter eventLocations to only include those for filtered events
-  const filteredEventLocations = eventLocations.filter((el) =>
-    filteredEventIds.has(el.eventId)
-  );
+    // Filter drafts to only include those for filtered work categories
+    const filteredDrafts = drafts.filter((d) =>
+      filteredWorkCategoryIds.has(d.workCategoryId)
+    );
 
-  // Filter drafts to only include those for filtered work categories
-  const filteredDrafts = drafts.filter((d) =>
-    filteredWorkCategoryIds.has(d.workCategoryId)
-  );
-
-  // Filter errorsByCellKey to only include those for filtered work categories
-  const filteredErrorsByCellKey: Record<string, string> = {};
-  for (const [cellKey, error] of Object.entries(errorsByCellKey)) {
-    const [workCategoryId] = cellKey.split('::');
-    if (filteredWorkCategoryIds.has(workCategoryId)) {
-      filteredErrorsByCellKey[cellKey] = error;
-    }
-  }
-
-  // Calculate date range spanning all events, constrained by date range filter
-  let minDate: string | null = null;
-  let maxDate: string | null = null;
-
-  if (activeDateRange.startDate && activeDateRange.endDate) {
-    // Use the date range filter as the bounds
-    minDate = activeDateRange.startDate;
-    maxDate = activeDateRange.endDate;
-  } else {
-    // No date range filter - calculate from filtered events
-    for (const event of filteredEventsArray) {
-      const range = resolveVisibleDateRange(event);
-      if (!minDate || range.startDate < minDate) {
-        minDate = range.startDate;
-      }
-      if (!maxDate || range.endDate > maxDate) {
-        maxDate = range.endDate;
+    // Filter errorsByCellKey to only include those for filtered work categories
+    const filteredErrorsByCellKey: Record<string, string> = {};
+    for (const [cellKey, error] of Object.entries(errorsByCellKey)) {
+      const [workCategoryId] = cellKey.split('::');
+      if (filteredWorkCategoryIds.has(workCategoryId)) {
+        filteredErrorsByCellKey[cellKey] = error;
       }
     }
-  }
 
-  // Generate dates array
-  const dates: string[] = [];
-  if (minDate && maxDate) {
-    const start = new Date(minDate);
-    const end = new Date(maxDate);
-    const current = new Date(start);
-    while (current <= end) {
-      dates.push(current.toISOString().split("T")[0]);
-      current.setDate(current.getDate() + 1);
+    return {
+      events: filtered,
+      eventsArray: filteredEventsArray,
+      workCategories: filteredWorkCategories,
+      allocations: filteredAllocations,
+      evaluation: filteredEvaluation,
+      eventLocations: filteredEventLocations,
+      drafts: filteredDrafts,
+      errorsByCellKey: filteredErrorsByCellKey,
+    };
+  }, [
+    unifiedEvents,
+    events,
+    workCategories,
+    allocations,
+    evaluation,
+    eventLocations,
+    drafts,
+    errorsByCellKey,
+    selectedEventIds,
+    selectedLocationIds,
+    activeDateRange,
+  ]);
+
+  // Memoize date range and dates array calculation for performance (Phase 1.2)
+  const { dates, minDate, maxDate } = useMemo(() => {
+    let min: string | null = null;
+    let max: string | null = null;
+
+    if (activeDateRange.startDate && activeDateRange.endDate) {
+      // Use the date range filter as the bounds
+      min = activeDateRange.startDate;
+      max = activeDateRange.endDate;
+    } else {
+      // No date range filter - calculate from filtered events
+      for (const event of filteredData.eventsArray) {
+        const range = resolveVisibleDateRange(event);
+        if (!min || range.startDate < min) {
+          min = range.startDate;
+        }
+        if (!max || range.endDate > max) {
+          max = range.endDate;
+        }
+      }
     }
-  }
 
-  // Timeline layout contract - shared between all components
-  const timeline: TimelineLayout = {
+    // Generate dates array
+    const datesArray: string[] = [];
+    if (min && max) {
+      const start = new Date(min);
+      const end = new Date(max);
+      const current = new Date(start);
+      while (current <= end) {
+        datesArray.push(current.toISOString().split("T")[0]);
+        current.setDate(current.getDate() + 1);
+      }
+    }
+
+    return { dates: datesArray, minDate: min, maxDate: max };
+  }, [activeDateRange, filteredData.eventsArray]);
+
+  // Memoize timeline layout object for performance (Phase 1.3)
+  const timeline: TimelineLayout = useMemo(() => ({
     dates,
     dateColumnWidth: TIMELINE_DATE_COLUMN_WIDTH,
     timelineOriginPx: TIMELINE_ORIGIN_PX,
-  };
+  }), [dates]);
 
   // Calculate scroll width for horizontal scroll containers
   const timelineWidth = dates.length * TIMELINE_DATE_COLUMN_WIDTH;
@@ -838,6 +816,54 @@ export default function WorkspacePage() {
     zIndex: 3,
     backgroundColor: '#fff',
   });
+
+  // Loading state - must be after all hooks
+  if (isLoading) {
+    return (
+      <div style={{
+        padding: "20px",
+        backgroundColor: "#fafafa",
+        border: "2px solid #666",
+        margin: "20px",
+        color: "#000",
+        fontSize: "16px",
+      }}>
+        Loading...
+      </div>
+    );
+  }
+
+  // Error state (non-blocking) - must be after all hooks
+  if (error) {
+    return (
+      <div style={{
+        padding: "20px",
+        backgroundColor: "#f5f5f5",
+        border: "2px solid #000",
+        margin: "20px",
+        color: "#000",
+        fontSize: "16px",
+      }}>
+        Error: {error}
+      </div>
+    );
+  }
+
+  // No events available - must be after all hooks
+  if (events.length === 0 && !isLoading) {
+    return (
+      <div style={{
+        padding: "20px",
+        backgroundColor: "#fafafa",
+        border: "2px solid #666",
+        margin: "20px",
+        color: "#000",
+        fontSize: "16px",
+      }}>
+        No active events
+      </div>
+    );
+  }
 
   return (
     <div
@@ -948,7 +974,7 @@ export default function WorkspacePage() {
                 scrollBehavior: "auto" as const,
               }}
             >
-              <EventCalendar events={filteredEvents} timeline={timeline} />
+              <EventCalendar events={filteredData.events} timeline={timeline} />
             </div>
           </div>
 
@@ -1097,16 +1123,16 @@ export default function WorkspacePage() {
             >
               <PlanningBoardGrid
                 hideHeader={true}
-                events={filteredEventsArray}
+                events={filteredData.eventsArray}
                 locations={locations}
-                eventLocations={filteredEventLocations}
+                eventLocations={filteredData.eventLocations}
                 dates={dates}
                 timeline={timeline}
-                workCategories={filteredWorkCategories}
-                allocations={filteredAllocations}
-                evaluation={filteredEvaluation}
-                drafts={filteredDrafts}
-                errorsByCellKey={filteredErrorsByCellKey}
+                workCategories={filteredData.workCategories}
+                allocations={filteredData.allocations}
+                evaluation={filteredData.evaluation}
+                drafts={filteredData.drafts}
+                errorsByCellKey={filteredData.errorsByCellKey}
                 onStartCreate={startCreateAllocation}
                 onStartEdit={startEditAllocation}
                 onChangeDraft={changeDraft}
