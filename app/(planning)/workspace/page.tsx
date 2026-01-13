@@ -172,7 +172,7 @@ export default function WorkspacePage() {
   // Refs for measuring sticky header heights
   const eventCalendarContainerRef = useRef<HTMLDivElement>(null);
   const crossEventContainerRef = useRef<HTMLDivElement>(null);
-  
+
   // Use ResizeObserver to reactively measure element heights
   const eventCalendarHeight = useElementHeight(eventCalendarContainerRef, 0);
   const crossEventHeight = useElementHeight(
@@ -180,7 +180,7 @@ export default function WorkspacePage() {
     0,
     crossEventEvaluation.crossEventDailyDemand.length > 0
   );
-  
+
   // Calculate sticky top offsets based on measured heights (with validation)
   const crossEventTop = Math.max(0, eventCalendarHeight);
   const planningGridHeaderTop = Math.max(
@@ -355,7 +355,7 @@ export default function WorkspacePage() {
     requestAnimationFrame(() => {
       // Double-check refs still exist (component might have unmounted)
       const validRefs = targetRefs.filter(ref => ref.current !== null && ref.current !== undefined);
-      
+
       validRefs.forEach(ref => {
         const element = ref.current;
         if (!element) return;
@@ -869,7 +869,7 @@ export default function WorkspacePage() {
       style={{
         padding: "var(--space-xl)",
         maxWidth: "100%",
-        backgroundColor: "var(--bg-secondary)",
+        backgroundColor: "var(--bg-primary)",
         height: "100vh",
         overflow: "hidden",
         display: "flex",
