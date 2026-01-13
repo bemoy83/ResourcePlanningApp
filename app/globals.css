@@ -1,0 +1,289 @@
+/* ============================================
+   CSS Custom Properties (Design Tokens)
+   ============================================ */
+
+:root {
+  /* === Color Palette === */
+
+  /* Background Colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: #fafafa;
+  --bg-tertiary: #f5f5f5;
+  --bg-elevated: #ffffff;
+
+  /* Text Colors */
+  --text-primary: #000000;
+  --text-secondary: #333333;
+  --text-tertiary: #666666;
+  --text-inverse: #ffffff;
+
+  /* Border Colors */
+  --border-primary: #999999;
+  --border-secondary: #cccccc;
+  --border-strong: #666666;
+  --border-emphasis: #333333;
+
+  /* Surface Colors (for different event phases, cards, panels) */
+  --surface-default: #ffffff;
+  --surface-hover: #f8f8f8;
+  --surface-active: #f0f0f0;
+  --surface-disabled: #e5e5e5;
+
+  /* Event Phase Colors */
+  --phase-planning: #e3f2fd;
+  --phase-execution: #fff3e0;
+  --phase-review: #f3e5f5;
+  --phase-completed: #e8f5e9;
+
+  /* Status Colors */
+  --status-success: #4caf50;
+  --status-warning: #ff9800;
+  --status-error: #f44336;
+  --status-info: #2196f3;
+
+  /* Capacity Indicators */
+  --capacity-over: #ffebee;
+  --capacity-over-text: #c62828;
+  --capacity-under: #fff9c4;
+  --capacity-under-text: #2e7d32;
+  --capacity-balanced: #e8f5e9;
+
+  /* Interactive States */
+  --interactive-hover: #f5f5f5;
+  --interactive-active: #e0e0e0;
+  --interactive-focus: #2196f3;
+
+  /* Calendar Specific */
+  --calendar-weekend-bg: #f7f7f7;
+  --calendar-holiday-bg: #ffe7e7;
+  --calendar-header-bg: #e0e0e0;
+  --calendar-span-bg: #e0e0e0;
+
+  /* === Spacing === */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-10: 10px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 20px;
+  --space-2xl: 24px;
+
+  /* === Border Radius === */
+  --radius-none: 0;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
+  --radius-full: 9999px;
+
+  /* === Borders === */
+  --border-width-thin: 1px;
+  --border-width-medium: 2px;
+  --border-width-thick: 3px;
+
+  /* === Shadows === */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.15);
+  --shadow-xl: 0 8px 16px rgba(0, 0, 0, 0.2);
+
+  /* === Typography === */
+  --font-size-xs: 10px;
+  --font-size-sm: 12px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 20px;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* === Layout === */
+  --header-height: 60px;
+  --sidebar-width: 240px;
+  --row-min-height: 46px;
+
+  /* === Transitions === */
+  --transition-fast: 150ms ease-in-out;
+  --transition-normal: 250ms ease-in-out;
+  --transition-slow: 350ms ease-in-out;
+
+  /* === Z-Index Scale === */
+  --z-base: 1;
+  --z-sticky-column: 3;
+  --z-sticky-header: 8;
+  --z-sticky-cross-event: 9;
+  --z-sticky-calendar: 10;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-popover: 600;
+  --z-tooltip: 700;
+}
+
+/* ============================================
+   Dark Theme
+   ============================================ */
+
+[data-theme="dark"] {
+  /* Background Colors */
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #242424;
+  --bg-tertiary: #2d2d2d;
+  --bg-elevated: #2d2d2d;
+
+  /* Text Colors */
+  --text-primary: #ffffff;
+  --text-secondary: #e0e0e0;
+  --text-tertiary: #b0b0b0;
+  --text-inverse: #000000;
+
+  /* Border Colors */
+  --border-primary: #404040;
+  --border-secondary: #333333;
+  --border-strong: #555555;
+  --border-emphasis: #666666;
+
+  /* Surface Colors */
+  --surface-default: #2d2d2d;
+  --surface-hover: #353535;
+  --surface-active: #404040;
+  --surface-disabled: #1f1f1f;
+
+  /* Event Phase Colors (darker versions) */
+  --phase-planning: #1e3a5f;
+  --phase-execution: #5f4a1e;
+  --phase-review: #4a1e5f;
+  --phase-completed: #1e5f2e;
+
+  /* Status Colors (adjusted for dark theme) */
+  --status-success: #66bb6a;
+  --status-warning: #ffa726;
+  --status-error: #ef5350;
+  --status-info: #42a5f5;
+
+  /* Capacity Indicators */
+  --capacity-over: #5f1e1e;
+  --capacity-over-text: #ff6b6b;
+  --capacity-under: #5f5a1e;
+  --capacity-under-text: #66bb6a;
+  --capacity-balanced: #1e5f2e;
+
+  /* Interactive States */
+  --interactive-hover: #353535;
+  --interactive-active: #404040;
+  --interactive-focus: #42a5f5;
+
+  /* Calendar Specific */
+  --calendar-weekend-bg: #1f1f1f;
+  --calendar-holiday-bg: #5f2e2e;
+  --calendar-header-bg: #353535;
+  --calendar-span-bg: #404040;
+
+  /* Shadows (more prominent in dark mode) */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 8px 16px rgba(0, 0, 0, 0.6);
+}
+
+/* ============================================
+   Minimal Base Styles
+   ============================================ */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  /* Smooth color transitions when switching themes */
+  transition: background-color var(--transition-normal), color var(--transition-normal);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================
+   Utility Classes (Optional)
+   ============================================ */
+
+/* Text utilities */
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-tertiary { color: var(--text-tertiary); }
+
+/* Background utilities */
+.bg-primary { background-color: var(--bg-primary); }
+.bg-secondary { background-color: var(--bg-secondary); }
+.bg-tertiary { background-color: var(--bg-tertiary); }
+
+/* Border utilities */
+.border { border: var(--border-width-thin) solid var(--border-primary); }
+.border-strong { border: var(--border-width-medium) solid var(--border-strong); }
+
+/* Radius utilities */
+.rounded-sm { border-radius: var(--radius-sm); }
+.rounded-md { border-radius: var(--radius-md); }
+.rounded-lg { border-radius: var(--radius-lg); }
+
+/* Shadow utilities */
+.shadow-sm { box-shadow: var(--shadow-sm); }
+.shadow-md { box-shadow: var(--shadow-md); }
+.shadow-lg { box-shadow: var(--shadow-lg); }
+
+/* ============================================
+   Component-Specific Patterns
+   ============================================ */
+
+/* Scrollbar styling (minimal, theme-aware) */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: var(--radius-md);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-primary) var(--bg-tertiary);
+}
+
+/* Focus outline styling */
+:focus-visible {
+  outline: 2px solid var(--interactive-focus);
+  outline-offset: 2px;
+}
+
+/* Selection styling */
+::selection {
+  background-color: var(--interactive-focus);
+  color: var(--text-inverse);
+}

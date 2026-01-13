@@ -47,8 +47,8 @@ interface EventRow {
   rangeEndMs: number;
 }
 
-const CELL_BORDER_WIDTH = 1;
-const ROW_LAYER_HEIGHT = 24;
+const CELL_BORDER_WIDTH = 1; // Keep as number for calculations
+const ROW_LAYER_HEIGHT = 24; // Keep as number for calculations
 
 // Tooltip component for event phase information
 function EventPhaseTooltip({ tooltip }: { tooltip: TooltipState | null }) {
@@ -80,20 +80,20 @@ function EventPhaseTooltip({ tooltip }: { tooltip: TooltipState | null }) {
         position: 'fixed',
         top: `${tooltip.position.top}px`,
         left: `${tooltip.position.left}px`,
-        backgroundColor: '#333',
-        color: '#fff',
-        padding: '8px 12px',
-        borderRadius: '4px',
-        fontSize: '12px',
-        zIndex: 10000, // Very high z-index to ensure it's above everything
-        boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+        backgroundColor: 'var(--text-secondary)',
+        color: 'var(--text-inverse)',
+        padding: 'var(--space-sm) var(--space-md)',
+        borderRadius: 'var(--radius-md)',
+        fontSize: 'var(--font-size-sm)',
+        zIndex: 'var(--z-tooltip)' as any,
+        boxShadow: 'var(--shadow-md)',
         pointerEvents: 'none',
         maxWidth: '250px',
-        lineHeight: '1.5',
+        lineHeight: 'var(--line-height-normal)',
         whiteSpace: 'nowrap',
       }}
     >
-      <div style={{ fontWeight: 'bold', marginBottom: '4px', borderBottom: '1px solid #555', paddingBottom: '4px' }}>
+      <div style={{ fontWeight: 'var(--font-weight-bold)', marginBottom: 'var(--space-xs)', borderBottom: 'var(--border-width-thin) solid var(--border-strong)', paddingBottom: 'var(--space-xs)' }}>
         {tooltip.content.eventName}
       </div>
       <div style={{ marginBottom: '2px' }}>
@@ -161,8 +161,9 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
     return buildDateFlags(dates);
   }, [dates, timeline.dateMeta]);
 
-  const weekendBackground = "#f7f7f7";
-  const holidayBackground = "#ffe7e7";
+  // Using CSS variables for theme-aware backgrounds
+  const weekendBackground = "var(--calendar-weekend-bg)";
+  const holidayBackground = "var(--calendar-holiday-bg)";
 
   // Calculate day count between two dates
   const calculateDayCount = (startDate: string, endDate: string): number => {
@@ -410,13 +411,13 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
 
   // Grid styling
   const gridTemplateColumns = leftColumnsTemplate;
-  const cellStyle = {
-    border: `${CELL_BORDER_WIDTH}px solid #999`,
-    padding: '8px',
+  const cellStyle: React.CSSProperties = {
+    border: `${CELL_BORDER_WIDTH}px solid var(--border-primary)`,
+    padding: 'var(--space-sm)',
     textAlign: 'center' as const,
     fontSize: '11px',
-    backgroundColor: '#fff',
-    color: '#000',
+    backgroundColor: 'var(--surface-default)',
+    color: 'var(--text-primary)',
     boxSizing: 'border-box' as const,
   };
 
@@ -428,19 +429,19 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
       <header style={{
         display: 'grid',
         gridTemplateColumns,
-        backgroundColor: '#e0e0e0',
-        fontWeight: 'bold',
-        border: '2px solid #666',
+        backgroundColor: 'var(--calendar-header-bg)',
+        fontWeight: 'var(--font-weight-bold)',
+        border: `var(--border-width-medium) solid var(--border-strong)`,
         position: 'sticky',
         top: 0,
-        zIndex: 4,
+        zIndex: 'var(--z-sticky-column)' as any,
       }}>
         <div style={{
           ...cellStyle,
           position: 'sticky',
           left: 0,
-          zIndex: 3,
-          backgroundColor: '#fff',
+          zIndex: 'var(--z-sticky-column)' as any,
+          backgroundColor: 'var(--surface-default)',
         }}>Location</div>
         <div style={{
           position: 'absolute',
@@ -455,7 +456,7 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
               ? holidayBackground
               : dateFlags?.isWeekend
               ? weekendBackground
-              : "#fff";
+              : "var(--surface-default)";
             return (
               <div
                 key={date}
@@ -477,7 +478,7 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
       </header>
 
       {/* Location groups with event rows stacked only when overlapping */}
-      <div style={{ border: '1px solid #666' }}>
+      <div style={{ border: `var(--border-width-thin) solid var(--border-strong)` }}>
         {locations.map((location) => {
           const eventRows = locationEventRows[location.id] || [];
 
@@ -495,7 +496,7 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
               style={{
                 display: 'grid',
                 gridTemplateColumns,
-                borderBottom: '2px solid #666',
+                borderBottom: `var(--border-width-medium) solid var(--border-strong)`,
                 position: 'relative',
                 height: `${rowHeight}px`,
                 boxSizing: 'border-box',
@@ -504,12 +505,12 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
               <div style={{
                 ...cellStyle,
                 textAlign: 'right',
-                fontWeight: 'bold',
+                fontWeight: 'var(--font-weight-bold)',
                 fontSize: '11px',
-                backgroundColor: '#fff',
+                backgroundColor: 'var(--surface-default)',
                 position: 'sticky',
                 left: 0,
-                zIndex: 3,
+                zIndex: 'var(--z-sticky-column)' as any,
                 height: `${cellHeight}px`,
                 display: 'flex',
                 alignItems: 'center',
@@ -531,7 +532,8 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
                     ? holidayBackground
                     : dateFlags?.isWeekend
                     ? weekendBackground
-                    : "#fff";
+                    : "var(--surface-default)";
+                  
                   return (
                     <div
                       key={date}
@@ -545,7 +547,6 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
                         backgroundColor,
                       }}
                     >
-                      —
                     </div>
                   );
                 })}
@@ -587,21 +588,21 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
                           left: `${leftOffset}px`,
                           width: `${blockWidth}px`,
                           height: `${spanHeight}px`,
-                          backgroundColor: '#e0e0e0',
-                          border: `${CELL_BORDER_WIDTH}px solid #999`,
-                          padding: '8px',
-                          fontWeight: 'bold',
+                          backgroundColor: 'var(--calendar-span-bg)',
+                          border: `${CELL_BORDER_WIDTH}px solid var(--border-primary)`,
+                          padding: 'var(--space-sm)',
+                          fontWeight: 'var(--font-weight-bold)',
                           fontSize: '11px',
-                          color: '#000',
+                          color: 'var(--text-primary)',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
                           boxSizing: 'border-box',
-                          zIndex: 1,
+                          zIndex: 'var(--z-base)' as any,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          cursor: 'help',
+                          cursor: tooltipsEnabled ? 'help' : 'default',
                         }}
                         onMouseEnter={(e) => handleSpanMouseEnter(e, eventRow, span)}
                         onMouseMove={handleSpanMouseMove}

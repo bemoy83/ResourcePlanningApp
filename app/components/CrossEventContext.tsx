@@ -52,24 +52,23 @@ export const CrossEventContext = memo(function CrossEventContext({ crossEventEva
   const gridTemplateColumns = generateLeftColumnsTemplate(CROSS_EVENT_LEFT_COLUMNS);
   const timelineWidth = dates.length * dateColumnWidth;
   const scrollWidth = timelineOriginPx + timelineWidth;
-  const rowMinHeight = 46;
 
-  const cellStyle = {
-    border: `${CELL_BORDER_WIDTH}px solid #999`,
-    padding: '8px',
+  const cellStyle: React.CSSProperties = {
+    border: `${CELL_BORDER_WIDTH}px solid var(--border-primary)`,
+    padding: 'var(--space-sm)',
     textAlign: 'center' as const,
-    fontSize: '12px',
-    backgroundColor: '#fff',
-    color: '#000',
-    minHeight: `${rowMinHeight}px`,
+    fontSize: 'var(--font-size-sm)',
+    backgroundColor: 'var(--surface-default)',
+    color: 'var(--text-primary)',
+    minHeight: 'var(--row-min-height)',
     boxSizing: 'border-box' as const,
   };
 
   const stickyColumnStyle = (offset: number): React.CSSProperties => ({
     position: 'sticky',
     left: `${offset}px`,
-    zIndex: 3,
-    backgroundColor: '#fff',
+    zIndex: 'var(--z-sticky-column)' as any,
+    backgroundColor: 'var(--surface-default)',
   });
 
   // Memoize demand map for O(1) lookups (Phase 2.3)
@@ -97,16 +96,16 @@ export const CrossEventContext = memo(function CrossEventContext({ crossEventEva
     return buildDateFlags(dates);
   }, [dates, timeline.dateMeta]);
 
-  const weekendBackground = "#f7f7f7";
-  const holidayBackground = "#ffe7e7";
+  const weekendBackground = "var(--calendar-weekend-bg)";
+  const holidayBackground = "var(--calendar-holiday-bg)";
 
   return (
-    <section style={{ minWidth: `${scrollWidth}px`, marginBottom: '20px' }}>
+    <section style={{ minWidth: `${scrollWidth}px`, marginBottom: 'var(--space-xl)' }}>
       {/* Cross-event demand row */}
-      <footer style={{ display: 'grid', gridTemplateColumns, backgroundColor: '#e0e0e0', border: '2px solid #666', position: 'relative' }}>
-        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0]), fontWeight: 'bold', textAlign: 'right' }}>
+      <footer style={{ display: 'grid', gridTemplateColumns, backgroundColor: 'var(--calendar-header-bg)', border: 'var(--border-width-medium) solid var(--border-strong)', position: 'relative' }}>
+        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0]), fontWeight: 'var(--font-weight-bold)', textAlign: 'right' }}>
             <div style={{ textAlign: 'right' }}>Total Demand (All Events)</div>
-            <div style={{ fontSize: '10px', fontWeight: 'normal', color: '#666', textAlign: 'right' }}>aggregated</div>
+            <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-normal)', color: 'var(--text-tertiary)', textAlign: 'right' }}>aggregated</div>
           </div>
           <div style={{
             position: 'absolute',
@@ -126,7 +125,7 @@ export const CrossEventContext = memo(function CrossEventContext({ crossEventEva
                 ? holidayBackground
                 : dateFlags?.isWeekend
                 ? weekendBackground
-                : '#fff';
+                : 'var(--surface-default)';
 
               return (
                 <div key={date} style={{
@@ -136,9 +135,9 @@ export const CrossEventContext = memo(function CrossEventContext({ crossEventEva
                   top: 0,
                   width: `${dateColumnWidth}px`,
                   height: '100%',
-                  fontWeight: 'bold',
-                  color: hasIssue ? 'red' : 'inherit',
-                  backgroundColor: hasIssue ? '#fee' : baseBackground,
+                  fontWeight: 'var(--font-weight-bold)',
+                  color: hasIssue ? 'var(--capacity-over-text)' : 'inherit',
+                  backgroundColor: hasIssue ? 'var(--capacity-over)' : baseBackground,
                 }}>
                   {crossDemand && crossDemand.totalEffortHours > 0 ? `${crossDemand.totalEffortHours}h` : '—'}
                 </div>
@@ -149,10 +148,10 @@ export const CrossEventContext = memo(function CrossEventContext({ crossEventEva
 
         {/* Cross-event capacity comparison row */}
         {crossEventEvaluation.crossEventCapacityComparison.length > 0 && (
-          <footer style={{ display: 'grid', gridTemplateColumns, backgroundColor: '#e0e0e0', marginTop: '2px', border: '2px solid #666', position: 'relative' }}>
-          <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0]), fontWeight: 'bold', textAlign: 'right' }}>
+          <footer style={{ display: 'grid', gridTemplateColumns, backgroundColor: 'var(--calendar-header-bg)', marginTop: '2px', border: 'var(--border-width-medium) solid var(--border-strong)', position: 'relative' }}>
+          <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0]), fontWeight: 'var(--font-weight-bold)', textAlign: 'right' }}>
               <div style={{ textAlign: 'right' }}>Total Capacity Status</div>
-              <div style={{ fontSize: '10px', fontWeight: 'normal', color: '#666', textAlign: 'right' }}>demand vs capacity</div>
+              <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-normal)', color: 'var(--text-tertiary)', textAlign: 'right' }}>demand vs capacity</div>
             </div>
             <div style={{
               position: 'absolute',
@@ -168,7 +167,7 @@ export const CrossEventContext = memo(function CrossEventContext({ crossEventEva
                   ? holidayBackground
                   : dateFlags?.isWeekend
                   ? weekendBackground
-                  : '#fff';
+                  : 'var(--surface-default)';
                 if (!crossComparison || crossComparison.capacityHours === 0) {
                   return (
                     <div key={date} style={{
@@ -184,9 +183,9 @@ export const CrossEventContext = memo(function CrossEventContext({ crossEventEva
                 }
 
                 const statusStyle = crossComparison.isOverAllocated
-                  ? { ...cellStyle, backgroundColor: '#fee', color: 'red' }
+                  ? { ...cellStyle, backgroundColor: 'var(--capacity-over)', color: 'var(--capacity-over-text)' }
                   : crossComparison.isUnderAllocated
-                  ? { ...cellStyle, backgroundColor: '#efe', color: 'green' }
+                  ? { ...cellStyle, backgroundColor: 'var(--capacity-under)', color: 'var(--capacity-under-text)' }
                   : { ...cellStyle, backgroundColor: baseBackground };
 
                 return (
@@ -198,14 +197,14 @@ export const CrossEventContext = memo(function CrossEventContext({ crossEventEva
                     width: `${dateColumnWidth}px`,
                     height: '100%',
                   }} title={`All Events Demand: ${crossComparison.demandHours}h, Total Capacity: ${crossComparison.capacityHours}h`}>
-                    <div style={{ fontWeight: 'bold' }}>{crossComparison.capacityHours}h</div>
+                    <div style={{ fontWeight: 'var(--font-weight-bold)' }}>{crossComparison.capacityHours}h</div>
                     {crossComparison.isOverAllocated && (
-                      <div style={{ fontSize: '10px' }}>
+                      <div style={{ fontSize: 'var(--font-size-xs)' }}>
                         +{(crossComparison.demandHours - crossComparison.capacityHours).toFixed(1)}h over
                       </div>
                     )}
                     {crossComparison.isUnderAllocated && (
-                      <div style={{ fontSize: '10px' }}>
+                      <div style={{ fontSize: 'var(--font-size-xs)' }}>
                         {(crossComparison.capacityHours - crossComparison.demandHours).toFixed(1)}h free
                       </div>
                     )}

@@ -151,15 +151,14 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
   const gridTemplateColumns = generateLeftColumnsTemplate(LEFT_COLUMNS);
   const timelineWidth = dates.length * dateColumnWidth;
   const scrollWidth = timelineOriginPx + timelineWidth;
-  const rowMinHeight = 46;
-  const cellStyle = {
-    border: '1px solid #999',
-    padding: '8px',
+  const cellStyle: React.CSSProperties = {
+    border: 'var(--border-width-thin) solid var(--border-primary)',
+    padding: 'var(--space-sm)',
     textAlign: 'center' as const,
-    fontSize: '12px',
-    backgroundColor: '#fff',
-    color: '#000',
-    minHeight: `${rowMinHeight}px`,
+    fontSize: 'var(--font-size-sm)',
+    backgroundColor: 'var(--surface-default)',
+    color: 'var(--text-primary)',
+    minHeight: 'var(--row-min-height)',
     boxSizing: 'border-box' as const,
   };
 
@@ -188,14 +187,14 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
     return buildDateFlags(dates);
   }, [dates, timeline?.dateMeta]);
 
-  const weekendBackground = "#f7f7f7";
-  const holidayBackground = "#ffe7e7";
+  const weekendBackground = "var(--calendar-weekend-bg)";
+  const holidayBackground = "var(--calendar-holiday-bg)";
 
   const stickyColumnStyle = (offset: number): React.CSSProperties => ({
     position: 'sticky',
     left: `${offset}px`,
-    zIndex: 3,
-    backgroundColor: '#fff',
+    zIndex: 'var(--z-sticky-column)' as any,
+    backgroundColor: 'var(--surface-default)',
   });
 
   const emptyRows = (() => {
@@ -257,12 +256,12 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
             style={{
               display: 'grid',
               gridTemplateColumns,
-              backgroundColor: '#fff',
-              fontWeight: 'bold',
-              border: '2px solid #666',
+              backgroundColor: 'var(--surface-default)',
+              fontWeight: 'var(--font-weight-bold)',
+              border: 'var(--border-width-medium) solid var(--border-strong)',
               position: 'sticky',
               top: 0,
-              zIndex: 2,
+              zIndex: 'var(--z-sticky)' as any,
             }}
           >
             <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0]) }}>
@@ -273,15 +272,15 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
             </div>
             <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[2]) }}>
               <div>Estimate</div>
-              <div style={{ fontSize: '10px', fontWeight: 'normal' }}>total hours</div>
+              <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-normal)' }}>total hours</div>
             </div>
             <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[3]) }}>
               <div>Allocated</div>
-              <div style={{ fontSize: '10px', fontWeight: 'normal' }}>total hours</div>
+              <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-normal)' }}>total hours</div>
             </div>
             <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[4]) }}>
               <div>Remaining</div>
-              <div style={{ fontSize: '10px', fontWeight: 'normal' }}>to allocate</div>
+              <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-normal)' }}>to allocate</div>
             </div>
             <div style={{
               position: 'absolute',
@@ -296,7 +295,7 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
                   ? holidayBackground
                   : dateFlags?.isWeekend
                   ? weekendBackground
-                  : '#fff';
+                  : 'var(--surface-default)';
                 return (
                   <div
                     key={date}
@@ -330,7 +329,7 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
           }}
         >
           {/* Work category rows */}
-          <div style={{ border: '1px solid #666' }}>
+          <div style={{ border: 'var(--border-width-thin) solid var(--border-strong)' }}>
             {workCategories.map((workCategory) => {
               const pressure = pressureMap.get(workCategory.id);
               const allocatedTotal = allocations
@@ -377,7 +376,7 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
               >
                 <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0]) }}>
                   <div>{row.eventName}</div>
-                  <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
+                  <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', marginTop: '2px' }}>
                     {row.locationName}
                   </div>
                 </div>
@@ -386,14 +385,14 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
                   ...cellStyle,
                   ...stickyColumnStyle(leftColumnOffsets[1]),
                   fontStyle: 'italic',
-                  color: '#666',
+                  color: 'var(--text-tertiary)',
                 }}>
                   (No work defined yet)
                 </div>
 
-                <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[2]), color: '#999' }}>—</div>
-                <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[3]), color: '#999' }}>—</div>
-                <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[4]), color: '#999' }}>—</div>
+                <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[2]), color: 'var(--border-primary)' }}>—</div>
+                <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[3]), color: 'var(--border-primary)' }}>—</div>
+                <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[4]), color: 'var(--border-primary)' }}>—</div>
 
                 <div style={{
                   position: 'absolute',
@@ -408,7 +407,7 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
                       ? holidayBackground
                       : dateFlags?.isWeekend
                       ? weekendBackground
-                      : '#fff';
+                      : 'var(--surface-default)';
                     return (
                       <div
                         key={`${row.eventId}-${row.locationId}-${date}`}
@@ -431,14 +430,14 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
 
           {/* Capacity comparison row */}
           {evaluation.dailyCapacityComparison.length > 0 && (
-            <footer style={{ display: 'grid', gridTemplateColumns, backgroundColor: '#e0e0e0', marginTop: '2px', border: '2px solid #666', position: 'relative' }}>
+            <footer style={{ display: 'grid', gridTemplateColumns, backgroundColor: 'var(--calendar-header-bg)', marginTop: '2px', border: 'var(--border-width-medium) solid var(--border-strong)', position: 'relative' }}>
               <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0]) }}></div>
               <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[1]) }}></div>
               <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[2]) }}></div>
               <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[3]) }}></div>
-              <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[4]), fontWeight: 'bold' }}>
+              <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[4]), fontWeight: 'var(--font-weight-bold)' }}>
                 <div>Capacity</div>
-                <div style={{ fontSize: '10px', fontWeight: 'normal', color: '#666' }}>available per day</div>
+                <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-normal)', color: 'var(--text-tertiary)' }}>available per day</div>
               </div>
               <div style={{
                 position: 'absolute',
@@ -454,7 +453,7 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
                     ? holidayBackground
                     : dateFlags?.isWeekend
                     ? weekendBackground
-                    : '#fff';
+                    : 'var(--surface-default)';
                   if (!comparison || comparison.capacityHours === 0) {
                     return (
                       <div
@@ -475,9 +474,9 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
                   }
 
                   const statusStyle = comparison.isOverAllocated
-                    ? { ...cellStyle, backgroundColor: '#fee', color: 'red' }
+                    ? { ...cellStyle, backgroundColor: 'var(--capacity-over)', color: 'var(--capacity-over-text)' }
                     : comparison.isUnderAllocated
-                      ? { ...cellStyle, backgroundColor: '#efe', color: 'green' }
+                      ? { ...cellStyle, backgroundColor: 'var(--capacity-under)', color: 'var(--capacity-under-text)' }
                       : { ...cellStyle, backgroundColor: baseBackground };
 
                   return (
@@ -489,14 +488,14 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
                       width: `${dateColumnWidth}px`,
                       height: '100%',
                     }} title={`Demand: ${comparison.demandHours}h, Capacity: ${comparison.capacityHours}h`}>
-                      <div style={{ fontWeight: 'bold' }}>{comparison.capacityHours}h</div>
+                      <div style={{ fontWeight: 'var(--font-weight-bold)' }}>{comparison.capacityHours}h</div>
                       {comparison.isOverAllocated && (
-                        <div style={{ fontSize: '10px' }}>
+                        <div style={{ fontSize: 'var(--font-size-xs)' }}>
                           +{(comparison.demandHours - comparison.capacityHours).toFixed(1)}h over
                         </div>
                       )}
                       {comparison.isUnderAllocated && (
-                        <div style={{ fontSize: '10px' }}>
+                        <div style={{ fontSize: 'var(--font-size-xs)' }}>
                           {(comparison.capacityHours - comparison.demandHours).toFixed(1)}h free
                         </div>
                       )}

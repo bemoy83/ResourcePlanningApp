@@ -9,6 +9,7 @@ import { LocationFilter } from "../../components/LocationFilter";
 import { EventFilter } from "../../components/EventFilter";
 import { DateRangeChipFilter, DateRangePreset, DateRange, getDateRangeFromPreset } from "../../components/DateRangeChipFilter";
 import { TooltipToggle, useTooltipPreference } from "../../components/TooltipToggle";
+import { ThemeToggle } from "../../components/ThemeToggle";
 import { UnifiedEvent } from "@/types/calendar";
 import {
   LEFT_COLUMNS,
@@ -807,34 +808,33 @@ export default function WorkspacePage() {
   // PlanningBoardGrid header configuration (using shared constants)
   const leftColumnOffsets = calculateLeftColumnOffsets(LEFT_COLUMNS);
   const gridTemplateColumns = generateLeftColumnsTemplate(LEFT_COLUMNS);
-  const rowMinHeight = 46;
-  const cellStyle = {
-    border: '1px solid #999',
-    padding: '8px',
+  const cellStyle: React.CSSProperties = {
+    border: `var(--border-width-thin) solid var(--border-primary)`,
+    padding: 'var(--space-sm)',
     textAlign: 'center' as const,
-    fontSize: '12px',
-    backgroundColor: '#fff',
-    color: '#000',
-    minHeight: `${rowMinHeight}px`,
+    fontSize: 'var(--font-size-sm)',
+    backgroundColor: 'var(--surface-default)',
+    color: 'var(--text-primary)',
+    minHeight: 'var(--row-min-height)',
     boxSizing: 'border-box' as const,
   };
   const stickyColumnStyle = (offset: number): React.CSSProperties => ({
     position: 'sticky',
     left: `${offset}px`,
-    zIndex: 3,
-    backgroundColor: '#fff',
+    zIndex: 'var(--z-sticky-column)' as any,
+    backgroundColor: 'var(--surface-default)',
   });
 
   // Loading state - must be after all hooks
   if (isLoading) {
     return (
       <div style={{
-        padding: "20px",
-        backgroundColor: "#fafafa",
-        border: "2px solid #666",
-        margin: "20px",
-        color: "#000",
-        fontSize: "16px",
+        padding: "var(--space-xl)",
+        backgroundColor: "var(--bg-secondary)",
+        border: "var(--border-width-medium) solid var(--border-strong)",
+        margin: "var(--space-xl)",
+        color: "var(--text-primary)",
+        fontSize: "var(--font-size-lg)",
       }}>
         Loading...
       </div>
@@ -845,12 +845,12 @@ export default function WorkspacePage() {
   if (error) {
     return (
       <div style={{
-        padding: "20px",
-        backgroundColor: "#f5f5f5",
-        border: "2px solid #000",
-        margin: "20px",
-        color: "#000",
-        fontSize: "16px",
+        padding: "var(--space-xl)",
+        backgroundColor: "var(--bg-tertiary)",
+        border: "var(--border-width-medium) solid var(--text-primary)",
+        margin: "var(--space-xl)",
+        color: "var(--text-primary)",
+        fontSize: "var(--font-size-lg)",
       }}>
         Error: {error}
       </div>
@@ -861,12 +861,12 @@ export default function WorkspacePage() {
   if (events.length === 0 && !isLoading) {
     return (
       <div style={{
-        padding: "20px",
-        backgroundColor: "#fafafa",
-        border: "2px solid #666",
-        margin: "20px",
-        color: "#000",
-        fontSize: "16px",
+        padding: "var(--space-xl)",
+        backgroundColor: "var(--bg-secondary)",
+        border: "var(--border-width-medium) solid var(--border-strong)",
+        margin: "var(--space-xl)",
+        color: "var(--text-primary)",
+        fontSize: "var(--font-size-lg)",
       }}>
         No active events
       </div>
@@ -876,9 +876,9 @@ export default function WorkspacePage() {
   return (
     <div
       style={{
-        padding: "20px",
+        padding: "var(--space-xl)",
         maxWidth: "100%",
-        backgroundColor: "#fafafa",
+        backgroundColor: "var(--bg-secondary)",
         height: "100vh",
         overflow: "hidden",
         display: "flex",
@@ -887,15 +887,15 @@ export default function WorkspacePage() {
       }}
     >
       <PlanningToolbar>
-        <div style={{ marginBottom: "16px" }}>
-          <h1 style={{ marginBottom: "8px", color: "#000", borderBottom: "2px solid #333", paddingBottom: "8px" }}>
+        <div style={{ marginBottom: "var(--space-lg)" }}>
+          <h1 style={{ marginBottom: "var(--space-sm)", color: "var(--text-primary)", borderBottom: "var(--border-width-medium) solid var(--border-emphasis)", paddingBottom: "var(--space-sm)" }}>
             Planning Workspace
           </h1>
 
-          <div style={{ fontSize: "14px", color: "#333", marginBottom: "8px" }}>
+          <div style={{ fontSize: "var(--font-size-md)", color: "var(--text-secondary)", marginBottom: "var(--space-sm)" }}>
             <strong>Unified Planning View</strong> - Event calendar and planning grid synchronized
           </div>
-          <div style={{ marginBottom: "8px", fontSize: "12px", color: "#666" }}>
+          <div style={{ marginBottom: "var(--space-sm)", fontSize: "var(--font-size-sm)", color: "var(--text-tertiary)" }}>
             {events.length} event{events.length !== 1 ? 's' : ''} | {workCategories.length} work categor{workCategories.length !== 1 ? 'ies' : 'y'} | {locations.length} location{locations.length !== 1 ? 's' : ''}
           </div>
         </div>
@@ -917,12 +917,13 @@ export default function WorkspacePage() {
                   onSelectionChange={setSelectedLocationIds}
                 />
               )}
-              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center" }}>
+              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "var(--space-md)" }}>
                 <TooltipToggle enabled={tooltipsEnabled} onChange={setTooltipsEnabled} />
+                <ThemeToggle />
               </div>
             </FilterBar>
 
-            <div style={{ marginBottom: "12px" }}>
+            <div style={{ marginBottom: "var(--space-md)" }}>
               <DateRangeChipFilter
                 selectedPreset={dateRangePreset}
                 customRange={customDateRange}
@@ -934,7 +935,7 @@ export default function WorkspacePage() {
         )}
 
         {isSaving && (
-          <div style={{ padding: "10px", marginBottom: "10px", backgroundColor: "#f5f5f5", border: "2px solid #666" }}>
+          <div style={{ padding: "var(--space-10)", marginBottom: "var(--space-10)", backgroundColor: "var(--bg-tertiary)", border: "var(--border-width-medium) solid var(--border-strong)" }}>
             Saving...
           </div>
         )}
@@ -965,8 +966,8 @@ export default function WorkspacePage() {
             style={{
               position: "sticky",
               top: 0,
-              zIndex: 10,
-              backgroundColor: "#fafafa",
+              zIndex: "var(--z-sticky-calendar)" as any,
+              backgroundColor: "var(--bg-secondary)",
               flexShrink: 0, // Prevent compression to ensure accurate height measurement
             }}
           >
@@ -996,8 +997,8 @@ export default function WorkspacePage() {
               style={{
                 position: "sticky",
                 top: `${crossEventTop}px`,
-                zIndex: 9,
-                backgroundColor: "#fafafa",
+                zIndex: "var(--z-sticky-cross-event)" as any,
+                backgroundColor: "var(--bg-secondary)",
                 flexShrink: 0,
               }}
             >
@@ -1026,8 +1027,8 @@ export default function WorkspacePage() {
             style={{
               position: "sticky",
               top: `${planningGridHeaderTop}px`,
-              zIndex: 8,
-              backgroundColor: "#fafafa",
+              zIndex: "var(--z-sticky-header)" as any,
+              backgroundColor: "var(--bg-secondary)",
               flexShrink: 0,
             }}
           >
@@ -1050,9 +1051,9 @@ export default function WorkspacePage() {
                 style={{
                   display: 'grid',
                   gridTemplateColumns,
-                  backgroundColor: '#fff',
-                  fontWeight: 'bold',
-                  border: '2px solid #666',
+                  backgroundColor: 'var(--surface-default)',
+                  fontWeight: 'var(--font-weight-bold)',
+                  border: `var(--border-width-medium) solid var(--border-strong)`,
                   minWidth: `${scrollWidth}px`,
                   position: 'relative',
                 }}
@@ -1065,15 +1066,15 @@ export default function WorkspacePage() {
                 </div>
                 <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[2]) }}>
                   <div>Estimate</div>
-                  <div style={{ fontSize: '10px', fontWeight: 'normal' }}>total hours</div>
+                  <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-normal)' }}>total hours</div>
                 </div>
                 <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[3]) }}>
                   <div>Allocated</div>
-                  <div style={{ fontSize: '10px', fontWeight: 'normal' }}>total hours</div>
+                  <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-normal)' }}>total hours</div>
                 </div>
                 <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[4]) }}>
                   <div>Remaining</div>
-                  <div style={{ fontSize: '10px', fontWeight: 'normal' }}>to allocate</div>
+                  <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-normal)' }}>to allocate</div>
                 </div>
                 <div style={{
                   position: 'absolute',
@@ -1099,7 +1100,7 @@ export default function WorkspacePage() {
                         }}
                       >
                         <div>{dayName}</div>
-                        <div style={{ fontSize: '10px', fontWeight: 'normal' }}>{dateStr}</div>
+                        <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-normal)' }}>{dateStr}</div>
                       </div>
                     );
                   })}
