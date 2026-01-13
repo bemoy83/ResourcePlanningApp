@@ -446,9 +446,9 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
       <header style={{
         display: 'grid',
         gridTemplateColumns,
-        backgroundColor: 'var(--calendar-header-bg)',
+          backgroundColor: 'var(--sticky-header-bg)',
         fontWeight: 'var(--font-weight-bold)',
-        border: `var(--border-width-medium) solid var(--border-strong)`,
+          border: `var(--border-width-medium) solid var(--sticky-header-border)`,
         position: 'sticky',
         top: 0,
         zIndex: 'var(--z-sticky-column)' as any,
@@ -458,7 +458,9 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
           position: 'sticky',
           left: 0,
           zIndex: 'var(--z-sticky-column)' as any,
-          backgroundColor: 'var(--surface-default)',
+            backgroundColor: 'var(--sticky-corner-bg)',
+            border: `${CELL_BORDER_WIDTH}px solid var(--sticky-corner-border)`,
+            color: 'var(--sticky-corner-text)',
         }}>Location</div>
         <div style={{
           position: 'absolute',
@@ -473,7 +475,7 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
               ? holidayBackground
               : dateFlags?.isWeekend
               ? weekendBackground
-              : "var(--surface-default)";
+                : "var(--sticky-header-cell-bg)";
             return (
               <div
                 key={date}
@@ -485,6 +487,8 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
                   width: `${DAY_COL_FULL_WIDTH}px`,
                   height: '100%',
                   backgroundColor,
+                  border: `${CELL_BORDER_WIDTH}px solid var(--sticky-header-cell-border)`,
+                  color: 'var(--sticky-header-text)',
                 }}
               >
                 {date}
@@ -524,7 +528,7 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
                 textAlign: 'right',
                 fontWeight: 'var(--font-weight-bold)',
                 fontSize: '11px',
-                backgroundColor: 'var(--surface-default)',
+                backgroundColor: 'var(--sticky-column-bg)',
                 position: 'sticky',
                 left: 0,
                 zIndex: 'var(--z-sticky-column)' as any,
@@ -532,6 +536,8 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'flex-end',
+                border: `${CELL_BORDER_WIDTH}px solid var(--sticky-column-border)`,
+                color: 'var(--sticky-column-text)',
               }}>
                 {location.name}
               </div>

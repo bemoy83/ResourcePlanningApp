@@ -13,12 +13,8 @@ export function FilterBar({ children }: FilterBarProps) {
         display: "flex",
         alignItems: "center",
         gap: "var(--space-md)",
-        padding: "var(--space-md)",
-        backgroundColor: "var(--bg-tertiary)",
-        border: "var(--border-width-medium) solid var(--border-strong)",
-        borderRadius: "var(--radius-md)",
-        marginBottom: "var(--space-md)",
         flexWrap: "wrap",
+        marginBottom: "var(--space-md)",
       }}
     >
       <span
