@@ -243,24 +243,28 @@ function PreviewRow({ row }: { row: ImportPreviewRow }) {
     backgroundColor: hasError ? '#ffebee' : hasWarning ? '#fff3e0' : '#fff',
   };
 
+  const locationName = row.raw.locationName || '';
+  const phase = row.raw.phase || '';
+  const interpretedPhase = row.interpreted?.phase;
+
   return (
     <tr style={rowStyle}>
       <td style={cellStyle}>{row.index + 1}</td>
       <td style={cellStyle}>{row.raw.eventName || <em style={{ color: '#999' }}>empty</em>}</td>
-      <td style={cellStyle}>{row.raw.location || <em style={{ color: '#999' }}>empty</em>}</td>
+      <td style={cellStyle}>{locationName || <em style={{ color: '#999' }}>empty</em>}</td>
       <td style={cellStyle}>
-        {row.interpreted.spanType || (
-          <span style={{ color: '#c62828' }}>{row.raw.spanType || 'missing'}</span>
+        {interpretedPhase || (
+          <span style={{ color: '#c62828' }}>{phase || 'missing'}</span>
         )}
       </td>
       <td style={cellStyle}>
-        {row.interpreted.startDate
+        {row.interpreted?.startDate
           ? row.raw.startDate
           : <span style={{ color: '#c62828' }}>{row.raw.startDate || 'missing'}</span>
         }
       </td>
       <td style={cellStyle}>
-        {row.interpreted.endDate
+        {row.interpreted?.endDate
           ? row.raw.endDate
           : <span style={{ color: '#c62828' }}>{row.raw.endDate || 'missing'}</span>
         }

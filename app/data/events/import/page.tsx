@@ -175,7 +175,7 @@ export default function ImportPreviewPage() {
 
         {/* Format Selector */}
         <div style={{ marginBottom: "12px" }}>
-          <label style={{ marginRight: "20px", fontSize: "14px" }}>
+          <label style={{ marginRight: "20px", fontSize: "14px", color: "#000" }}>
             <input
               type="radio"
               value="csv"
@@ -185,7 +185,7 @@ export default function ImportPreviewPage() {
             />
             CSV
           </label>
-          <label style={{ fontSize: "14px" }}>
+          <label style={{ fontSize: "14px", color: "#000" }}>
             <input
               type="radio"
               value="json"
@@ -344,41 +344,41 @@ export default function ImportPreviewPage() {
 
                 {/* Events Detected */}
                 <div style={{ marginBottom: "20px" }}>
-                  <h3 style={{ fontSize: "15px", marginBottom: "8px", fontWeight: "bold" }}>
+                  <h3 style={{ fontSize: "15px", marginBottom: "8px", fontWeight: "bold", color: "#000" }}>
                     Events Detected ({interpretation.events.length})
                   </h3>
                   <ul style={{ margin: 0, paddingLeft: "20px" }}>
                     {interpretation.events.map((event, idx) => (
-                      <li key={idx} style={{ marginBottom: "4px" }}>{event}</li>
+                      <li key={idx} style={{ marginBottom: "4px", color: "#000" }}>{event}</li>
                     ))}
                   </ul>
                 </div>
 
                 {/* Locations Detected */}
                 <div style={{ marginBottom: "20px" }}>
-                  <h3 style={{ fontSize: "15px", marginBottom: "8px", fontWeight: "bold" }}>
+                  <h3 style={{ fontSize: "15px", marginBottom: "8px", fontWeight: "bold", color: "#000" }}>
                     Locations Detected ({interpretation.locations.length})
                   </h3>
                   <ul style={{ margin: 0, paddingLeft: "20px" }}>
                     {interpretation.locations.map((location, idx) => (
-                      <li key={idx} style={{ marginBottom: "4px" }}>{location}</li>
+                      <li key={idx} style={{ marginBottom: "4px", color: "#000" }}>{location}</li>
                     ))}
                   </ul>
                 </div>
 
                 {/* Phases Detected (per event) */}
                 <div>
-                  <h3 style={{ fontSize: "15px", marginBottom: "8px", fontWeight: "bold" }}>
+                  <h3 style={{ fontSize: "15px", marginBottom: "8px", fontWeight: "bold", color: "#000" }}>
                     Phases Detected (per event)
                   </h3>
                   {interpretation.eventPhases.map((eventPhase, idx) => (
                     <div key={idx} style={{ marginBottom: "12px" }}>
-                      <div style={{ fontWeight: "bold", marginBottom: "4px" }}>
+                      <div style={{ fontWeight: "bold", marginBottom: "4px", color: "#000" }}>
                         {eventPhase.eventName}
                       </div>
                       <ul style={{ margin: 0, paddingLeft: "30px" }}>
                         {eventPhase.phases.map((phase, phaseIdx) => (
-                          <li key={phaseIdx} style={{ marginBottom: "2px" }}>{phase}</li>
+                          <li key={phaseIdx} style={{ marginBottom: "2px", color: "#000" }}>{phase}</li>
                         ))}
                       </ul>
                     </div>
@@ -446,20 +446,21 @@ export default function ImportPreviewPage() {
                 border: "2px solid #2e7d32",
                 padding: "16px",
                 fontSize: "14px",
+                color: "#000",
               }}>
-                <div style={{ marginBottom: "8px", fontWeight: "bold" }}>
+                <div style={{ marginBottom: "8px", fontWeight: "bold", color: "#000" }}>
                   Import completed successfully!
                 </div>
                 <ul style={{ margin: 0, paddingLeft: "20px" }}>
-                  <li>Events created: {importResult.eventsCreated}</li>
-                  <li>Events reused: {importResult.eventsReused}</li>
-                  <li>Locations created: {importResult.locationsCreated}</li>
-                  <li>Event-Location links created: {importResult.eventLocationsCreated}</li>
-                  <li>Phases created: {importResult.phasesCreated}</li>
+                  <li style={{ color: "#000" }}>Events created: {importResult.eventsCreated}</li>
+                  <li style={{ color: "#000" }}>Events reused: {importResult.eventsReused}</li>
+                  <li style={{ color: "#000" }}>Locations created: {importResult.locationsCreated}</li>
+                  <li style={{ color: "#000" }}>Event-Location links created: {importResult.eventLocationsCreated}</li>
+                  <li style={{ color: "#000" }}>Phases created: {importResult.phasesCreated}</li>
                 </ul>
                 <div style={{ marginTop: "12px" }}>
                   <a
-                    href="/calendar"
+                    href="/workspace"
                     style={{
                       padding: "8px 16px",
                       backgroundColor: "#2e7d32",

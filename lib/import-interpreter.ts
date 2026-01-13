@@ -2,18 +2,15 @@
  * Event Import Interpreter
  *
  * Implements the Event Import Contract transformation logic
- * from EventImportRow[] to ImportPreviewRow[]
+ * from raw CSV/JSON rows to ImportPreviewRow[]
  */
 
 import {
-  EventImportRow,
+  EventPhaseName,
   ImportPreviewRow,
   ImportPreviewResponse,
   ValidationSignal,
-  ValidationSeverity,
-  ValidationSignalType,
-  SPAN_TYPES,
-  SpanType,
+  PHASE_TYPES,
 } from '../types/event-import';
 
 /**
@@ -35,9 +32,9 @@ export function interpretImportRows(rawRows: Record<string, string>[]): ImportPr
   const locationNames = new Set<string>();
 
   for (const row of previewRows) {
-    if (row.errors.length === 0) {
+    if (row.errors.length === 0 && row.interpreted) {
       eventNames.add(row.interpreted.eventName);
-      locationNames.add(row.interpreted.location);
+      locationNames.add(row.interpreted.locationName);
     }
   }
 
@@ -70,23 +67,15 @@ function interpretRow(index: number, rawRow: Record<string, string>): ImportPrev
 
   // Extract raw values
   const eventName = rawRow.eventName || '';
-  const location = rawRow.location || '';
-  const spanTypeStr = rawRow.spanType || '';
+  const locationName = rawRow.locationName || '';
+  const phaseStr = rawRow.phase || '';
   const startDateStr = rawRow.startDate || '';
   const endDateStr = rawRow.endDate || '';
-
-  const raw: EventImportRow = {
-    eventName,
-    location,
-    spanType: spanTypeStr as any,
-    startDate: startDateStr,
-    endDate: endDateStr,
-  };
 
   // Validate required fields
   if (!eventName) {
     errors.push({
-      type: ValidationSignalType.EMPTY_REQUIRED_FIELD,
+      type: 'EMPTY_REQUIRED_FIELD',
       severity: 'error',
       message: 'Event name is required',
       rowNumbers: [index],
@@ -94,29 +83,29 @@ function interpretRow(index: number, rawRow: Record<string, string>): ImportPrev
     });
   }
 
-  if (!location) {
+  if (!locationName) {
     errors.push({
-      type: ValidationSignalType.EMPTY_REQUIRED_FIELD,
+      type: 'EMPTY_REQUIRED_FIELD',
       severity: 'error',
       message: 'Location is required',
       rowNumbers: [index],
-      context: { field: 'location' },
+      context: { field: 'locationName' },
     });
   }
 
-  if (!spanTypeStr) {
+  if (!phaseStr) {
     errors.push({
-      type: ValidationSignalType.EMPTY_REQUIRED_FIELD,
+      type: 'EMPTY_REQUIRED_FIELD',
       severity: 'error',
-      message: 'Span type is required',
+      message: 'Phase is required',
       rowNumbers: [index],
-      context: { field: 'spanType' },
+      context: { field: 'phase' },
     });
   }
 
   if (!startDateStr) {
     errors.push({
-      type: ValidationSignalType.EMPTY_REQUIRED_FIELD,
+      type: 'EMPTY_REQUIRED_FIELD',
       severity: 'error',
       message: 'Start date is required',
       rowNumbers: [index],
@@ -126,7 +115,7 @@ function interpretRow(index: number, rawRow: Record<string, string>): ImportPrev
 
   if (!endDateStr) {
     errors.push({
-      type: ValidationSignalType.EMPTY_REQUIRED_FIELD,
+      type: 'EMPTY_REQUIRED_FIELD',
       severity: 'error',
       message: 'End date is required',
       rowNumbers: [index],
@@ -134,18 +123,18 @@ function interpretRow(index: number, rawRow: Record<string, string>): ImportPrev
     });
   }
 
-  // Validate span type
-  let spanType: SpanType | null = null;
-  if (spanTypeStr) {
-    if (SPAN_TYPES.includes(spanTypeStr as SpanType)) {
-      spanType = spanTypeStr as SpanType;
+  // Validate phase
+  let phase: EventPhaseName | null = null;
+  if (phaseStr) {
+    if (PHASE_TYPES.includes(phaseStr as EventPhaseName)) {
+      phase = phaseStr as EventPhaseName;
     } else {
       errors.push({
-        type: ValidationSignalType.UNKNOWN_SPAN_TYPE,
+        type: 'UNKNOWN_PHASE',
         severity: 'error',
-        message: `Unknown span type: "${spanTypeStr}". Must be one of: ${SPAN_TYPES.join(', ')}`,
+        message: `Unknown phase: "${phaseStr}". Must be one of: ${PHASE_TYPES.join(', ')}`,
         rowNumbers: [index],
-        context: { spanType: spanTypeStr, allowed: SPAN_TYPES },
+        context: { phase: phaseStr, allowed: PHASE_TYPES },
       });
     }
   }
@@ -160,7 +149,7 @@ function interpretRow(index: number, rawRow: Record<string, string>): ImportPrev
       startDate = parsed;
     } else {
       errors.push({
-        type: ValidationSignalType.INVALID_DATE_FORMAT,
+        type: 'INVALID_DATE_FORMAT',
         severity: 'error',
         message: `Invalid start date format: "${startDateStr}". Expected YYYY-MM-DD`,
         rowNumbers: [index],
@@ -175,7 +164,7 @@ function interpretRow(index: number, rawRow: Record<string, string>): ImportPrev
       endDate = parsed;
     } else {
       errors.push({
-        type: ValidationSignalType.INVALID_DATE_FORMAT,
+        type: 'INVALID_DATE_FORMAT',
         severity: 'error',
         message: `Invalid end date format: "${endDateStr}". Expected YYYY-MM-DD`,
         rowNumbers: [index],
@@ -187,7 +176,7 @@ function interpretRow(index: number, rawRow: Record<string, string>): ImportPrev
   // Validate date range
   if (startDate && endDate && endDate < startDate) {
     errors.push({
-      type: ValidationSignalType.END_BEFORE_START,
+      type: 'END_BEFORE_START',
       severity: 'error',
       message: `End date (${endDateStr}) is before start date (${startDateStr})`,
       rowNumbers: [index],
@@ -197,14 +186,14 @@ function interpretRow(index: number, rawRow: Record<string, string>): ImportPrev
 
   return {
     index,
-    raw,
-    interpreted: {
+    raw: rawRow,
+    interpreted: errors.length === 0 ? {
       eventName,
-      location,
-      spanType,
+      locationName,
+      phase,
       startDate,
       endDate,
-    },
+    } : undefined,
     errors,
     warnings,
   };
@@ -245,7 +234,7 @@ function generateGlobalSignals(rows: ImportPreviewRow[], signals: ValidationSign
   const eventGroups = new Map<string, ImportPreviewRow[]>();
 
   for (const row of rows) {
-    if (row.errors.length > 0) continue; // Skip rows with errors
+    if (row.errors.length > 0 || !row.interpreted) continue; // Skip rows with errors
 
     const eventName = row.interpreted.eventName;
     if (!eventGroups.has(eventName)) {
@@ -256,23 +245,23 @@ function generateGlobalSignals(rows: ImportPreviewRow[], signals: ValidationSign
 
   // Check each event group
   for (const [eventName, eventRows] of eventGroups) {
-    // Check if event has at least one EVENT span
-    const eventSpans = eventRows.filter(r => r.interpreted.spanType === 'EVENT');
-    if (eventSpans.length === 0) {
+    // Check if event has at least one EVENT phase
+    const eventPhases = eventRows.filter(r => r.interpreted?.phase === 'EVENT');
+    if (eventPhases.length === 0) {
       signals.push({
-        type: ValidationSignalType.NO_EVENT_SPAN,
+        type: 'NO_EVENT_PHASE',
         severity: 'warning',
-        message: `Event "${eventName}" has no EVENT span, only phases`,
+        message: `Event "${eventName}" has no EVENT phase, only other phases`,
         rowNumbers: eventRows.map(r => r.index),
         context: { eventName },
       });
     }
 
     // Check for inconsistent EVENT dates
-    if (eventSpans.length > 1) {
-      const dates = eventSpans.map(r => ({
-        start: r.interpreted.startDate,
-        end: r.interpreted.endDate,
+    if (eventPhases.length > 1) {
+      const dates = eventPhases.map(r => ({
+        start: r.interpreted!.startDate,
+        end: r.interpreted!.endDate,
       }));
 
       const allSame = dates.every(d =>
@@ -282,10 +271,10 @@ function generateGlobalSignals(rows: ImportPreviewRow[], signals: ValidationSign
 
       if (!allSame) {
         signals.push({
-          type: ValidationSignalType.INCONSISTENT_EVENT_DATES,
+          type: 'INCONSISTENT_EVENT_DATES',
           severity: 'warning',
           message: `Event "${eventName}" has inconsistent EVENT dates across rows`,
-          rowNumbers: eventSpans.map(r => r.index),
+          rowNumbers: eventPhases.map(r => r.index),
           context: { eventName },
         });
       }
