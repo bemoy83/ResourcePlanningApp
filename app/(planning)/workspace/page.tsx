@@ -153,7 +153,6 @@ export default function WorkspacePage() {
   });
   const [drafts, setDrafts] = useState<AllocationDraft[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorsByCellKey, setErrorsByCellKey] = useState<Record<string, string>>({});
   const [selectedLocationIds, setSelectedLocationIds] = useState<Set<string>>(new Set());
@@ -497,8 +496,6 @@ export default function WorkspacePage() {
       return;
     }
 
-    setIsSaving(true);
-
     try {
       let res: Response;
 
@@ -573,8 +570,6 @@ export default function WorkspacePage() {
         ...prev,
         [draftKey]: errorMessage,
       }));
-    } finally {
-      setIsSaving(false);
     }
   }
 
@@ -590,8 +585,6 @@ export default function WorkspacePage() {
 
   // Delete allocation
   async function deleteAllocation(allocationId: string) {
-    setIsSaving(true);
-
     try {
       const res = await fetch(`/api/schedule/allocations/${allocationId}`, {
         method: "DELETE",
@@ -609,8 +602,6 @@ export default function WorkspacePage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete allocation");
       // Error doesn't block - user can continue planning
-    } finally {
-      setIsSaving(false);
     }
   }
 
@@ -934,11 +925,6 @@ export default function WorkspacePage() {
           </>
         )}
 
-        {isSaving && (
-          <div style={{ padding: "var(--space-10)", marginBottom: "var(--space-10)", backgroundColor: "var(--bg-tertiary)", border: "var(--border-width-medium) solid var(--border-strong)" }}>
-            Saving...
-          </div>
-        )}
       </PlanningToolbar>
 
       {/* Workspace Viewport - scrolling context for sticky positioning */}

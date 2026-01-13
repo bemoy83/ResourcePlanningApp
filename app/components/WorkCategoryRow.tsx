@@ -121,22 +121,40 @@ export function WorkCategoryRow({
 
       {/* Allocated total with progress bar */}
       <div style={{ ...rowStyle, ...stickyColumnStyle(leftColumnOffsets[3]) }}>
-        <div style={{ fontWeight: 'var(--font-weight-bold)' }}>{allocatedTotal}h</div>
         <div style={{
-          marginTop: 'var(--space-xs)',
-          height: '4px',
+          fontWeight: 'var(--font-weight-bold)',
+          lineHeight: '1.2',
+          fontSize: 'var(--font-size-sm)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '4px',
+        }}>
+          <span>{allocatedTotal}h</span>
+          <span style={{
+            fontSize: 'var(--font-size-xs)',
+            color: 'var(--text-tertiary)',
+            fontWeight: 'var(--font-weight-normal)',
+          }}>—</span>
+          <span style={{
+            fontSize: 'var(--font-size-xs)',
+            color: 'var(--text-tertiary)',
+            fontWeight: 'var(--font-weight-normal)',
+          }}>{progressPercentage}%</span>
+        </div>
+        <div style={{
+          marginTop: '3px',
+          height: '2px',
           backgroundColor: 'var(--surface-progress-track)',
           borderRadius: 'var(--radius-sm)',
           overflow: 'hidden',
+          width: '100%',
         }}>
           <div style={{
             width: `${Math.min(progressPercentage, 100)}%`,
             height: '100%',
             backgroundColor: progressPercentage >= 100 ? 'var(--status-success)' : 'var(--status-info)',
           }} />
-        </div>
-        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', marginTop: 'var(--space-xxs)' }}>
-          {progressPercentage}%
         </div>
       </div>
 
@@ -184,6 +202,7 @@ export function WorkCategoryRow({
                 width: `${dateColumnWidth}px`,
                 height: '100%',
                 backgroundColor,
+                overflow: 'visible',
               }}
             >
               <AllocationCell

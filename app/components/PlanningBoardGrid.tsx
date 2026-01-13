@@ -160,6 +160,10 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
     color: 'var(--text-primary)',
     minHeight: 'var(--row-min-height)',
     boxSizing: 'border-box' as const,
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
   };
 
   // Memoize pressure map for quick lookup (Phase 2.2)

@@ -40,7 +40,20 @@ export function AllocationCell({
   // Draft mode - show edit UI
   if (draft) {
     return (
-      <div onClick={(e) => e.stopPropagation()} style={{ padding: '4px', backgroundColor: '#f5f5f5', border: '2px solid #333', position: 'relative', zIndex: 100 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{
+        padding: 'var(--space-xs)',
+        backgroundColor: 'var(--bg-tertiary)',
+        border: 'var(--border-width-medium) solid var(--border-emphasis)',
+        borderRadius: 'var(--radius-md)',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        width: '100%',
+        zIndex: 'var(--z-tooltip)' as any,
+        boxShadow: 'var(--shadow-lg)',
+        boxSizing: 'border-box',
+      }}>
         <input
           type="number"
           value={draft.effortValue}
@@ -51,7 +64,15 @@ export function AllocationCell({
               draft.effortUnit
             )
           }
-          style={{ width: '60px', marginBottom: '4px' }}
+          style={{ 
+            width: '100%', 
+            marginBottom: 'var(--space-xs)',
+            boxSizing: 'border-box',
+            padding: 'var(--space-xs)',
+            fontSize: 'var(--font-size-sm)',
+            border: 'var(--border-width-thin) solid var(--border-primary)',
+            borderRadius: 'var(--radius-sm)',
+          }}
         />
 
         <select
@@ -63,17 +84,46 @@ export function AllocationCell({
               e.target.value as "HOURS" | "FTE"
             )
           }
-          style={{ width: '70px', marginBottom: '4px' }}
+          style={{ 
+            width: '100%', 
+            marginBottom: 'var(--space-xs)',
+            boxSizing: 'border-box',
+            padding: 'var(--space-xs)',
+            fontSize: 'var(--font-size-sm)',
+            border: 'var(--border-width-thin) solid var(--border-primary)',
+            borderRadius: 'var(--radius-sm)',
+          }}
         >
           <option value="HOURS">HOURS</option>
           <option value="FTE">FTE</option>
         </select>
 
-        <div style={{ display: 'flex', gap: '4px', flexDirection: 'column' }}>
-          <button onClick={() => onCommit(draft.key)} style={{ padding: '2px 4px', fontSize: '10px' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-xs)', flexDirection: 'column' }}>
+          <button onClick={() => onCommit(draft.key)} style={{
+            width: '100%',
+            padding: 'var(--space-xs) var(--space-sm)',
+            fontSize: 'var(--font-size-sm)',
+            backgroundColor: 'var(--button-primary-bg)',
+            color: 'var(--text-inverse)',
+            border: 'var(--border-width-thin) solid var(--button-primary-border)',
+            borderRadius: 'var(--radius-sm)',
+            cursor: 'pointer',
+            fontWeight: 'var(--font-weight-bold)',
+            boxSizing: 'border-box',
+          }}>
             Save
           </button>
-          <button onClick={() => onCancel(draft.key)} style={{ padding: '2px 4px', fontSize: '10px' }}>
+          <button onClick={() => onCancel(draft.key)} style={{
+            width: '100%',
+            padding: 'var(--space-xs) var(--space-sm)',
+            fontSize: 'var(--font-size-sm)',
+            backgroundColor: 'var(--surface-default)',
+            color: 'var(--text-primary)',
+            border: 'var(--border-width-thin) solid var(--border-primary)',
+            borderRadius: 'var(--radius-sm)',
+            cursor: 'pointer',
+            boxSizing: 'border-box',
+          }}>
             Cancel
           </button>
           {draft.allocationId && (
@@ -84,7 +134,17 @@ export function AllocationCell({
                   onCancel(draft.key);
                 }
               }}
-              style={{ padding: '2px 4px', fontSize: '10px', backgroundColor: '#fee', color: 'red' }}
+              style={{
+                width: '100%',
+                padding: 'var(--space-xs) var(--space-sm)',
+                fontSize: 'var(--font-size-sm)',
+                backgroundColor: 'var(--capacity-over)',
+                color: 'var(--status-error)',
+                border: 'var(--border-width-thin) solid var(--status-error)',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'pointer',
+                boxSizing: 'border-box',
+              }}
             >
               Delete
             </button>
@@ -92,7 +152,11 @@ export function AllocationCell({
         </div>
 
         {error && (
-          <div style={{ color: 'red', fontSize: '10px', marginTop: '4px' }}>
+          <div style={{
+            color: 'var(--status-error)',
+            fontSize: 'var(--font-size-xs)',
+            marginTop: 'var(--space-xs)'
+          }}>
             {error}
           </div>
         )}
@@ -107,11 +171,11 @@ export function AllocationCell({
         onClick={() => onStartEdit(allocation.id, workCategoryId, date, allocation.effortHours)}
         style={{
           cursor: 'pointer',
-          padding: '4px',
-          backgroundColor: '#e0e0e0',
-          fontWeight: 'bold',
-          color: '#000',
-          border: '1px solid #666',
+          padding: 'var(--space-xs)',
+          backgroundColor: 'transparent',
+          fontWeight: 'var(--font-weight-bold)',
+          color: 'var(--text-primary)',
+          border: 'none',
         }}
         title="Click to edit"
       >
@@ -126,10 +190,10 @@ export function AllocationCell({
       onClick={() => onStartCreate(workCategoryId, date)}
       style={{
         cursor: 'pointer',
-        padding: '4px',
-        color: '#666',
+        padding: 'var(--space-xs)',
+        color: 'var(--text-tertiary)',
         backgroundColor: 'transparent',
-        border: '1px solid #ccc',
+        border: 'none',
         minHeight: '30px',
         display: 'flex',
         alignItems: 'center',
