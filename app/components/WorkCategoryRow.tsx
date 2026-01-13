@@ -79,7 +79,7 @@ export function WorkCategoryRow({
 }: WorkCategoryRowProps) {
   // Determine row background color based on pressure
   const rowStyle = pressure?.isUnderPressure
-    ? { ...cellStyle, backgroundColor: '#fff3cd' }
+    ? { ...cellStyle, backgroundColor: 'var(--status-warning-light)' }
     : cellStyle;
 
   const progressPercentage = workCategory.estimatedEffortHours > 0
@@ -87,14 +87,14 @@ export function WorkCategoryRow({
     : 0;
 
   const timelineWidth = dates.length * dateColumnWidth;
-  const weekendBackground = "#f7f7f7";
-  const holidayBackground = "#ffe7e7";
+  const weekendBackground = "var(--calendar-weekend-bg)";
+  const holidayBackground = "var(--calendar-holiday-bg)";
 
   const stickyColumnStyle = (offset: number): React.CSSProperties => ({
     position: 'sticky',
     left: `${offset}px`,
-    zIndex: 4,
-    backgroundColor: '#fff',
+    zIndex: 'var(--z-sticky-column)' as any,
+    backgroundColor: 'var(--surface-default)',
   });
 
   return (
@@ -108,7 +108,7 @@ export function WorkCategoryRow({
       <div style={{ ...rowStyle, ...stickyColumnStyle(leftColumnOffsets[1]) }}>
         <div>{workCategory.name}</div>
         {pressure?.isUnderPressure && (
-          <div style={{ fontSize: '10px', color: '#f57c00', marginTop: '2px' }}>
+          <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--status-warning)', marginTop: 'var(--space-xxs)' }}>
             ⚠ Pressure: {pressure.remainingDays} days left
           </div>
         )}
@@ -116,26 +116,26 @@ export function WorkCategoryRow({
 
       {/* Estimated effort */}
       <div style={{ ...rowStyle, ...stickyColumnStyle(leftColumnOffsets[2]) }}>
-        <div style={{ fontWeight: 'bold' }}>{workCategory.estimatedEffortHours}h</div>
+        <div style={{ fontWeight: 'var(--font-weight-bold)' }}>{workCategory.estimatedEffortHours}h</div>
       </div>
 
       {/* Allocated total with progress bar */}
       <div style={{ ...rowStyle, ...stickyColumnStyle(leftColumnOffsets[3]) }}>
-        <div style={{ fontWeight: 'bold' }}>{allocatedTotal}h</div>
+        <div style={{ fontWeight: 'var(--font-weight-bold)' }}>{allocatedTotal}h</div>
         <div style={{
-          marginTop: '4px',
+          marginTop: 'var(--space-xs)',
           height: '4px',
-          backgroundColor: '#e0e0e0',
-          borderRadius: '2px',
+          backgroundColor: 'var(--surface-progress-track)',
+          borderRadius: 'var(--radius-sm)',
           overflow: 'hidden',
         }}>
           <div style={{
             width: `${Math.min(progressPercentage, 100)}%`,
             height: '100%',
-            backgroundColor: progressPercentage >= 100 ? '#4caf50' : '#2196f3',
+            backgroundColor: progressPercentage >= 100 ? 'var(--status-success)' : 'var(--status-info)',
           }} />
         </div>
-        <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
+        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', marginTop: 'var(--space-xxs)' }}>
           {progressPercentage}%
         </div>
       </div>
@@ -144,8 +144,8 @@ export function WorkCategoryRow({
       <div style={{
         ...rowStyle,
         ...stickyColumnStyle(leftColumnOffsets[4]),
-        color: remaining < 0 ? 'red' : remaining > 0 ? 'inherit' : '#4caf50',
-        fontWeight: remaining !== 0 ? 'bold' : 'normal',
+        color: remaining < 0 ? 'var(--status-error)' : remaining > 0 ? 'inherit' : 'var(--status-success)',
+        fontWeight: remaining !== 0 ? 'var(--font-weight-bold)' : 'var(--font-weight-normal)',
       }}>
         {remaining > 0 ? `${remaining}h` : remaining < 0 ? `${Math.abs(remaining)}h (over)` : '✓ Complete'}
       </div>
@@ -171,7 +171,7 @@ export function WorkCategoryRow({
             ? holidayBackground
             : dateFlags?.isWeekend
             ? weekendBackground
-            : '#fff';
+            : 'var(--surface-default)';
 
           return (
             <div

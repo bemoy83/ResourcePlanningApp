@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Chip } from "./Chip";
 import {
   addDays,
   daysInMonth,
@@ -94,16 +95,16 @@ export function DateRangeChipFilter({
         style={{
           display: "flex",
           alignItems: "center",
-          gap: "8px",
+          gap: "var(--space-sm)",
           flexWrap: "wrap",
         }}
       >
         <span
           style={{
-            fontSize: "12px",
-            fontWeight: "bold",
-            color: "#000",
-            marginRight: "4px",
+            fontSize: "var(--font-size-sm)",
+            fontWeight: "var(--font-weight-bold)",
+            color: "var(--text-primary)",
+            marginRight: "var(--space-xs)",
           }}
         >
           Date Range:
@@ -111,34 +112,13 @@ export function DateRangeChipFilter({
         {presets.map((preset) => {
           const isSelected = selectedPreset === preset.id;
           return (
-            <button
+            <Chip
               key={preset.id}
+              selected={isSelected}
               onClick={() => handleChipClick(preset.id)}
-              style={{
-                padding: "6px 12px",
-                fontSize: "12px",
-                fontWeight: isSelected ? "bold" : "normal",
-                color: isSelected ? "#fff" : "#000",
-                backgroundColor: isSelected ? "#333" : "#fff",
-                border: isSelected ? "2px solid #000" : "2px solid #999",
-                borderRadius: "16px",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-                whiteSpace: "nowrap",
-              }}
-              onMouseEnter={(e) => {
-                if (!isSelected) {
-                  e.currentTarget.style.backgroundColor = "#f0f0f0";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isSelected) {
-                  e.currentTarget.style.backgroundColor = "#fff";
-                }
-              }}
             >
               {getChipLabel(preset.id)}
-            </button>
+            </Chip>
           );
         })}
       </div>
@@ -155,7 +135,7 @@ export function DateRangeChipFilter({
               right: 0,
               bottom: 0,
               backgroundColor: "rgba(0, 0, 0, 0.5)",
-              zIndex: 9998,
+              zIndex: "var(--z-modal-backdrop)" as any,
             }}
             onClick={handleCustomCancel}
           />
@@ -167,34 +147,34 @@ export function DateRangeChipFilter({
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
-              backgroundColor: "#fff",
-              border: "2px solid #666",
-              borderRadius: "8px",
-              padding: "24px",
-              zIndex: 9999,
+              backgroundColor: "var(--surface-default)",
+              border: "var(--border-width-medium) solid var(--border-strong)",
+              borderRadius: "var(--radius-xl)",
+              padding: "var(--space-2xl)",
+              zIndex: "var(--z-modal)" as any,
               minWidth: "400px",
-              boxShadow: "0 8px 16px rgba(0,0,0,0.3)",
+              boxShadow: "var(--shadow-xl)",
             }}
           >
             <h3
               style={{
-                margin: "0 0 16px 0",
-                fontSize: "16px",
-                fontWeight: "bold",
-                color: "#000",
+                margin: "0 0 var(--space-lg) 0",
+                fontSize: "var(--font-size-lg)",
+                fontWeight: "var(--font-weight-bold)",
+                color: "var(--text-primary)",
               }}
             >
               Custom Date Range
             </h3>
 
-            <div style={{ marginBottom: "16px" }}>
+            <div style={{ marginBottom: "var(--space-lg)" }}>
               <label
                 style={{
                   display: "block",
-                  fontSize: "12px",
-                  fontWeight: "bold",
-                  marginBottom: "4px",
-                  color: "#000",
+                  fontSize: "var(--font-size-sm)",
+                  fontWeight: "var(--font-weight-bold)",
+                  marginBottom: "var(--space-xs)",
+                  color: "var(--text-primary)",
                 }}
               >
                 Start Date
@@ -205,23 +185,23 @@ export function DateRangeChipFilter({
                 onChange={(e) => setTempStartDate(e.target.value)}
                 style={{
                   width: "100%",
-                  padding: "8px",
-                  fontSize: "12px",
-                  border: "2px solid #999",
-                  borderRadius: "4px",
+                  padding: "var(--space-sm)",
+                  fontSize: "var(--font-size-sm)",
+                  border: "var(--border-width-medium) solid var(--border-primary)",
+                  borderRadius: "var(--radius-md)",
                   boxSizing: "border-box",
                 }}
               />
             </div>
 
-            <div style={{ marginBottom: "24px" }}>
+            <div style={{ marginBottom: "var(--space-2xl)" }}>
               <label
                 style={{
                   display: "block",
-                  fontSize: "12px",
-                  fontWeight: "bold",
-                  marginBottom: "4px",
-                  color: "#000",
+                  fontSize: "var(--font-size-sm)",
+                  fontWeight: "var(--font-weight-bold)",
+                  marginBottom: "var(--space-xs)",
+                  color: "var(--text-primary)",
                 }}
               >
                 End Date
@@ -232,10 +212,10 @@ export function DateRangeChipFilter({
                 onChange={(e) => setTempEndDate(e.target.value)}
                 style={{
                   width: "100%",
-                  padding: "8px",
-                  fontSize: "12px",
-                  border: "2px solid #999",
-                  borderRadius: "4px",
+                  padding: "var(--space-sm)",
+                  fontSize: "var(--font-size-sm)",
+                  border: "var(--border-width-medium) solid var(--border-primary)",
+                  borderRadius: "var(--radius-md)",
                   boxSizing: "border-box",
                 }}
               />
@@ -245,18 +225,18 @@ export function DateRangeChipFilter({
               style={{
                 display: "flex",
                 justifyContent: "flex-end",
-                gap: "8px",
+                gap: "var(--space-sm)",
               }}
             >
               <button
                 onClick={handleCustomCancel}
                 style={{
-                  padding: "8px 16px",
-                  fontSize: "12px",
-                  color: "#000",
-                  backgroundColor: "#fff",
-                  border: "2px solid #999",
-                  borderRadius: "4px",
+                  padding: "var(--space-sm) var(--space-lg)",
+                  fontSize: "var(--font-size-sm)",
+                  color: "var(--text-primary)",
+                  backgroundColor: "var(--surface-default)",
+                  border: "var(--border-width-medium) solid var(--border-primary)",
+                  borderRadius: "var(--radius-md)",
                   cursor: "pointer",
                 }}
               >
@@ -266,14 +246,15 @@ export function DateRangeChipFilter({
                 onClick={handleCustomApply}
                 disabled={!tempStartDate || !tempEndDate}
                 style={{
-                  padding: "8px 16px",
-                  fontSize: "12px",
-                  fontWeight: "bold",
-                  color: "#fff",
-                  backgroundColor: tempStartDate && tempEndDate ? "#333" : "#999",
-                  border: "2px solid #000",
-                  borderRadius: "4px",
+                  padding: "var(--space-sm) var(--space-lg)",
+                  fontSize: "var(--font-size-sm)",
+                  fontWeight: "var(--font-weight-bold)",
+                  color: "var(--text-inverse)",
+                  backgroundColor: tempStartDate && tempEndDate ? "var(--button-primary-bg)" : "var(--border-primary)",
+                  border: "var(--border-width-medium) solid var(--button-primary-border)",
+                  borderRadius: "var(--radius-md)",
                   cursor: tempStartDate && tempEndDate ? "pointer" : "not-allowed",
+                  opacity: tempStartDate && tempEndDate ? 1 : 0.6,
                 }}
               >
                 Apply

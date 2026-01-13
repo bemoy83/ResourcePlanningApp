@@ -12,21 +12,21 @@ export function FilterBar({ children }: FilterBarProps) {
       style={{
         display: "flex",
         alignItems: "center",
-        gap: "12px",
-        padding: "12px",
-        backgroundColor: "#f5f5f5",
-        border: "2px solid #666",
-        borderRadius: "4px",
-        marginBottom: "12px",
+        gap: "var(--space-md)",
+        padding: "var(--space-md)",
+        backgroundColor: "var(--bg-tertiary)",
+        border: "var(--border-width-medium) solid var(--border-strong)",
+        borderRadius: "var(--radius-md)",
+        marginBottom: "var(--space-md)",
         flexWrap: "wrap",
       }}
     >
       <span
         style={{
-          fontSize: "12px",
-          fontWeight: "bold",
-          color: "#000",
-          marginRight: "4px",
+          fontSize: "var(--font-size-sm)",
+          fontWeight: "var(--font-weight-bold)",
+          color: "var(--text-primary)",
+          marginRight: "var(--space-xs)",
         }}
       >
         Filters:

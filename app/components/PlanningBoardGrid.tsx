@@ -325,7 +325,7 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
             flex: 1,
             minHeight: 0,
             position: 'relative',
-            zIndex: 1,
+            zIndex: 'var(--z-base)' as any,
           }}
         >
           {/* Work category rows */}
@@ -376,7 +376,7 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
               >
                 <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0]) }}>
                   <div>{row.eventName}</div>
-                  <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', marginTop: '2px' }}>
+                  <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', marginTop: 'var(--space-xxs)' }}>
                     {row.locationName}
                   </div>
                 </div>
@@ -430,7 +430,7 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
 
           {/* Capacity comparison row */}
           {evaluation.dailyCapacityComparison.length > 0 && (
-            <footer style={{ display: 'grid', gridTemplateColumns, backgroundColor: 'var(--calendar-header-bg)', marginTop: '2px', border: 'var(--border-width-medium) solid var(--border-strong)', position: 'relative' }}>
+            <footer style={{ display: 'grid', gridTemplateColumns, backgroundColor: 'var(--calendar-header-bg)', marginTop: 'var(--space-xxs)', border: 'var(--border-width-medium) solid var(--border-strong)', position: 'relative' }}>
               <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0]) }}></div>
               <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[1]) }}></div>
               <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[2]) }}></div>
