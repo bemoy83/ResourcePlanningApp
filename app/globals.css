@@ -37,6 +37,12 @@
   --phase-review: #f3e5f5;
   --phase-completed: #e8f5e9;
 
+  /* Event Phase Specific Colors */
+    --phase-assembly: #e3f2fd;
+    --phase-move-in: #e8f5e9;
+    --phase-event: #f3e5f5;
+    --phase-move-out: #fff3e0;
+    --phase-dismantle: #ffebee;
   /* Status Colors */
   --status-success: #4caf50;
   --status-warning: #ff9800;
@@ -180,6 +186,12 @@
   --phase-review: #4a1e5f;
   --phase-completed: #1e5f2e;
 
+  /* Event Phase Specific Colors (darker versions) */
+    --phase-assembly: #1e3a5f;
+    --phase-move-in: #1e5f2e;
+    --phase-event: #4a1e5f;
+    --phase-move-out: #5f4a1e;
+    --phase-dismantle: #5f1e1e;
   /* Status Colors (adjusted for dark theme) */
   --status-success: #66bb6a;
   --status-warning: #ffa726;

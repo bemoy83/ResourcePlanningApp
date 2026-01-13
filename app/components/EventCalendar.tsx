@@ -154,6 +154,23 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
 
   const isEventPhaseName = (name: string) => name.trim().toUpperCase() === "EVENT";
 
+  // Map phase name to CSS token
+  const getPhaseBackgroundColor = (phaseName: string | undefined): string => {
+    if (!phaseName) {
+      return 'var(--calendar-span-bg)';
+    }
+    const normalizedPhase = phaseName.trim().toUpperCase();
+    // Map phase names to CSS tokens (convert to lowercase with hyphens)
+    const phaseTokenMap: Record<string, string> = {
+      'ASSEMBLY': 'var(--phase-assembly)',
+      'MOVE_IN': 'var(--phase-move-in)',
+      'EVENT': 'var(--phase-event)',
+      'MOVE_OUT': 'var(--phase-move-out)',
+      'DISMANTLE': 'var(--phase-dismantle)',
+    };
+    return phaseTokenMap[normalizedPhase] || 'var(--calendar-span-bg)';
+  };
+
   const dateMeta = useMemo(() => {
     if (timeline.dateMeta && timeline.dateMeta.length === dates.length) {
       return timeline.dateMeta;
@@ -588,7 +605,7 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
                           left: `${leftOffset}px`,
                           width: `${blockWidth}px`,
                           height: `${spanHeight}px`,
-                          backgroundColor: 'var(--calendar-span-bg)',
+                          backgroundColor: getPhaseBackgroundColor(span.phaseName),
                           border: `${CELL_BORDER_WIDTH}px solid var(--border-primary)`,
                           padding: 'var(--space-sm)',
                           fontWeight: 'var(--font-weight-bold)',
