@@ -58,7 +58,7 @@ export default function ImportPreviewPage() {
     <div style={{ padding: '20px', maxWidth: '100%', backgroundColor: '#fafafa' }}>
       <div style={{ marginBottom: '12px' }}>
         <a
-          href="/calendar"
+          href="/workspace"
           style={{
             padding: '8px 12px',
             backgroundColor: '#f5f5f5',
@@ -69,7 +69,7 @@ export default function ImportPreviewPage() {
             display: 'inline-block',
           }}
         >
-          Back to Calendar
+          Back to Planning Workspace
         </a>
       </div>
 

@@ -77,7 +77,7 @@ async function testImportExecution() {
     console.log(`  Phases created: ${data.phasesCreated}`);
 
     console.log("\n=== Test Complete ===");
-    console.log("Visit http://localhost:3000/calendar to view imported events");
+    console.log("Visit http://localhost:3000/workspace to view imported events");
   } catch (error) {
     console.error(
       `\n❌ Error calling API: ${error instanceof Error ? error.message : "Unknown error"}`

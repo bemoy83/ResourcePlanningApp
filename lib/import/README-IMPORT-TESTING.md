@@ -59,9 +59,9 @@ Autumn Trade Fair 2026,Hall A,MOVE_OUT,2026-09-09,2026-09-11
    - Event-Location links created: 3
    - Phases created: 8
 
-### Step 6: Verify in Calendar
+### Step 6: Verify in Workspace
 
-Click "View Event Calendar" or navigate to `/calendar`
+Click "View Event Calendar" or navigate to `/workspace`
 
 Verify:
 - Spring Trade Fair 2026 appears
