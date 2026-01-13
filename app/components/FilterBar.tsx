@@ -18,6 +18,7 @@ export function FilterBar({ children }: FilterBarProps) {
         border: "2px solid #666",
         borderRadius: "4px",
         marginBottom: "12px",
+        flexWrap: "wrap",
       }}
     >
       <span

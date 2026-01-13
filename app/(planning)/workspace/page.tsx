@@ -8,6 +8,7 @@ import { FilterBar } from "../../components/FilterBar";
 import { LocationFilter } from "../../components/LocationFilter";
 import { EventFilter } from "../../components/EventFilter";
 import { DateRangeChipFilter, DateRangePreset, DateRange, getDateRangeFromPreset } from "../../components/DateRangeChipFilter";
+import { TooltipToggle, useTooltipPreference } from "../../components/TooltipToggle";
 import { UnifiedEvent } from "@/types/calendar";
 import {
   LEFT_COLUMNS,
@@ -158,6 +159,7 @@ export default function WorkspacePage() {
   const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set());
   const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>("next-3-months");
   const [customDateRange, setCustomDateRange] = useState<DateRange>({ startDate: null, endDate: null });
+  const [tooltipsEnabled, setTooltipsEnabled] = useTooltipPreference();
 
   // Refs for synchronized horizontal scrolling
   const eventCalendarScrollRef = useRef<HTMLDivElement>(null);
@@ -915,6 +917,9 @@ export default function WorkspacePage() {
                   onSelectionChange={setSelectedLocationIds}
                 />
               )}
+              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center" }}>
+                <TooltipToggle enabled={tooltipsEnabled} onChange={setTooltipsEnabled} />
+              </div>
             </FilterBar>
 
             <div style={{ marginBottom: "12px" }}>
@@ -980,7 +985,7 @@ export default function WorkspacePage() {
                 scrollBehavior: "auto" as const,
               }}
             >
-              <EventCalendar events={filteredData.events} timeline={timeline} />
+              <EventCalendar events={filteredData.events} timeline={timeline} tooltipsEnabled={tooltipsEnabled} />
             </div>
           </div>
 

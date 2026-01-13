@@ -1,4 +1,5 @@
-import { useMemo, memo } from "react";
+import { useMemo, memo, useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { UnifiedEvent } from "../../types/calendar";
 import { buildDateFlags, DateFlags } from "../utils/date";
 
@@ -12,6 +13,7 @@ interface TimelineLayout {
 interface EventCalendarProps {
   events: UnifiedEvent[];
   timeline: TimelineLayout;
+  tooltipsEnabled?: boolean; // Optional prop to control tooltip visibility
 }
 
 interface CalendarSpan {
@@ -20,6 +22,19 @@ interface CalendarSpan {
   label: string;
   startDate: string;
   endDate: string;
+  phaseName?: string; // Original phase name for tooltip
+}
+
+interface TooltipState {
+  visible: boolean;
+  content: {
+    eventName: string;
+    phaseName: string;
+    startDate: string;
+    endDate: string;
+    dayCount: number;
+  };
+  position: { top: number; left: number };
 }
 
 interface EventRow {
@@ -35,8 +50,76 @@ interface EventRow {
 const CELL_BORDER_WIDTH = 1;
 const ROW_LAYER_HEIGHT = 24;
 
+// Tooltip component for event phase information
+function EventPhaseTooltip({ tooltip }: { tooltip: TooltipState | null }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  if (!tooltip || !tooltip.visible || !mounted) return null;
+
+  const formatDate = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
+      });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const tooltipContent = (
+    <div
+      style={{
+        position: 'fixed',
+        top: `${tooltip.position.top}px`,
+        left: `${tooltip.position.left}px`,
+        backgroundColor: '#333',
+        color: '#fff',
+        padding: '8px 12px',
+        borderRadius: '4px',
+        fontSize: '12px',
+        zIndex: 10000, // Very high z-index to ensure it's above everything
+        boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+        pointerEvents: 'none',
+        maxWidth: '250px',
+        lineHeight: '1.5',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <div style={{ fontWeight: 'bold', marginBottom: '4px', borderBottom: '1px solid #555', paddingBottom: '4px' }}>
+        {tooltip.content.eventName}
+      </div>
+      <div style={{ marginBottom: '2px' }}>
+        <strong>Phase:</strong> {tooltip.content.phaseName}
+      </div>
+      <div style={{ marginBottom: '2px' }}>
+        <strong>Dates:</strong> {formatDate(tooltip.content.startDate)} - {formatDate(tooltip.content.endDate)}
+      </div>
+      <div>
+        <strong>Duration:</strong> {tooltip.content.dayCount} {tooltip.content.dayCount === 1 ? 'day' : 'days'}
+      </div>
+    </div>
+  );
+
+  // Render tooltip in a portal to document.body to avoid parent transform issues
+  return createPortal(tooltipContent, document.body);
+}
+
 // Phase 2.1: Memoize component to prevent unnecessary re-renders
-export const EventCalendar = memo(function EventCalendar({ events, timeline }: EventCalendarProps) {
+export const EventCalendar = memo(function EventCalendar({ events, timeline, tooltipsEnabled = true }: EventCalendarProps) {
+  const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+  const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const tooltipShowTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Recommended tooltip delay: 500-1000ms (using 700ms as a good middle ground)
+  const TOOLTIP_DELAY_MS = 700;
   // Memoize events with locations (Phase 2.1)
   const eventsWithLocations = useMemo(() =>
     events.filter((e) => e.locations.length > 0),
@@ -81,6 +164,157 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline }: E
   const weekendBackground = "#f7f7f7";
   const holidayBackground = "#ffe7e7";
 
+  // Calculate day count between two dates
+  const calculateDayCount = (startDate: string, endDate: string): number => {
+    try {
+      const start = new Date(startDate.split('T')[0]);
+      const end = new Date(endDate.split('T')[0]);
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays + 1; // Inclusive of both start and end dates
+    } catch {
+      return 0;
+    }
+  };
+
+  // Calculate tooltip position based on cursor coordinates
+  const calculateTooltipPosition = (clientX: number, clientY: number) => {
+    // Use actual tooltip dimensions if available, otherwise use estimates
+    const tooltipWidth = 250; // Approximate tooltip width
+    const tooltipHeight = 120; // Approximate tooltip height
+    const spacing = 8; // Minimum spacing from viewport edges
+
+    // Start with cursor position (tooltip spawns at cursor)
+    let top = clientY;
+    let left = clientX;
+
+    // Only adjust if tooltip would actually go off-screen
+    // Check right edge
+    if (left + tooltipWidth > window.innerWidth - spacing) {
+      left = Math.max(spacing, window.innerWidth - tooltipWidth - spacing);
+    }
+
+    // Check left edge
+    if (left < spacing) {
+      left = spacing;
+    }
+
+    // Check bottom edge
+    if (top + tooltipHeight > window.innerHeight - spacing) {
+      top = Math.max(spacing, window.innerHeight - tooltipHeight - spacing);
+    }
+
+    // Check top edge
+    if (top < spacing) {
+      top = spacing;
+    }
+
+    return { top, left };
+  };
+
+  // Handle mouse enter for tooltip
+  const handleSpanMouseEnter = (
+    event: React.MouseEvent<HTMLDivElement>,
+    eventRow: EventRow,
+    span: CalendarSpan
+  ) => {
+    // Clear any pending hide timeout
+    if (tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current);
+      tooltipTimeoutRef.current = null;
+    }
+
+    // If tooltips are disabled, don't show anything
+    if (!tooltipsEnabled) {
+      return;
+    }
+
+    // Clear any existing show timeout
+    if (tooltipShowTimeoutRef.current) {
+      clearTimeout(tooltipShowTimeoutRef.current);
+    }
+
+    const dayCount = calculateDayCount(span.startDate, span.endDate);
+    
+    // Determine phase name - if label matches event name, it's the "EVENT" phase
+    const phaseName = span.label === eventRow.eventName 
+      ? (span.phaseName || 'EVENT')
+      : span.label;
+
+    // Capture mouse position at the time of the event
+    const mouseX = event.clientX;
+    const mouseY = event.clientY;
+
+    // Delay tooltip appearance to avoid accidental triggers
+    tooltipShowTimeoutRef.current = setTimeout(() => {
+      const position = calculateTooltipPosition(mouseX, mouseY);
+      setTooltip({
+        visible: true,
+        content: {
+          eventName: eventRow.eventName,
+          phaseName: phaseName,
+          startDate: span.startDate,
+          endDate: span.endDate,
+          dayCount,
+        },
+        position,
+      });
+    }, TOOLTIP_DELAY_MS);
+  };
+
+  // Handle mouse move to update tooltip position
+  const handleSpanMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
+    // If tooltips are disabled, do nothing
+    if (!tooltipsEnabled) {
+      return;
+    }
+
+    // Update position if tooltip is already visible
+    setTooltip((prevTooltip) => {
+      if (!prevTooltip || !prevTooltip.visible) return prevTooltip;
+      const position = calculateTooltipPosition(event.clientX, event.clientY);
+      return {
+        ...prevTooltip,
+        position,
+      };
+    });
+  };
+
+  // Handle mouse leave for tooltip
+  const handleSpanMouseLeave = () => {
+    // Cancel any pending show timeout
+    if (tooltipShowTimeoutRef.current) {
+      clearTimeout(tooltipShowTimeoutRef.current);
+      tooltipShowTimeoutRef.current = null;
+    }
+
+    // Hide tooltip immediately when mouse leaves
+    setTooltip(null);
+  };
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (tooltipTimeoutRef.current) {
+        clearTimeout(tooltipTimeoutRef.current);
+      }
+      if (tooltipShowTimeoutRef.current) {
+        clearTimeout(tooltipShowTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Clear tooltip when tooltips are disabled
+  useEffect(() => {
+    if (!tooltipsEnabled) {
+      setTooltip(null);
+      if (tooltipShowTimeoutRef.current) {
+        clearTimeout(tooltipShowTimeoutRef.current);
+        tooltipShowTimeoutRef.current = null;
+      }
+    }
+  }, [tooltipsEnabled]);
+
   // Memoize calendar rows calculation (Phase 2.1) - expensive O(n³) operation
   const locationEventRows: Record<string, EventRow[]> = useMemo(() => {
     const rows: Record<string, EventRow[]> = {};
@@ -98,6 +332,7 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline }: E
           label: isEventPhaseName(phase.name) ? event.name : phase.name,
           startDate: phase.startDate,
           endDate: phase.endDate,
+          phaseName: phase.name, // Store original phase name
         }));
 
         if (spans.length === 0) {
@@ -186,7 +421,9 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline }: E
   };
 
   return (
-    <section style={{ minWidth: `${scrollWidth}px` }}>
+    <>
+      <EventPhaseTooltip tooltip={tooltip} />
+      <section style={{ minWidth: `${scrollWidth}px` }}>
       {/* Header row with dates */}
       <header style={{
         display: 'grid',
@@ -364,7 +601,11 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline }: E
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
+                          cursor: 'help',
                         }}
+                        onMouseEnter={(e) => handleSpanMouseEnter(e, eventRow, span)}
+                        onMouseMove={handleSpanMouseMove}
+                        onMouseLeave={handleSpanMouseLeave}
                       >
                         {span.label}
                       </div>
@@ -377,6 +618,7 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline }: E
         })}
       </div>
     </section>
+    </>
   );
 }, (prevProps, nextProps) => {
   // Custom comparison to prevent re-renders when props haven't changed (Phase 2.1)
@@ -384,6 +626,7 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline }: E
     prevProps.events === nextProps.events &&
     prevProps.timeline.dates === nextProps.timeline.dates &&
     prevProps.timeline.dateColumnWidth === nextProps.timeline.dateColumnWidth &&
-    prevProps.timeline.timelineOriginPx === nextProps.timeline.timelineOriginPx
+    prevProps.timeline.timelineOriginPx === nextProps.timeline.timelineOriginPx &&
+    prevProps.tooltipsEnabled === nextProps.tooltipsEnabled
   );
 });
