@@ -18,6 +18,7 @@ import {
 } from "../../components/layoutConstants";
 import { useElementHeight } from "../../components/useElementHeight";
 import { buildDateFlags, DateFlags, nextDateString } from "../../utils/date";
+import { HOLIDAY_DATES_2026 } from "../../utils/holidays";
 
 interface Event {
   id: string;
@@ -785,7 +786,7 @@ export default function WorkspacePage() {
     return { dates: datesArray, minDate: min, maxDate: max };
   }, [activeDateRange, filteredData.eventsArray]);
 
-  const holidayDates = useMemo(() => new Set<string>(), []);
+  const holidayDates = useMemo(() => new Set<string>(HOLIDAY_DATES_2026), []);
 
   const dateMeta = useMemo(() => buildDateFlags(dates, holidayDates), [dates, holidayDates]);
 
