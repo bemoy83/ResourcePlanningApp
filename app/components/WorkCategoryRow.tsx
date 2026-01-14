@@ -90,11 +90,15 @@ export function WorkCategoryRow({
   const weekendBackground = "var(--calendar-weekend-bg)";
   const holidayBackground = "var(--calendar-holiday-bg)";
 
+  const CELL_BORDER_WIDTH = 1;
+
   const stickyColumnStyle = (offset: number): React.CSSProperties => ({
     position: 'sticky',
     left: `${offset}px`,
     zIndex: 'var(--z-sticky-column)' as any,
-    backgroundColor: 'var(--surface-default)',
+    backgroundColor: 'var(--sticky-column-bg)',
+    border: `${CELL_BORDER_WIDTH}px solid var(--sticky-column-border)`,
+    color: 'var(--sticky-column-text)',
   });
 
   return (

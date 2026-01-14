@@ -68,7 +68,9 @@ export const CrossEventContext = memo(function CrossEventContext({ crossEventEva
     position: 'sticky',
     left: `${offset}px`,
     zIndex: 'var(--z-sticky-column)' as any,
-    backgroundColor: 'var(--surface-default)',
+    backgroundColor: 'var(--sticky-column-bg)',
+    border: `${CELL_BORDER_WIDTH}px solid var(--sticky-column-border)`,
+    color: 'var(--sticky-column-text)',
   });
 
   // Memoize demand map for O(1) lookups (Phase 2.3)
@@ -102,10 +104,18 @@ export const CrossEventContext = memo(function CrossEventContext({ crossEventEva
   return (
     <section style={{ minWidth: `${scrollWidth}px`, marginBottom: 'var(--space-xl)' }}>
       {/* Cross-event demand row */}
-      <footer style={{ display: 'grid', gridTemplateColumns, backgroundColor: 'var(--calendar-header-bg)', border: 'var(--border-width-medium) solid var(--border-strong)', position: 'relative' }}>
-        <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0]), fontWeight: 'var(--font-weight-bold)', textAlign: 'right' }}>
+      <footer style={{ display: 'grid', gridTemplateColumns, backgroundColor: 'var(--sticky-header-bg)', border: 'var(--border-width-medium) solid var(--sticky-header-border)', position: 'relative' }}>
+        <div style={{
+          ...cellStyle,
+          ...stickyColumnStyle(leftColumnOffsets[0]),
+          backgroundColor: 'var(--sticky-corner-bg)',
+          border: `${CELL_BORDER_WIDTH}px solid var(--sticky-corner-border)`,
+          color: 'var(--sticky-corner-text)',
+          fontWeight: 'var(--font-weight-bold)',
+          textAlign: 'right',
+        }}>
             <div style={{ textAlign: 'right' }}>Total Demand (All Events)</div>
-            <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-normal)', color: 'var(--text-tertiary)', textAlign: 'right' }}>aggregated</div>
+            <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-normal)', textAlign: 'right' }}>aggregated</div>
           </div>
           <div style={{
             position: 'absolute',
@@ -148,10 +158,18 @@ export const CrossEventContext = memo(function CrossEventContext({ crossEventEva
 
         {/* Cross-event capacity comparison row */}
         {crossEventEvaluation.crossEventCapacityComparison.length > 0 && (
-          <footer style={{ display: 'grid', gridTemplateColumns, backgroundColor: 'var(--calendar-header-bg)', marginTop: '2px', border: 'var(--border-width-medium) solid var(--border-strong)', position: 'relative' }}>
-          <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0]), fontWeight: 'var(--font-weight-bold)', textAlign: 'right' }}>
+          <footer style={{ display: 'grid', gridTemplateColumns, backgroundColor: 'var(--sticky-header-bg)', marginTop: '2px', border: 'var(--border-width-medium) solid var(--sticky-header-border)', position: 'relative' }}>
+          <div style={{
+            ...cellStyle,
+            ...stickyColumnStyle(leftColumnOffsets[0]),
+            backgroundColor: 'var(--sticky-corner-bg)',
+            border: `${CELL_BORDER_WIDTH}px solid var(--sticky-corner-border)`,
+            color: 'var(--sticky-corner-text)',
+            fontWeight: 'var(--font-weight-bold)',
+            textAlign: 'right',
+          }}>
               <div style={{ textAlign: 'right' }}>Total Capacity Status</div>
-              <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-normal)', color: 'var(--text-tertiary)', textAlign: 'right' }}>demand vs capacity</div>
+              <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-normal)', textAlign: 'right' }}>demand vs capacity</div>
             </div>
             <div style={{
               position: 'absolute',

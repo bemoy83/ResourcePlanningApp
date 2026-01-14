@@ -194,11 +194,15 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
   const weekendBackground = "var(--calendar-weekend-bg)";
   const holidayBackground = "var(--calendar-holiday-bg)";
 
+  const CELL_BORDER_WIDTH = 1;
+
   const stickyColumnStyle = (offset: number): React.CSSProperties => ({
     position: 'sticky',
     left: `${offset}px`,
     zIndex: 'var(--z-sticky-column)' as any,
-    backgroundColor: 'var(--surface-default)',
+    backgroundColor: 'var(--sticky-column-bg)',
+    border: `${CELL_BORDER_WIDTH}px solid var(--sticky-column-border)`,
+    color: 'var(--sticky-column-text)',
   });
 
   const emptyRows = (() => {
@@ -260,29 +264,59 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
             style={{
               display: 'grid',
               gridTemplateColumns,
-              backgroundColor: 'var(--surface-default)',
+              backgroundColor: 'var(--sticky-header-bg)',
               fontWeight: 'var(--font-weight-bold)',
-              border: 'var(--border-width-medium) solid var(--border-strong)',
+              border: 'var(--border-width-medium) solid var(--sticky-header-border)',
               position: 'sticky',
               top: 0,
               zIndex: 'var(--z-sticky)' as any,
             }}
           >
-            <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0]) }}>
+            <div style={{
+              ...cellStyle,
+              ...stickyColumnStyle(leftColumnOffsets[0]),
+              backgroundColor: 'var(--sticky-corner-bg)',
+              border: `${CELL_BORDER_WIDTH}px solid var(--sticky-corner-border)`,
+              color: 'var(--sticky-corner-text)',
+            }}>
               <div>Event</div>
             </div>
-            <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[1]) }}>
+            <div style={{
+              ...cellStyle,
+              ...stickyColumnStyle(leftColumnOffsets[1]),
+              backgroundColor: 'var(--sticky-corner-bg)',
+              border: `${CELL_BORDER_WIDTH}px solid var(--sticky-corner-border)`,
+              color: 'var(--sticky-corner-text)',
+            }}>
               <div>Work Category</div>
             </div>
-            <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[2]) }}>
+            <div style={{
+              ...cellStyle,
+              ...stickyColumnStyle(leftColumnOffsets[2]),
+              backgroundColor: 'var(--sticky-corner-bg)',
+              border: `${CELL_BORDER_WIDTH}px solid var(--sticky-corner-border)`,
+              color: 'var(--sticky-corner-text)',
+            }}>
               <div>Estimate</div>
               <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-normal)' }}>total hours</div>
             </div>
-            <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[3]) }}>
+            <div style={{
+              ...cellStyle,
+              ...stickyColumnStyle(leftColumnOffsets[3]),
+              backgroundColor: 'var(--sticky-corner-bg)',
+              border: `${CELL_BORDER_WIDTH}px solid var(--sticky-corner-border)`,
+              color: 'var(--sticky-corner-text)',
+            }}>
               <div>Allocated</div>
               <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-normal)' }}>total hours</div>
             </div>
-            <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[4]) }}>
+            <div style={{
+              ...cellStyle,
+              ...stickyColumnStyle(leftColumnOffsets[4]),
+              backgroundColor: 'var(--sticky-corner-bg)',
+              border: `${CELL_BORDER_WIDTH}px solid var(--sticky-corner-border)`,
+              color: 'var(--sticky-corner-text)',
+            }}>
               <div>Remaining</div>
               <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-normal)' }}>to allocate</div>
             </div>
@@ -299,7 +333,7 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
                   ? holidayBackground
                   : dateFlags?.isWeekend
                   ? weekendBackground
-                  : 'var(--surface-default)';
+                  : 'var(--sticky-header-cell-bg)';
                 return (
                   <div
                     key={date}
@@ -311,6 +345,8 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
                       width: `${dateColumnWidth}px`,
                       height: '100%',
                       backgroundColor,
+                      border: `${CELL_BORDER_WIDTH}px solid var(--sticky-header-cell-border)`,
+                      color: 'var(--sticky-header-text)',
                     }}
                   >
                     <div>{date}</div>
@@ -434,14 +470,45 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
 
           {/* Capacity comparison row */}
           {evaluation.dailyCapacityComparison.length > 0 && (
-            <footer style={{ display: 'grid', gridTemplateColumns, backgroundColor: 'var(--calendar-header-bg)', marginTop: 'var(--space-xxs)', border: 'var(--border-width-medium) solid var(--border-strong)', position: 'relative' }}>
-              <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0]) }}></div>
-              <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[1]) }}></div>
-              <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[2]) }}></div>
-              <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[3]) }}></div>
-              <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[4]), fontWeight: 'var(--font-weight-bold)' }}>
+            <footer style={{ display: 'grid', gridTemplateColumns, backgroundColor: 'var(--sticky-header-bg)', marginTop: 'var(--space-xxs)', border: 'var(--border-width-medium) solid var(--sticky-header-border)', position: 'relative' }}>
+              <div style={{
+                ...cellStyle,
+                ...stickyColumnStyle(leftColumnOffsets[0]),
+                backgroundColor: 'var(--sticky-corner-bg)',
+                border: `${CELL_BORDER_WIDTH}px solid var(--sticky-corner-border)`,
+                color: 'var(--sticky-corner-text)',
+              }}></div>
+              <div style={{
+                ...cellStyle,
+                ...stickyColumnStyle(leftColumnOffsets[1]),
+                backgroundColor: 'var(--sticky-corner-bg)',
+                border: `${CELL_BORDER_WIDTH}px solid var(--sticky-corner-border)`,
+                color: 'var(--sticky-corner-text)',
+              }}></div>
+              <div style={{
+                ...cellStyle,
+                ...stickyColumnStyle(leftColumnOffsets[2]),
+                backgroundColor: 'var(--sticky-corner-bg)',
+                border: `${CELL_BORDER_WIDTH}px solid var(--sticky-corner-border)`,
+                color: 'var(--sticky-corner-text)',
+              }}></div>
+              <div style={{
+                ...cellStyle,
+                ...stickyColumnStyle(leftColumnOffsets[3]),
+                backgroundColor: 'var(--sticky-corner-bg)',
+                border: `${CELL_BORDER_WIDTH}px solid var(--sticky-corner-border)`,
+                color: 'var(--sticky-corner-text)',
+              }}></div>
+              <div style={{
+                ...cellStyle,
+                ...stickyColumnStyle(leftColumnOffsets[4]),
+                backgroundColor: 'var(--sticky-corner-bg)',
+                border: `${CELL_BORDER_WIDTH}px solid var(--sticky-corner-border)`,
+                color: 'var(--sticky-corner-text)',
+                fontWeight: 'var(--font-weight-bold)',
+              }}>
                 <div>Capacity</div>
-                <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-normal)', color: 'var(--text-tertiary)' }}>available per day</div>
+                <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-normal)' }}>available per day</div>
               </div>
               <div style={{
                 position: 'absolute',

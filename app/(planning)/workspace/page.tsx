@@ -809,11 +809,15 @@ export default function WorkspacePage() {
     minHeight: 'var(--row-min-height)',
     boxSizing: 'border-box' as const,
   };
+  const CELL_BORDER_WIDTH = 1;
+
   const stickyColumnStyle = (offset: number): React.CSSProperties => ({
     position: 'sticky',
     left: `${offset}px`,
     zIndex: 'var(--z-sticky-column)' as any,
-    backgroundColor: 'var(--surface-default)',
+    backgroundColor: 'var(--sticky-column-bg)',
+    border: `${CELL_BORDER_WIDTH}px solid var(--sticky-column-border)`,
+    color: 'var(--sticky-column-text)',
   });
 
   // Loading state - must be after all hooks
@@ -1037,28 +1041,58 @@ export default function WorkspacePage() {
                 style={{
                   display: 'grid',
                   gridTemplateColumns,
-                  backgroundColor: 'var(--surface-default)',
+                  backgroundColor: 'var(--sticky-header-bg)',
                   fontWeight: 'var(--font-weight-bold)',
-                  border: `var(--border-width-medium) solid var(--border-strong)`,
+                  border: `var(--border-width-medium) solid var(--sticky-header-border)`,
                   minWidth: `${scrollWidth}px`,
                   position: 'relative',
                 }}
               >
-                <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[0]) }}>
+                <div style={{
+                  ...cellStyle,
+                  ...stickyColumnStyle(leftColumnOffsets[0]),
+                  backgroundColor: 'var(--sticky-corner-bg)',
+                  border: `${CELL_BORDER_WIDTH}px solid var(--sticky-corner-border)`,
+                  color: 'var(--sticky-corner-text)',
+                }}>
                   <div>Event</div>
                 </div>
-                <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[1]) }}>
+                <div style={{
+                  ...cellStyle,
+                  ...stickyColumnStyle(leftColumnOffsets[1]),
+                  backgroundColor: 'var(--sticky-corner-bg)',
+                  border: `${CELL_BORDER_WIDTH}px solid var(--sticky-corner-border)`,
+                  color: 'var(--sticky-corner-text)',
+                }}>
                   <div>Work Category</div>
                 </div>
-                <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[2]) }}>
+                <div style={{
+                  ...cellStyle,
+                  ...stickyColumnStyle(leftColumnOffsets[2]),
+                  backgroundColor: 'var(--sticky-corner-bg)',
+                  border: `${CELL_BORDER_WIDTH}px solid var(--sticky-corner-border)`,
+                  color: 'var(--sticky-corner-text)',
+                }}>
                   <div>Estimate</div>
                   <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-normal)' }}>total hours</div>
                 </div>
-                <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[3]) }}>
+                <div style={{
+                  ...cellStyle,
+                  ...stickyColumnStyle(leftColumnOffsets[3]),
+                  backgroundColor: 'var(--sticky-corner-bg)',
+                  border: `${CELL_BORDER_WIDTH}px solid var(--sticky-corner-border)`,
+                  color: 'var(--sticky-corner-text)',
+                }}>
                   <div>Allocated</div>
                   <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-normal)' }}>total hours</div>
                 </div>
-                <div style={{ ...cellStyle, ...stickyColumnStyle(leftColumnOffsets[4]) }}>
+                <div style={{
+                  ...cellStyle,
+                  ...stickyColumnStyle(leftColumnOffsets[4]),
+                  backgroundColor: 'var(--sticky-corner-bg)',
+                  border: `${CELL_BORDER_WIDTH}px solid var(--sticky-corner-border)`,
+                  color: 'var(--sticky-corner-text)',
+                }}>
                   <div>Remaining</div>
                   <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-normal)' }}>to allocate</div>
                 </div>
@@ -1073,6 +1107,12 @@ export default function WorkspacePage() {
                     const dateObj = new Date(date);
                     const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
                     const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    const dateFlags = dateMeta[index];
+                    const backgroundColor = dateFlags?.isHoliday
+                      ? 'var(--calendar-holiday-bg)'
+                      : dateFlags?.isWeekend
+                      ? 'var(--calendar-weekend-bg)'
+                      : 'var(--sticky-header-cell-bg)';
                     return (
                       <div
                         key={date}
@@ -1083,6 +1123,9 @@ export default function WorkspacePage() {
                           top: 0,
                           width: `${TIMELINE_DATE_COLUMN_WIDTH}px`,
                           height: '100%',
+                          backgroundColor,
+                          border: `${CELL_BORDER_WIDTH}px solid var(--sticky-header-cell-border)`,
+                          color: 'var(--sticky-header-text)',
                         }}
                       >
                         <div>{dayName}</div>
