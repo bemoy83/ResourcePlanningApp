@@ -39,6 +39,11 @@ interface Location {
   name: string;
 }
 
+interface LocationTagGroup {
+  name: string;
+  locationIds: string[];
+}
+
 interface EventLocation {
   id: string;
   eventId: string;
@@ -136,6 +141,7 @@ export default function WorkspaceV2Page() {
   const [errorsByCellKey, setErrorsByCellKey] = useState<Record<string, string>>({});
   const [selectedLocationIds, setSelectedLocationIds] = useState<Set<string>>(new Set());
   const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set());
+  const [locationTagGroups, setLocationTagGroups] = useState<LocationTagGroup[]>([]);
   const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>("next-3-months");
   const [customDateRange, setCustomDateRange] = useState<DateRange>({ startDate: null, endDate: null });
   const [tooltipsEnabled, setTooltipsEnabled] = useTooltipPreference();
@@ -678,6 +684,7 @@ export default function WorkspaceV2Page() {
                   locations={locations}
                   selectedLocationIds={selectedLocationIds}
                   onSelectionChange={setSelectedLocationIds}
+                  onTagsChange={setLocationTagGroups}
                 />
               )}
               <Chip
@@ -749,6 +756,61 @@ export default function WorkspaceV2Page() {
                 <ThemeToggle />
               </div>
             </FilterBar>
+
+            {locationTagGroups.length > 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "var(--space-sm)",
+                  flexWrap: "wrap",
+                  marginBottom: "var(--space-md)",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "var(--font-size-sm)",
+                    fontWeight: "var(--font-weight-bold)",
+                    color: "var(--text-primary)",
+                    marginRight: "var(--space-xs)",
+                  }}
+                >
+                  Location Tags:
+                </span>
+                {locationTagGroups.map((group) => {
+                  const tagCount = group.locationIds.length;
+                  const matchingCount = group.locationIds.filter((id) =>
+                    selectedLocationIds.has(id)
+                  ).length;
+                  const isTagSelected = tagCount > 0 && matchingCount === tagCount;
+                  return (
+                    <Chip
+                      key={group.name}
+                      selected={isTagSelected}
+                      disabled={tagCount === 0}
+                      onClick={() => {
+                        if (tagCount === 0) return;
+                        if (matchingCount === tagCount) {
+                          const nextSelection = new Set(selectedLocationIds);
+                          for (const id of group.locationIds) {
+                            nextSelection.delete(id);
+                          }
+                          setSelectedLocationIds(nextSelection);
+                          return;
+                        }
+                        const nextSelection = new Set(selectedLocationIds);
+                        for (const id of group.locationIds) {
+                          nextSelection.add(id);
+                        }
+                        setSelectedLocationIds(nextSelection);
+                      }}
+                    >
+                      {group.name} ({tagCount})
+                    </Chip>
+                  );
+                })}
+              </div>
+            )}
 
             <div style={{ marginBottom: "var(--space-md)" }}>
               <DateRangeChipFilter

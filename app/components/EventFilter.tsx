@@ -77,13 +77,13 @@ export function EventFilter({
   const someSelected = !allSelected && !noneSelected;
 
   const toggleAll = () => {
-    if (allSelected) {
-      // Uncheck all - deselect everything
-      onSelectionChange(new Set());
-    } else {
+    if (selectedEventIds.size === 0) {
       // Check all - select everything (from full list, not filtered)
       onSelectionChange(new Set(events.map((evt) => evt.id)));
+      return;
     }
+    // Uncheck all - deselect everything
+    onSelectionChange(new Set());
   };
 
   const toggleEvent = (eventId: string) => {
@@ -183,77 +183,85 @@ export function EventFilter({
             zIndex: "var(--z-dropdown-panel)" as any,
           }}
         >
-          {/* Search Input */}
           <div
             style={{
-              padding: "var(--space-sm) var(--space-md)",
-              borderBottom: "var(--border-width-thin) solid var(--border-secondary)",
+              position: "sticky",
+              top: 0,
+              zIndex: 1,
               backgroundColor: "var(--bg-secondary)",
             }}
           >
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search events..."
+            {/* Search Input */}
+            <div
               style={{
-                width: "100%",
-                padding: "6px var(--space-sm)",
-                fontSize: "var(--font-size-sm)",
-                border: "var(--border-width-thin) solid var(--border-primary)",
-                borderRadius: "var(--radius-xs)",
-                boxSizing: "border-box",
-                outline: "none",
+                padding: "var(--space-sm) var(--space-md)",
+                borderBottom: "var(--border-width-thin) solid var(--border-secondary)",
               }}
-            />
-            {searchQuery && (
-              <div
+            >
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search events..."
                 style={{
-                  fontSize: "var(--font-size-xs)",
-                  color: "var(--text-tertiary)",
-                  marginTop: "var(--space-xs)",
+                  width: "100%",
+                  padding: "6px var(--space-sm)",
+                  fontSize: "var(--font-size-sm)",
+                  border: "var(--border-width-thin) solid var(--border-primary)",
+                  borderRadius: "var(--radius-xs)",
+                  boxSizing: "border-box",
+                  outline: "none",
                 }}
-              >
-                Showing {filteredEvents.length} of {events.length} events
-              </div>
-            )}
-          </div>
+              />
+              {searchQuery && (
+                <div
+                  style={{
+                    fontSize: "var(--font-size-xs)",
+                    color: "var(--text-tertiary)",
+                    marginTop: "var(--space-xs)",
+                  }}
+                >
+                  Showing {filteredEvents.length} of {events.length} events
+                </div>
+              )}
+            </div>
 
-          {/* Select All Option */}
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              padding: "10px var(--space-md)",
-              cursor: "pointer",
-              fontSize: "var(--font-size-sm)",
-              fontWeight: "var(--font-weight-bold)",
-              borderBottom: "var(--border-width-thin) solid var(--border-secondary)",
-              backgroundColor: "var(--bg-tertiary)",
-              color: "var(--text-primary)",
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={allSelected}
-              tabIndex={-1}
-              ref={(input) => {
-                if (input) {
-                  input.indeterminate = someSelected;
-                }
-              }}
-              onChange={toggleAll}
+            {/* Select All Option */}
+            <label
               style={{
-                marginRight: "var(--space-sm)",
+                display: "flex",
+                alignItems: "center",
+                padding: "10px var(--space-md)",
                 cursor: "pointer",
-                width: "16px",
-                height: "16px",
+                fontSize: "var(--font-size-sm)",
+                fontWeight: "var(--font-weight-bold)",
+                borderBottom: "var(--border-width-thin) solid var(--border-secondary)",
+                backgroundColor: "var(--bg-tertiary)",
+                color: "var(--text-primary)",
               }}
-              aria-label="Select all events"
-            />
-            <span>All Events</span>
-          </label>
+            >
+              <input
+                type="checkbox"
+                checked={allSelected}
+                tabIndex={-1}
+                ref={(input) => {
+                  if (input) {
+                    input.indeterminate = someSelected;
+                  }
+                }}
+                onChange={toggleAll}
+                style={{
+                  marginRight: "var(--space-sm)",
+                  cursor: "pointer",
+                  width: "16px",
+                  height: "16px",
+                }}
+                aria-label="Select all events"
+              />
+              <span>All Events</span>
+            </label>
+          </div>
 
           {/* Individual Event Checkboxes */}
           {filteredEvents.length === 0 ? (
@@ -326,12 +334,15 @@ export function EventFilter({
           {/* Action Buttons */}
           <div
             style={{
+              position: "sticky",
+              bottom: 0,
               display: "flex",
               justifyContent: "space-between",
               padding: "var(--space-sm) var(--space-md)",
               borderTop: "var(--border-width-thin) solid var(--border-secondary)",
               backgroundColor: "var(--bg-tertiary)",
               gap: "var(--space-sm)",
+              boxShadow: "0 -6px 12px rgba(0, 0, 0, 0.08)",
             }}
           >
             <button
