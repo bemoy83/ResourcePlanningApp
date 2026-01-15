@@ -40,10 +40,6 @@ const CELL_BORDER_WIDTH = 1;
 
 // Phase 2.3: Memoize component to prevent unnecessary re-renders
 export const CrossEventContext = memo(function CrossEventContext({ crossEventEvaluation, timeline }: CrossEventContextProps) {
-  if (crossEventEvaluation.crossEventDailyDemand.length === 0) {
-    return null;
-  }
-
   const dates = timeline.dates;
   const dateColumnWidth = timeline.dateColumnWidth;
   const timelineOriginPx = timeline.timelineOriginPx;
@@ -100,6 +96,12 @@ export const CrossEventContext = memo(function CrossEventContext({ crossEventEva
 
   const weekendBackground = "var(--calendar-weekend-bg)";
   const holidayBackground = "var(--calendar-holiday-bg)";
+
+  // Strict rendering: if no demand data exists, render nothing.
+  // Must be after all hooks to avoid "Rendered fewer hooks than expected".
+  if (crossEventEvaluation.crossEventDailyDemand.length === 0) {
+    return null;
+  }
 
   return (
     <section style={{ minWidth: `${scrollWidth}px`, marginBottom: 'var(--space-xl)' }}>

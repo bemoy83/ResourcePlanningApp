@@ -139,11 +139,6 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
     );
   }, [eventsWithLocations]);
 
-  // Strict rendering: if no locations exist, render nothing
-  if (locations.length === 0) {
-    return null;
-  }
-
   const dates = timeline.dates;
   const DAY_COL_FULL_WIDTH = timeline.dateColumnWidth;
   const timelineOriginPx = timeline.timelineOriginPx;
@@ -437,6 +432,12 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
     color: 'var(--text-primary)',
     boxSizing: 'border-box' as const,
   };
+
+  // Strict rendering: if no locations exist, render nothing.
+  // Must be after all hooks to avoid "Rendered fewer hooks than expected".
+  if (locations.length === 0) {
+    return null;
+  }
 
   return (
     <>
