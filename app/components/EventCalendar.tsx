@@ -511,11 +511,7 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
 
           // Calculate row height based on number of vertical stacks needed
           const maxRows = eventRows.length > 0 ? Math.max(...eventRows.map((sr) => sr.row)) + 1 : 0;
-          const rowHeight = Math.max(maxRows, 1) * ROW_LAYER_HEIGHT + 2; // Add 2px for bottom border
-          // With box-sizing: border-box, parent's borderBottom (2px) is included in rowHeight
-          // Content area (above border) = rowHeight - 2px
-          // Cells with borders need height = contentArea to fill it (borders included in height)
-          const cellHeight = rowHeight - 2;
+          const rowHeight = Math.max(maxRows, 1) * ROW_LAYER_HEIGHT;
 
           return (
             <div
@@ -538,7 +534,7 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
                 position: 'sticky',
                 left: 0,
                 zIndex: 'var(--z-sticky-column)' as any,
-                height: `${cellHeight}px`,
+                height: `${rowHeight}px`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'flex-end',
@@ -553,7 +549,7 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
                 position: 'absolute',
                 left: `${timelineOriginPx}px`,
                 top: 0,
-                height: `${cellHeight}px`,
+                height: `${rowHeight}px`,
                 width: `${timelineWidth}px`,
               }}>
                 {dates.map((date, index) => {
@@ -612,8 +608,8 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
 
                     // Vertical positioning: one row per event-location
                     const topOffset = eventRow.row * ROW_LAYER_HEIGHT;
-                    // Calculate span height: if it's the only row, match the cell height; otherwise use layer height
-                    const spanHeight = maxRows === 1 ? cellHeight : ROW_LAYER_HEIGHT;
+                    // Calculate span height: if it's the only row, match the row height; otherwise use layer height
+                    const spanHeight = maxRows === 1 ? rowHeight : ROW_LAYER_HEIGHT;
 
                     return (
                       <div
