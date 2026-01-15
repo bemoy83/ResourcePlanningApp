@@ -1,9 +1,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { PlanningTableHeader } from './PlanningTableHeader';
+import { CalendarHeader } from './CalendarHeader';
 import { CalendarLocationRow } from './rows/CalendarLocationRow';
 import { CrossEventDemandRow } from './rows/CrossEventDemandRow';
 import { CrossEventCapacityRow } from './rows/CrossEventCapacityRow';
 import { WorkCategoryRow } from '../WorkCategoryRow';
+import { StickyLeftCell } from './shared/StickyLeftCell';
 import {
   TimelineLayout,
   Event,
@@ -262,93 +264,180 @@ export function UnifiedPlanningTable({
 
   return (
     <div
-      className="unified-planning-table"
       ref={scrollContainerRef}
+      className="unified-planning-table"
       style={{
-        overflow: 'auto',
         height: '100%',
         width: '100%',
+        overflow: 'auto',
       }}
     >
-      {/* Content wrapper with explicit width */}
       <div style={{ minWidth: `${scrollWidth}px` }}>
-        {/* Sticky Header */}
-        <PlanningTableHeader timeline={timeline} />
+        {/* Sticky Navigation Sections - Calendar + Cross-Event Context */}
+        <div
+          style={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 10,
+            backgroundColor: 'var(--surface-default)',
+          }}
+        >
+          {/* Calendar Header - "Locations" label */}
+          <CalendarHeader timeline={timeline} />
 
-        {/* Calendar Section - One row per location */}
-        {sortedLocations.length > 0 && (
-          <section className="calendar-section" style={{ borderTop: 'var(--border-width-thin) solid var(--border-strong)' }}>
-            {sortedLocations.map((location) => {
-              const locationEvents = eventsForLocation(location);
-              if (locationEvents.length === 0) return null;
+          {/* Calendar Section - One row per location */}
+          {sortedLocations.length > 0 && (
+            <section className="calendar-section">
+              {sortedLocations.map((location) => {
+                const locationEvents = eventsForLocation(location);
+                if (locationEvents.length === 0) return null;
 
-              return (
-                <CalendarLocationRow
-                  key={location.id}
-                  location={location}
-                  events={locationEvents}
-                  timeline={timeline}
-                  tooltipsEnabled={tooltipsEnabled}
-                />
-              );
-            })}
-          </section>
-        )}
+                return (
+                  <CalendarLocationRow
+                    key={location.id}
+                    location={location}
+                    events={locationEvents}
+                    timeline={timeline}
+                    tooltipsEnabled={tooltipsEnabled}
+                  />
+                );
+              })}
+            </section>
+          )}
 
-        {/* Cross-Event Section - Summary rows */}
-        {crossEventEvaluation.crossEventDailyDemand.length > 0 && (
-          <section className="cross-event-section" style={{ marginTop: 'var(--space-md)', marginBottom: 'var(--space-md)' }}>
-            <CrossEventDemandRow
-              dailyDemand={crossEventEvaluation.crossEventDailyDemand}
-              dailyCapacityComparison={crossEventEvaluation.crossEventCapacityComparison}
-              timeline={timeline}
-            />
-            <CrossEventCapacityRow
-              dailyCapacityComparison={crossEventEvaluation.crossEventCapacityComparison}
-              timeline={timeline}
-            />
-          </section>
-        )}
+          {/* Cross-Event Section - Summary rows */}
+          {crossEventEvaluation.crossEventDailyDemand.length > 0 && (
+            <section className="cross-event-section" style={{ marginTop: 'var(--space-md)', marginBottom: 'var(--space-md)' }}>
+              <CrossEventDemandRow
+                dailyDemand={crossEventEvaluation.crossEventDailyDemand}
+                dailyCapacityComparison={crossEventEvaluation.crossEventCapacityComparison}
+                timeline={timeline}
+              />
+              <CrossEventCapacityRow
+                dailyCapacityComparison={crossEventEvaluation.crossEventCapacityComparison}
+                timeline={timeline}
+              />
+            </section>
+          )}
 
-        {/* Planning Grid Section - One row per work category */}
+          {/* Work Categories Labels Row - Sticky below cross-event */}
+          <div
+            style={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 11,
+              backgroundColor: 'var(--sticky-header-bg)',
+              border: 'var(--border-width-medium) solid var(--sticky-header-border)',
+              display: 'grid',
+              gridTemplateColumns: gridTemplateColumns,
+              fontWeight: 'var(--font-weight-bold)',
+              fontSize: 'var(--font-size-sm)',
+              minWidth: `${scrollWidth}px`,
+              position: 'relative',
+            }}
+          >
+            <StickyLeftCell
+              leftOffset={leftColumnOffsets[0]}
+              style={{
+                padding: 'var(--space-sm)',
+                textAlign: 'center',
+                backgroundColor: 'var(--sticky-corner-bg)',
+                color: 'var(--sticky-corner-text)',
+                border: '1px solid var(--sticky-corner-border)',
+              }}
+            >
+              Event
+            </StickyLeftCell>
+            <StickyLeftCell
+              leftOffset={leftColumnOffsets[1]}
+              style={{
+                padding: 'var(--space-sm)',
+                textAlign: 'center',
+                backgroundColor: 'var(--sticky-corner-bg)',
+                color: 'var(--sticky-corner-text)',
+                border: '1px solid var(--sticky-corner-border)',
+              }}
+            >
+              Work Category
+            </StickyLeftCell>
+            <StickyLeftCell
+              leftOffset={leftColumnOffsets[2]}
+              style={{
+                padding: 'var(--space-sm)',
+                textAlign: 'center',
+                backgroundColor: 'var(--sticky-corner-bg)',
+                color: 'var(--sticky-corner-text)',
+                border: '1px solid var(--sticky-corner-border)',
+              }}
+            >
+              Estimate
+            </StickyLeftCell>
+            <StickyLeftCell
+              leftOffset={leftColumnOffsets[3]}
+              style={{
+                padding: 'var(--space-sm)',
+                textAlign: 'center',
+                backgroundColor: 'var(--sticky-corner-bg)',
+                color: 'var(--sticky-corner-text)',
+                border: '1px solid var(--sticky-corner-border)',
+              }}
+            >
+              Allocated
+            </StickyLeftCell>
+            <StickyLeftCell
+              leftOffset={leftColumnOffsets[4]}
+              style={{
+                padding: 'var(--space-sm)',
+                textAlign: 'center',
+                backgroundColor: 'var(--sticky-corner-bg)',
+                color: 'var(--sticky-corner-text)',
+                border: '1px solid var(--sticky-corner-border)',
+              }}
+            >
+              Remaining
+            </StickyLeftCell>
+          </div>
+        </div>
+
+        {/* Planning Grid Section - Scrollable work categories */}
         <section className="planning-grid-section" style={{ border: 'var(--border-width-thin) solid var(--border-strong)' }}>
-        {workCategories.map((workCategory) => {
-          const pressure = pressureMap.get(workCategory.id);
-          const allocatedTotal = allocations
-            .filter((a) => a.workCategoryId === workCategory.id)
-            .reduce((sum, a) => sum + a.effortHours, 0);
-          const remaining = workCategory.estimatedEffortHours - allocatedTotal;
-          const event = eventMap.get(workCategory.eventId);
-          const eventName = event?.name || 'Unknown Event';
+          {workCategories.map((workCategory) => {
+            const pressure = pressureMap.get(workCategory.id);
+            const allocatedTotal = allocations
+              .filter((a) => a.workCategoryId === workCategory.id)
+              .reduce((sum, a) => sum + a.effortHours, 0);
+            const remaining = workCategory.estimatedEffortHours - allocatedTotal;
+            const event = eventMap.get(workCategory.eventId);
+            const eventName = event?.name || 'Unknown Event';
 
-          return (
-            <WorkCategoryRow
-              key={workCategory.id}
-              eventName={eventName}
-              workCategory={workCategory}
-              allocatedTotal={allocatedTotal}
-              remaining={remaining}
-              pressure={pressure}
-              dates={dates}
-              dateColumnWidth={dateColumnWidth}
-              timelineOriginPx={timelineOriginPx}
-              leftColumnOffsets={leftColumnOffsets}
-              allocations={allocations}
-              drafts={drafts}
-              errorsByCellKey={errorsByCellKey}
-              onStartCreate={onStartCreate}
-              onStartEdit={onStartEdit}
-              onChangeDraft={onChangeDraft}
-              onCommit={onCommit}
-              onCancel={onCancel}
-              onDelete={onDelete}
-              gridTemplateColumns={gridTemplateColumns}
-              cellStyle={cellStyle}
-              dateMeta={timeline.dateMeta}
-            />
-          );
-        })}
-      </section>
+            return (
+              <WorkCategoryRow
+                key={workCategory.id}
+                eventName={eventName}
+                workCategory={workCategory}
+                allocatedTotal={allocatedTotal}
+                remaining={remaining}
+                pressure={pressure}
+                dates={dates}
+                dateColumnWidth={dateColumnWidth}
+                timelineOriginPx={timelineOriginPx}
+                leftColumnOffsets={leftColumnOffsets}
+                allocations={allocations}
+                drafts={drafts}
+                errorsByCellKey={errorsByCellKey}
+                onStartCreate={onStartCreate}
+                onStartEdit={onStartEdit}
+                onChangeDraft={onChangeDraft}
+                onCommit={onCommit}
+                onCancel={onCancel}
+                onDelete={onDelete}
+                gridTemplateColumns={gridTemplateColumns}
+                cellStyle={cellStyle}
+                dateMeta={timeline.dateMeta}
+              />
+            );
+          })}
+        </section>
       </div>
     </div>
   );

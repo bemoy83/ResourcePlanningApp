@@ -102,7 +102,7 @@ export function WorkCategoryRow({
   });
 
   return (
-    <section style={{ display: 'grid', gridTemplateColumns, position: 'relative' }}>
+    <section style={{ display: 'grid', gridTemplateColumns, position: 'relative', minWidth: `${timelineOriginPx + timelineWidth}px` }}>
       {/* Event name */}
       <div style={{ ...rowStyle, ...stickyColumnStyle(leftColumnOffsets[0]) }}>
         <div>{eventName}</div>

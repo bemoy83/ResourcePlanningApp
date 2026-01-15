@@ -78,6 +78,7 @@ export const CrossEventCapacityRow = memo(function CrossEventCapacityRow({
           color: 'var(--sticky-corner-text)',
           fontWeight: 'var(--font-weight-bold)',
           textAlign: 'right',
+          alignItems: 'flex-end',
           paddingRight: 'var(--space-md)',
         }}
       >
