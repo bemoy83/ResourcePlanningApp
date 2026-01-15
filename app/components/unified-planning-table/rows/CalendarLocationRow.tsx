@@ -450,6 +450,7 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
               return (
                 <div
                   key={`${eventRow.eventId}-${eventRow.locationId}-${spanIndex}-${span.startDate}-${span.endDate}`}
+                  data-event-id={eventRow.eventId}
                   style={{
                     position: 'absolute',
                     top: `${topOffset}px`,

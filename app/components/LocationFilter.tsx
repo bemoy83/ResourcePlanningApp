@@ -20,7 +20,7 @@ export function LocationFilter({
 }: LocationFilterProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [focusedIndex, setFocusedIndex] = useState(-1); // -1 = search input, 0+ = list items
+  const [focusedIndex, setFocusedIndex] = useState(-1); // -1 = no focused option, 0+ = list items
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const listItemRefs = useRef<Map<number, HTMLLabelElement>>(new Map());
@@ -45,9 +45,7 @@ export function LocationFilter({
   useEffect(() => {
     if (isOpen) {
       setFocusedIndex(-1);
-      if (searchInputRef.current) {
-        searchInputRef.current.focus();
-      }
+      searchInputRef.current?.focus();
     }
   }, [isOpen]);
 
@@ -102,31 +100,32 @@ export function LocationFilter({
 
   // Keyboard navigation handler
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Tab") {
+      setIsOpen(false);
+      return;
+    }
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setFocusedIndex((prev) => Math.min(prev + 1, filteredLocations.length - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setFocusedIndex((prev) => Math.max(prev - 1, -1));
-      if (focusedIndex === 0) {
-        // Going back to search input
-        searchInputRef.current?.focus();
-      }
-    } else if (e.key === "Enter" && focusedIndex >= 0) {
+    } else if (e.key === "Enter") {
       e.preventDefault();
-      const location = filteredLocations[focusedIndex];
+      if (focusedIndex < 0 && searchQuery.trim() === "") {
+        toggleAll();
+        return;
+      }
+      const targetIndex = focusedIndex >= 0 ? focusedIndex : 0;
+      const location = filteredLocations[targetIndex];
       if (location) {
         toggleLocation(location.id);
       }
     } else if (e.key === "Escape") {
-      if (searchQuery) {
-        e.preventDefault();
-        setSearchQuery("");
-        setFocusedIndex(-1);
-        searchInputRef.current?.focus();
-      } else {
-        setIsOpen(false);
-      }
+      e.preventDefault();
+      setSearchQuery("");
+      setFocusedIndex(-1);
+      setIsOpen(false);
     }
   };
 
@@ -240,6 +239,7 @@ export function LocationFilter({
             <input
               type="checkbox"
               checked={allSelected}
+              tabIndex={-1}
               ref={(input) => {
                 if (input) {
                   input.indeterminate = someSelected;
@@ -309,6 +309,7 @@ export function LocationFilter({
                   <input
                     type="checkbox"
                     checked={isChecked}
+                    tabIndex={-1}
                     onChange={() => toggleLocation(location.id)}
                     style={{
                       marginRight: "var(--space-sm)",
@@ -339,6 +340,7 @@ export function LocationFilter({
               onClick={() => {
                 onSelectionChange(new Set());
               }}
+              tabIndex={-1}
               style={{
                 padding: "6px var(--space-md)",
                 backgroundColor: "var(--surface-default)",
@@ -354,6 +356,7 @@ export function LocationFilter({
             </button>
             <button
               onClick={() => setIsOpen(false)}
+              tabIndex={-1}
               style={{
                 padding: "6px var(--space-md)",
                 backgroundColor: "var(--button-primary-bg)",

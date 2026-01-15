@@ -1,7 +1,8 @@
 "use client";
 
-import { ReactNode, useEffect, useState, useMemo } from "react";
+import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { UnifiedPlanningTable } from "../../components/unified-planning-table/UnifiedPlanningTable";
+import { Chip } from "../../components/Chip";
 import { FilterBar } from "../../components/FilterBar";
 import { LocationFilter } from "../../components/LocationFilter";
 import { EventFilter } from "../../components/EventFilter";
@@ -138,6 +139,84 @@ export default function WorkspaceV2Page() {
   const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>("next-3-months");
   const [customDateRange, setCustomDateRange] = useState<DateRange>({ startDate: null, endDate: null });
   const [tooltipsEnabled, setTooltipsEnabled] = useTooltipPreference();
+  const [focusedEventId, setFocusedEventId] = useState<string | null>(null);
+  const [currentEventIndex, setCurrentEventIndex] = useState(-1);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimeoutRef = useRef<number | null>(null);
+
+  const selectedEventsForNavigation = useMemo(() => {
+    return events
+      .filter((event) => selectedEventIds.has(event.id))
+      .sort((a, b) => {
+        const startDelta = a.startDate.localeCompare(b.startDate);
+        if (startDelta !== 0) return startDelta;
+        return a.name.localeCompare(b.name);
+      });
+  }, [events, selectedEventIds]);
+
+  const selectedEventKey = useMemo(() => {
+    return [...selectedEventIds].sort().join("|");
+  }, [selectedEventIds]);
+
+  useEffect(() => {
+    setCurrentEventIndex(-1);
+    setFocusedEventId(null);
+  }, [selectedEventKey]);
+
+  useEffect(() => {
+    if (selectedEventsForNavigation.length === 0) {
+      setCurrentEventIndex(-1);
+      setFocusedEventId(null);
+    } else if (currentEventIndex >= selectedEventsForNavigation.length) {
+      setCurrentEventIndex(selectedEventsForNavigation.length - 1);
+    }
+  }, [currentEventIndex, selectedEventsForNavigation.length]);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current !== null) {
+        window.clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const showToast = useCallback((message: string) => {
+    setToastMessage(message);
+    if (toastTimeoutRef.current !== null) {
+      window.clearTimeout(toastTimeoutRef.current);
+    }
+    toastTimeoutRef.current = window.setTimeout(() => {
+      setToastMessage(null);
+      toastTimeoutRef.current = null;
+    }, 2500);
+  }, []);
+
+  const handleClearFilters = useCallback(() => {
+    setSelectedEventIds(new Set());
+    setSelectedLocationIds(new Set());
+    setCurrentEventIndex(-1);
+    setFocusedEventId(null);
+  }, []);
+
+  const handleLocatePrevious = useCallback(() => {
+    if (selectedEventsForNavigation.length === 0) return;
+    const previousIndex = Math.max(currentEventIndex - 1, 0);
+    if (previousIndex === currentEventIndex) return;
+    const previousEvent = selectedEventsForNavigation[previousIndex];
+    if (!previousEvent) return;
+    setCurrentEventIndex(previousIndex);
+    setFocusedEventId(previousEvent.id);
+  }, [currentEventIndex, selectedEventsForNavigation]);
+
+  const handleLocateNext = useCallback(() => {
+    if (selectedEventsForNavigation.length === 0) return;
+    const nextIndex = Math.min(currentEventIndex + 1, selectedEventsForNavigation.length - 1);
+    if (nextIndex === currentEventIndex) return;
+    const nextEvent = selectedEventsForNavigation[nextIndex];
+    if (!nextEvent) return;
+    setCurrentEventIndex(nextIndex);
+    setFocusedEventId(nextEvent.id);
+  }, [currentEventIndex, selectedEventsForNavigation]);
 
   // Load all data
   useEffect(() => {
@@ -498,6 +577,20 @@ export default function WorkspaceV2Page() {
     return { dates: datesArray, minDate: min, maxDate: max };
   }, [activeDateRange, filteredData.events]);
 
+  const hasNavigationSelection = selectedEventsForNavigation.length > 0;
+  const hasSelectionFilters =
+    selectedEventIds.size > 0 || selectedLocationIds.size > 0;
+  const canLocatePrevious = hasNavigationSelection && currentEventIndex > 0;
+  const canLocateNext =
+    hasNavigationSelection && currentEventIndex < selectedEventsForNavigation.length - 1;
+  const navigatorLabel = !hasNavigationSelection
+    ? "Locate"
+    : currentEventIndex < 0
+    ? `Locate (${selectedEventsForNavigation.length} selected)`
+    : `Locate ${currentEventIndex + 1} of ${selectedEventsForNavigation.length}`;
+  const navigatorTitle =
+    currentEventIndex >= 0 ? selectedEventsForNavigation[currentEventIndex]?.name : undefined;
+
   if (isLoading) {
     return (
       <div style={{
@@ -587,6 +680,70 @@ export default function WorkspaceV2Page() {
                   onSelectionChange={setSelectedLocationIds}
                 />
               )}
+              <Chip
+                onClick={handleClearFilters}
+                disabled={!hasSelectionFilters}
+                style={{ opacity: hasSelectionFilters ? 1 : 0.6 }}
+              >
+                Clear Filters
+              </Chip>
+              {hasNavigationSelection && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "var(--space-xs)",
+                    marginLeft: "var(--space-sm)",
+                  }}
+                  title={navigatorTitle}
+                >
+                  <button
+                    type="button"
+                    onClick={handleLocatePrevious}
+                    disabled={!canLocatePrevious}
+                    aria-label="Locate previous selected event"
+                    style={{
+                      padding: "6px var(--space-sm)",
+                      backgroundColor: "var(--surface-default)",
+                      border: "var(--border-width-medium) solid var(--border-strong)",
+                      borderRadius: "var(--radius-sm)",
+                      cursor: canLocatePrevious ? "pointer" : "not-allowed",
+                      fontSize: "var(--font-size-sm)",
+                      color: "var(--text-primary)",
+                      opacity: canLocatePrevious ? 1 : 0.4,
+                    }}
+                  >
+                    Prev
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleLocateNext}
+                    disabled={!canLocateNext}
+                    aria-label="Locate next selected event"
+                    style={{
+                      padding: "6px var(--space-sm)",
+                      backgroundColor: "var(--surface-default)",
+                      border: "var(--border-width-medium) solid var(--border-strong)",
+                      borderRadius: "var(--radius-sm)",
+                      cursor: canLocateNext ? "pointer" : "not-allowed",
+                      fontSize: "var(--font-size-sm)",
+                      color: "var(--text-primary)",
+                      opacity: canLocateNext ? 1 : 0.4,
+                    }}
+                  >
+                    Next
+                  </button>
+                  <span
+                    style={{
+                      fontSize: "var(--font-size-xs)",
+                      color: "var(--text-tertiary)",
+                      minWidth: "120px",
+                    }}
+                  >
+                    {navigatorLabel}
+                  </span>
+                </div>
+              )}
               <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "var(--space-md)" }}>
                 <TooltipToggle enabled={tooltipsEnabled} onChange={setTooltipsEnabled} />
                 <ThemeToggle />
@@ -619,6 +776,8 @@ export default function WorkspaceV2Page() {
           drafts={filteredData.drafts}
           errorsByCellKey={filteredData.errorsByCellKey}
           tooltipsEnabled={tooltipsEnabled}
+          focusedEventId={focusedEventId}
+          onLocateFailure={showToast}
           onStartCreate={startCreateAllocation}
           onStartEdit={startEditAllocation}
           onChangeDraft={changeDraft}
@@ -627,6 +786,27 @@ export default function WorkspaceV2Page() {
           onDelete={deleteAllocation}
         />
       </div>
+      {toastMessage && (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            position: "fixed",
+            right: "var(--space-lg)",
+            bottom: "var(--space-lg)",
+            padding: "var(--space-sm) var(--space-md)",
+            backgroundColor: "var(--bg-tertiary)",
+            border: "var(--border-width-medium) solid var(--border-strong)",
+            borderRadius: "var(--radius-md)",
+            boxShadow: "var(--shadow-dropdown)",
+            color: "var(--text-primary)",
+            fontSize: "var(--font-size-sm)",
+            zIndex: 2000,
+          }}
+        >
+          {toastMessage}
+        </div>
+      )}
     </div>
   );
 }

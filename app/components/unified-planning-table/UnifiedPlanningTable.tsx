@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { PlanningTableHeader } from './PlanningTableHeader';
 import { CalendarLocationRow } from './rows/CalendarLocationRow';
 import { CrossEventDemandRow } from './rows/CrossEventDemandRow';
@@ -41,6 +41,8 @@ interface UnifiedPlanningTableProps {
   drafts: AllocationDraft[];
   errorsByCellKey: Record<string, string>;
   tooltipsEnabled?: boolean;
+  focusedEventId?: string | null;
+  onLocateFailure?: (message: string) => void;
   onStartCreate(workCategoryId: string, date: string): void;
   onStartEdit(allocationId: string, workCategoryId: string, date: string, effortHours: number): void;
   onChangeDraft(draftKey: string, effortValue: number, effortUnit: 'HOURS' | 'FTE'): void;
@@ -71,6 +73,8 @@ export function UnifiedPlanningTable({
   drafts,
   errorsByCellKey,
   tooltipsEnabled = true,
+  focusedEventId = null,
+  onLocateFailure,
   onStartCreate,
   onStartEdit,
   onChangeDraft,
@@ -78,6 +82,10 @@ export function UnifiedPlanningTable({
   onCancel,
   onDelete,
 }: UnifiedPlanningTableProps) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const eventsRef = useRef(events);
+  const datesRef = useRef(dates);
+
   // Build timeline layout
   const timeline: TimelineLayout = useMemo(
     () => ({
@@ -142,6 +150,101 @@ export function UnifiedPlanningTable({
   const dateColumnWidth = TIMELINE_DATE_COLUMN_WIDTH;
   const timelineOriginPx = TIMELINE_ORIGIN_PX;
 
+  useEffect(() => {
+    eventsRef.current = events;
+  }, [events]);
+
+  useEffect(() => {
+    datesRef.current = dates;
+  }, [dates]);
+
+  const resolveEventRange = (event: Event) => {
+    let minDate = event.startDate;
+    let maxDate = event.endDate;
+
+    if (event.phases) {
+      for (const phase of event.phases) {
+        if (phase.startDate < minDate) {
+          minDate = phase.startDate;
+        }
+        if (phase.endDate > maxDate) {
+          maxDate = phase.endDate;
+        }
+      }
+    }
+
+    return { startDate: minDate, endDate: maxDate };
+  };
+
+  useLayoutEffect(() => {
+    if (!focusedEventId) return;
+
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const currentDates = datesRef.current;
+    const currentEvents = eventsRef.current;
+    const timelineWidth = currentDates.length * TIMELINE_DATE_COLUMN_WIDTH;
+    const currentScrollWidth = TIMELINE_ORIGIN_PX + timelineWidth;
+
+    if (currentDates.length === 0) {
+      onLocateFailure?.('No dates available for the current range.');
+      return;
+    }
+
+    const event = currentEvents.find((item) => item.id === focusedEventId);
+    if (!event) {
+      onLocateFailure?.('Selected event is hidden by current filters.');
+      return;
+    }
+
+    const range = resolveEventRange(event);
+    const normalizedStart = range.startDate.split('T')[0];
+    const normalizedEnd = range.endDate.split('T')[0];
+    const visibleStart = currentDates[0];
+    const visibleEnd = currentDates[currentDates.length - 1];
+    const startIndex = currentDates.indexOf(normalizedStart);
+    const endIndex = currentDates.indexOf(normalizedEnd);
+
+    if (normalizedEnd < visibleStart || normalizedStart > visibleEnd) {
+      onLocateFailure?.('Selected event is outside the current date range.');
+      return;
+    }
+
+    const clampedStart = startIndex === -1 ? 0 : startIndex;
+    const clampedEnd = endIndex === -1 ? currentDates.length - 1 : endIndex;
+    const centerIndex = Math.floor((clampedStart + clampedEnd) / 2);
+    const eventCenterPx =
+      timelineOriginPx + centerIndex * dateColumnWidth + dateColumnWidth / 2;
+    const maxScrollLeft = Math.max(currentScrollWidth - container.clientWidth, 0);
+    const targetScrollLeft = Math.min(
+      Math.max(eventCenterPx - container.clientWidth / 2, 0),
+      maxScrollLeft
+    );
+
+    let targetScrollTop = container.scrollTop;
+    const anchor = container.querySelector(
+      `[data-event-id="${focusedEventId}"]`
+    ) as HTMLElement | null;
+    if (anchor) {
+      const containerRect = container.getBoundingClientRect();
+      const anchorRect = anchor.getBoundingClientRect();
+      targetScrollTop =
+        container.scrollTop +
+        (anchorRect.top - containerRect.top) -
+        containerRect.height / 2 +
+        anchorRect.height / 2;
+    }
+    const maxScrollTop = Math.max(container.scrollHeight - container.clientHeight, 0);
+    targetScrollTop = Math.min(Math.max(targetScrollTop, 0), maxScrollTop);
+
+    container.scrollTo({
+      left: targetScrollLeft,
+      top: targetScrollTop,
+      behavior: 'smooth',
+    });
+  }, [dateColumnWidth, focusedEventId, onLocateFailure, timelineOriginPx]);
+
   const cellStyle: React.CSSProperties = {
     border: 'var(--border-width-thin) solid var(--border-primary)',
     padding: 'var(--space-sm)',
@@ -160,6 +263,7 @@ export function UnifiedPlanningTable({
   return (
     <div
       className="unified-planning-table"
+      ref={scrollContainerRef}
       style={{
         overflow: 'auto',
         height: '100%',
