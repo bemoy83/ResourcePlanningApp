@@ -459,7 +459,7 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
           left: 0,
           zIndex: 'var(--z-sticky-column)' as any,
             backgroundColor: 'var(--sticky-corner-bg)',
-            border: `${CELL_BORDER_WIDTH}px solid var(--sticky-corner-border)`,
+            border: `${CELL_BORDER_WIDTH}px solid var(--border-primary)`,
             color: 'var(--sticky-corner-text)',
         }}>Location</div>
         <div style={{
@@ -476,6 +476,12 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
               : dateFlags?.isWeekend
               ? weekendBackground
                 : "var(--sticky-header-cell-bg)";
+            const borderColor = dateFlags?.isHoliday
+              ? "var(--calendar-holiday-border)"
+              : dateFlags?.isWeekend
+              ? "var(--calendar-weekend-border)"
+              : "var(--border-primary)";
+
             return (
               <div
                 key={date}
@@ -487,7 +493,7 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
                   width: `${DAY_COL_FULL_WIDTH}px`,
                   height: '100%',
                   backgroundColor,
-                  border: `${CELL_BORDER_WIDTH}px solid var(--sticky-header-cell-border)`,
+                  border: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
                   color: 'var(--sticky-header-text)',
                 }}
               >
@@ -517,7 +523,7 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
               style={{
                 display: 'grid',
                 gridTemplateColumns,
-                borderBottom: `var(--border-width-medium) solid var(--border-strong)`,
+                borderBottom: `1px solid var(--sticky-column-bg)`,
                 position: 'relative',
                 height: `${rowHeight}px`,
                 boxSizing: 'border-box',
@@ -536,7 +542,8 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'flex-end',
-                border: `${CELL_BORDER_WIDTH}px solid var(--sticky-column-border)`,
+                border: 'none',
+                paddingRight: 'var(--space-md)',
                 color: 'var(--sticky-column-text)',
               }}>
                 {location.name}
@@ -556,7 +563,12 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
                     : dateFlags?.isWeekend
                     ? weekendBackground
                     : "var(--surface-default)";
-                  
+                  const borderColor = dateFlags?.isHoliday
+                    ? "var(--calendar-holiday-border)"
+                    : dateFlags?.isWeekend
+                    ? "var(--calendar-weekend-border)"
+                    : "var(--border-primary)";
+
                   return (
                     <div
                       key={date}
@@ -568,6 +580,7 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
                         width: `${DAY_COL_FULL_WIDTH}px`,
                         height: '100%',
                         backgroundColor,
+                        border: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
                       }}
                     >
                     </div>

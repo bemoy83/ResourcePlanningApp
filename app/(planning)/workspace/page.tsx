@@ -1113,6 +1113,12 @@ export default function WorkspacePage() {
                       : dateFlags?.isWeekend
                       ? 'var(--calendar-weekend-bg)'
                       : 'var(--sticky-header-cell-bg)';
+                    const borderColor = dateFlags?.isHoliday
+                      ? "var(--calendar-holiday-border)"
+                      : dateFlags?.isWeekend
+                      ? "var(--calendar-weekend-border)"
+                      : "var(--border-primary)";
+
                     return (
                       <div
                         key={date}
@@ -1124,7 +1130,7 @@ export default function WorkspacePage() {
                           width: `${TIMELINE_DATE_COLUMN_WIDTH}px`,
                           height: '100%',
                           backgroundColor,
-                          border: `${CELL_BORDER_WIDTH}px solid var(--sticky-header-cell-border)`,
+                          border: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
                           color: 'var(--sticky-header-text)',
                         }}
                       >

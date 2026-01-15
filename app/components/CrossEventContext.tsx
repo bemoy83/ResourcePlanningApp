@@ -136,6 +136,11 @@ export const CrossEventContext = memo(function CrossEventContext({ crossEventEva
                 : dateFlags?.isWeekend
                 ? weekendBackground
                 : 'var(--surface-default)';
+              const borderColor = dateFlags?.isHoliday
+                ? "var(--calendar-holiday-border)"
+                : dateFlags?.isWeekend
+                ? "var(--calendar-weekend-border)"
+                : "var(--border-primary)";
 
               return (
                 <div key={date} style={{
@@ -148,6 +153,7 @@ export const CrossEventContext = memo(function CrossEventContext({ crossEventEva
                   fontWeight: 'var(--font-weight-bold)',
                   color: hasIssue ? 'var(--capacity-over-text)' : 'inherit',
                   backgroundColor: hasIssue ? 'var(--capacity-over)' : baseBackground,
+                  border: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
                 }}>
                   {crossDemand && crossDemand.totalEffortHours > 0 ? `${crossDemand.totalEffortHours}h` : '—'}
                 </div>
@@ -186,6 +192,12 @@ export const CrossEventContext = memo(function CrossEventContext({ crossEventEva
                   : dateFlags?.isWeekend
                   ? weekendBackground
                   : 'var(--surface-default)';
+                const borderColor = dateFlags?.isHoliday
+                  ? "var(--calendar-holiday-border)"
+                  : dateFlags?.isWeekend
+                  ? "var(--calendar-weekend-border)"
+                  : "var(--border-primary)";
+
                 if (!crossComparison || crossComparison.capacityHours === 0) {
                   return (
                     <div key={date} style={{
@@ -196,15 +208,16 @@ export const CrossEventContext = memo(function CrossEventContext({ crossEventEva
                       width: `${dateColumnWidth}px`,
                       height: '100%',
                       backgroundColor: baseBackground,
+                      border: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
                     }}>—</div>
                   );
                 }
 
                 const statusStyle = crossComparison.isOverAllocated
-                  ? { ...cellStyle, backgroundColor: 'var(--capacity-over)', color: 'var(--capacity-over-text)' }
+                  ? { ...cellStyle, backgroundColor: 'var(--capacity-over)', color: 'var(--capacity-over-text)', border: `${CELL_BORDER_WIDTH}px solid ${borderColor}` }
                   : crossComparison.isUnderAllocated
-                  ? { ...cellStyle, backgroundColor: 'var(--capacity-under)', color: 'var(--capacity-under-text)' }
-                  : { ...cellStyle, backgroundColor: baseBackground };
+                  ? { ...cellStyle, backgroundColor: 'var(--capacity-under)', color: 'var(--capacity-under-text)', border: `${CELL_BORDER_WIDTH}px solid ${borderColor}` }
+                  : { ...cellStyle, backgroundColor: baseBackground, border: `${CELL_BORDER_WIDTH}px solid ${borderColor}` };
 
                 return (
                   <div key={date} style={{

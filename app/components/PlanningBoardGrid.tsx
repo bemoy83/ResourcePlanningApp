@@ -334,6 +334,12 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
                   : dateFlags?.isWeekend
                   ? weekendBackground
                   : 'var(--sticky-header-cell-bg)';
+                const borderColor = dateFlags?.isHoliday
+                  ? "var(--calendar-holiday-border)"
+                  : dateFlags?.isWeekend
+                  ? "var(--calendar-weekend-border)"
+                  : "var(--border-primary)";
+
                 return (
                   <div
                     key={date}
@@ -345,7 +351,7 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
                       width: `${dateColumnWidth}px`,
                       height: '100%',
                       backgroundColor,
-                      border: `${CELL_BORDER_WIDTH}px solid var(--sticky-header-cell-border)`,
+                      border: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
                       color: 'var(--sticky-header-text)',
                     }}
                   >
@@ -448,6 +454,12 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
                       : dateFlags?.isWeekend
                       ? weekendBackground
                       : 'var(--surface-default)';
+                    const borderColor = dateFlags?.isHoliday
+                      ? "var(--calendar-holiday-border)"
+                      : dateFlags?.isWeekend
+                      ? "var(--calendar-weekend-border)"
+                      : "var(--border-primary)";
+
                     return (
                       <div
                         key={`${row.eventId}-${row.locationId}-${date}`}
@@ -459,6 +471,7 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
                           width: `${dateColumnWidth}px`,
                           height: '100%',
                           backgroundColor,
+                          border: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
                         }}
                       />
                     );
@@ -525,6 +538,12 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
                     : dateFlags?.isWeekend
                     ? weekendBackground
                     : 'var(--surface-default)';
+                  const borderColor = dateFlags?.isHoliday
+                    ? "var(--calendar-holiday-border)"
+                    : dateFlags?.isWeekend
+                    ? "var(--calendar-weekend-border)"
+                    : "var(--border-primary)";
+
                   if (!comparison || comparison.capacityHours === 0) {
                     return (
                       <div
@@ -537,6 +556,7 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
                           width: `${dateColumnWidth}px`,
                           height: '100%',
                           backgroundColor: baseBackground,
+                          border: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
                         }}
                       >
                         —
@@ -545,10 +565,10 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
                   }
 
                   const statusStyle = comparison.isOverAllocated
-                    ? { ...cellStyle, backgroundColor: 'var(--capacity-over)', color: 'var(--capacity-over-text)' }
+                    ? { ...cellStyle, backgroundColor: 'var(--capacity-over)', color: 'var(--capacity-over-text)', border: `${CELL_BORDER_WIDTH}px solid ${borderColor}` }
                     : comparison.isUnderAllocated
-                      ? { ...cellStyle, backgroundColor: 'var(--capacity-under)', color: 'var(--capacity-under-text)' }
-                      : { ...cellStyle, backgroundColor: baseBackground };
+                      ? { ...cellStyle, backgroundColor: 'var(--capacity-under)', color: 'var(--capacity-under-text)', border: `${CELL_BORDER_WIDTH}px solid ${borderColor}` }
+                      : { ...cellStyle, backgroundColor: baseBackground, border: `${CELL_BORDER_WIDTH}px solid ${borderColor}` };
 
                   return (
                     <div key={date} style={{

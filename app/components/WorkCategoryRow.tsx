@@ -194,6 +194,11 @@ export function WorkCategoryRow({
             : dateFlags?.isWeekend
             ? weekendBackground
             : 'var(--surface-default)';
+          const borderColor = dateFlags?.isHoliday
+            ? "var(--calendar-holiday-border)"
+            : dateFlags?.isWeekend
+            ? "var(--calendar-weekend-border)"
+            : "var(--border-primary)";
 
           return (
             <div
@@ -206,6 +211,7 @@ export function WorkCategoryRow({
                 width: `${dateColumnWidth}px`,
                 height: '100%',
                 backgroundColor,
+                border: `1px solid ${borderColor}`,
                 overflow: 'visible',
               }}
             >
