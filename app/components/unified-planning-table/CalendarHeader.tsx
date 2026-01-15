@@ -9,9 +9,143 @@ interface CalendarHeaderProps {
 }
 
 const CELL_BORDER_WIDTH = 1;
+const WEEK_HEADER_HEIGHT = 24; // Height for week number label row
+const MONTH_HEADER_HEIGHT = 28; // Height for month label row
+
+/**
+ * Gets ISO week number and year for a date
+ * ISO weeks start on Monday, week 1 is the first week with at least 4 days in the new year
+ * Returns both week number and the ISO week year (which may differ from calendar year)
+ */
+function getISOWeek(date: Date): { weekNumber: number; year: number } {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  // Move to Thursday of the week (always in the correct ISO week year)
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNumber = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return { weekNumber, year: d.getUTCFullYear() };
+}
+
+/**
+ * Groups consecutive dates by week and returns week spans with positions
+ */
+function groupDatesByWeek(dates: string[], dateColumnWidth: number) {
+  const spans: Array<{
+    weekNumber: number;
+    year: number;
+    startIndex: number;
+    endIndex: number;
+    left: number;
+    width: number;
+  }> = [];
+
+  if (dates.length === 0) return spans;
+
+  let currentWeekKey = '';
+  let startIndex = 0;
+
+  dates.forEach((date, index) => {
+    const dateObj = new Date(date);
+    const { weekNumber, year: weekYear } = getISOWeek(dateObj);
+    const weekKey = `${weekYear}-W${weekNumber}`;
+
+    if (weekKey !== currentWeekKey) {
+      // Save previous span if exists
+      if (currentWeekKey !== '') {
+        const prevDate = new Date(dates[startIndex]);
+        const prevWeek = getISOWeek(prevDate);
+        spans.push({
+          weekNumber: prevWeek.weekNumber,
+          year: prevWeek.year,
+          startIndex,
+          endIndex: index - 1,
+          left: startIndex * dateColumnWidth,
+          width: (index - startIndex) * dateColumnWidth,
+        });
+      }
+      // Start new span
+      currentWeekKey = weekKey;
+      startIndex = index;
+    }
+  });
+
+  // Add final span
+  if (currentWeekKey !== '') {
+    const lastDate = new Date(dates[startIndex]);
+    const lastWeek = getISOWeek(lastDate);
+    spans.push({
+      weekNumber: lastWeek.weekNumber,
+      year: lastWeek.year,
+      startIndex,
+      endIndex: dates.length - 1,
+      left: startIndex * dateColumnWidth,
+      width: (dates.length - startIndex) * dateColumnWidth,
+    });
+  }
+
+  return spans;
+}
+
+/**
+ * Groups consecutive dates by month and returns month spans with positions
+ */
+function groupDatesByMonth(dates: string[], dateColumnWidth: number) {
+  const spans: Array<{
+    monthYear: string;
+    startIndex: number;
+    endIndex: number;
+    left: number;
+    width: number;
+  }> = [];
+
+  if (dates.length === 0) return spans;
+
+  let currentMonthKey = '';
+  let startIndex = 0;
+
+  dates.forEach((date, index) => {
+    const dateObj = new Date(date);
+    const year = dateObj.getFullYear();
+    const month = dateObj.getMonth();
+    const monthKey = `${year}-${month}`;
+
+    if (monthKey !== currentMonthKey) {
+      // Save previous span if exists
+      if (currentMonthKey !== '') {
+        const prevDate = new Date(dates[startIndex]);
+        spans.push({
+          monthYear: prevDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+          startIndex,
+          endIndex: index - 1,
+          left: startIndex * dateColumnWidth,
+          width: (index - startIndex) * dateColumnWidth,
+        });
+      }
+      // Start new span
+      currentMonthKey = monthKey;
+      startIndex = index;
+    }
+  });
+
+  // Add final span
+  if (currentMonthKey !== '') {
+    const lastDate = new Date(dates[startIndex]);
+    spans.push({
+      monthYear: lastDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+      startIndex,
+      endIndex: dates.length - 1,
+      left: startIndex * dateColumnWidth,
+      width: (dates.length - startIndex) * dateColumnWidth,
+    });
+  }
+
+  return spans;
+}
 
 /**
  * Simple header for the calendar section with "Locations" label and date columns
+ * Now includes a month header row above the date cells
  */
 export const CalendarHeader = memo(function CalendarHeader({
   timeline,
@@ -25,6 +159,16 @@ export const CalendarHeader = memo(function CalendarHeader({
     }
     return buildDateFlags(timeline.dates);
   }, [timeline.dates, timeline.dateMeta]);
+
+  // Group dates by week for week header
+  const weekSpans = useMemo(() => {
+    return groupDatesByWeek(timeline.dates, timeline.dateColumnWidth);
+  }, [timeline.dates, timeline.dateColumnWidth]);
+
+  // Group dates by month for month header
+  const monthSpans = useMemo(() => {
+    return groupDatesByMonth(timeline.dates, timeline.dateColumnWidth);
+  }, [timeline.dates, timeline.dateColumnWidth]);
 
   const cellStyle: React.CSSProperties = {
     border: `${CELL_BORDER_WIDTH}px solid var(--sticky-corner-border)`,
@@ -45,6 +189,7 @@ export const CalendarHeader = memo(function CalendarHeader({
       style={{
         display: 'grid',
         gridTemplateColumns: `${timeline.timelineOriginPx}px`,
+        gridTemplateRows: `${MONTH_HEADER_HEIGHT}px ${WEEK_HEADER_HEIGHT}px var(--row-min-height)`,
         backgroundColor: 'var(--sticky-header-bg)',
         fontWeight: 'var(--font-weight-bold)',
         border: `var(--border-width-medium) solid var(--sticky-header-border)`,
@@ -53,7 +198,7 @@ export const CalendarHeader = memo(function CalendarHeader({
         width: `${scrollWidth}px`,
       }}
     >
-      {/* Sticky "Locations" label cell */}
+      {/* Sticky "Locations" label cell - spans all three rows */}
       <StickyLeftCell
         leftOffset={0}
         style={{
@@ -61,21 +206,89 @@ export const CalendarHeader = memo(function CalendarHeader({
           width: `${timeline.timelineOriginPx}px`,
           textAlign: 'right',
           paddingRight: 'var(--space-md)',
+          gridRow: 'span 3',
         }}
       >
         Locations
       </StickyLeftCell>
+
+      {/* Month header row */}
+      <DateCellsContainer
+        timelineOriginPx={timeline.timelineOriginPx}
+        timelineWidth={timelineWidth}
+        height={MONTH_HEADER_HEIGHT}
+      >
+        {monthSpans.map((span, index) => (
+          <div
+            key={`month-${span.startIndex}-${span.endIndex}`}
+            style={{
+              position: 'absolute',
+              left: `${span.left}px`,
+              top: 0,
+              width: `${span.width}px`,
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'var(--sticky-header-bg)',
+              border: `${CELL_BORDER_WIDTH}px solid var(--sticky-header-border)`,
+              borderBottom: 'none',
+              fontSize: 'var(--font-size-sm)',
+              fontWeight: 'var(--font-weight-bold)',
+              color: 'var(--sticky-header-text)',
+              padding: 'var(--space-xs)',
+            }}
+          >
+            {span.monthYear}
+          </div>
+        ))}
+      </DateCellsContainer>
+
+      {/* Week number header row */}
+      <DateCellsContainer
+        timelineOriginPx={timeline.timelineOriginPx}
+        timelineWidth={timelineWidth}
+        height={WEEK_HEADER_HEIGHT}
+        style={{ top: `${MONTH_HEADER_HEIGHT}px` }}
+      >
+        {weekSpans.map((span, index) => (
+          <div
+            key={`week-${span.startIndex}-${span.endIndex}`}
+            style={{
+              position: 'absolute',
+              left: `${span.left}px`,
+              top: 0,
+              width: `${span.width}px`,
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'var(--sticky-header-bg)',
+              border: `${CELL_BORDER_WIDTH}px solid var(--sticky-header-border)`,
+              borderBottom: 'none',
+              fontSize: 'var(--font-size-xs)',
+              fontWeight: 'var(--font-weight-normal)',
+              color: 'var(--sticky-header-text)',
+              padding: 'var(--space-xs)',
+              opacity: 0.8,
+            }}
+          >
+            W{span.weekNumber} {span.year}
+          </div>
+        ))}
+      </DateCellsContainer>
 
       {/* Date header cells */}
       <DateCellsContainer
         timelineOriginPx={timeline.timelineOriginPx}
         timelineWidth={timelineWidth}
         height="var(--row-min-height)"
+        style={{ top: `${MONTH_HEADER_HEIGHT + WEEK_HEADER_HEIGHT}px` }}
       >
         {timeline.dates.map((date, index) => {
           const dateObj = new Date(date);
+          const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
           const day = dateObj.getDate();
-          const month = dateObj.toLocaleDateString('en-US', { month: 'short' });
           const dateFlags = dateMeta[index];
 
           return (
@@ -98,11 +311,11 @@ export const CalendarHeader = memo(function CalendarHeader({
                 border: `${CELL_BORDER_WIDTH}px solid var(--sticky-header-border)`,
               }}
             >
+              <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-normal)', opacity: 0.8 }}>
+                {dayName}
+              </div>
               <div style={{ fontSize: 'var(--font-size-lg)', fontWeight: 'var(--font-weight-bold)' }}>
                 {day}
-              </div>
-              <div style={{ fontSize: 'var(--font-size-xs)', opacity: 0.8 }}>
-                {month}
               </div>
             </div>
           );

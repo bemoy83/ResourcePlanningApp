@@ -1,9 +1,10 @@
-import { ReactNode } from 'react';
+import { ReactNode, CSSProperties } from 'react';
 
 interface DateCellsContainerProps {
   timelineOriginPx: number;
   timelineWidth: number;
   height?: string | number;
+  style?: CSSProperties;
   children: ReactNode;
 }
 
@@ -15,6 +16,7 @@ export function DateCellsContainer({
   timelineOriginPx,
   timelineWidth,
   height = '100%',
+  style = {},
   children
 }: DateCellsContainerProps) {
   return (
@@ -25,6 +27,7 @@ export function DateCellsContainer({
         top: 0,
         height: typeof height === 'number' ? `${height}px` : height,
         width: `${timelineWidth}px`,
+        ...style,
       }}
     >
       {children}
