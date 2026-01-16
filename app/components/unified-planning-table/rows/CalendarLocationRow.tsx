@@ -382,7 +382,7 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'flex-end',
-            border: 'none',
+            border: '1px solid var(--calendar-weekend-border)',
             paddingRight: 'var(--space-md)',
             gridColumn: '1 / -1', // Span all grid columns
             width: `${timeline.timelineOriginPx}px`, // Match total left columns width
