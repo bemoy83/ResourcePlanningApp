@@ -3,6 +3,7 @@
 import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { UnifiedPlanningTable } from "../../components/unified-planning-table/UnifiedPlanningTable";
 import { Chip } from "../../components/Chip";
+import { Button } from "../../components/Button";
 import { FilterBar } from "../../components/FilterBar";
 import { LocationFilter } from "../../components/LocationFilter";
 import { EventFilter } from "../../components/EventFilter";
@@ -684,13 +685,15 @@ export default function WorkspacePage() {
                   onTagsChange={setLocationTagGroups}
                 />
               )}
-              <Chip
+              <Button
                 onClick={handleClearFilters}
                 disabled={!hasSelectionFilters}
+                variant="default"
+                size="sm"
                 style={{ opacity: hasSelectionFilters ? 1 : 0.6 }}
               >
                 Clear Filters
-              </Chip>
+              </Button>
               {hasNavigationSelection && (
                 <div
                   style={{

@@ -1,32 +1,16 @@
 "use client";
 
 import { useTheme } from "./ThemeProvider";
+import { Button } from "./Button";
 
 export function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <button
+    <Button
       onClick={toggleTheme}
-      style={{
-        padding: "8px 12px",
-        backgroundColor: "var(--surface-default)",
-        color: "var(--text-primary)",
-        border: "1px solid var(--border-primary)",
-        borderRadius: "var(--radius-md)",
-        fontSize: "var(--font-size-sm)",
-        cursor: "pointer",
-        transition: "all var(--transition-fast)",
-        display: "flex",
-        alignItems: "center",
-        gap: "6px",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = "var(--interactive-hover)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = "var(--surface-default)";
-      }}
+      variant="default"
+      size="sm"
       title={`Switch to ${theme === "light" ? "dark" : "light"} theme`}
     >
       {theme === "light" ? (
@@ -40,6 +24,6 @@ export function ThemeToggle() {
           <span>Light</span>
         </>
       )}
-    </button>
+    </Button>
   );
 }

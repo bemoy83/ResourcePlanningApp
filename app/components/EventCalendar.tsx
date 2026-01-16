@@ -623,6 +623,7 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
                           height: `${spanHeight}px`,
                           backgroundColor: getPhaseBackgroundColor(span.phaseName),
                           border: `${CELL_BORDER_WIDTH}px solid var(--border-primary)`,
+                          borderRadius: 'var(--radius-sm)',
                           padding: 'var(--space-sm)',
                           fontWeight: 'var(--font-weight-bold)',
                           fontSize: '11px',

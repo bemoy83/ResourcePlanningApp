@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
+import { Button } from "./Button";
 
 interface Location {
   id: string;
@@ -288,63 +289,62 @@ export function LocationFilter({
   return (
     <div ref={dropdownRef} style={{ position: "relative", display: "inline-block" }}>
       {/* Filter Button */}
-      <button
+      <Button
         onClick={() => setIsOpen(!isOpen)}
+        variant={someSelected || allSelected ? "selected" : "default"}
+        size="sm"
         style={{
-          padding: "var(--space-sm) var(--space-md)",
-          backgroundColor: "var(--surface-default)",
-          border: "var(--border-width-medium) solid var(--border-strong)",
-          borderRadius: "var(--radius-lg)",
-          cursor: "pointer",
-          fontSize: "var(--font-size-sm)",
           fontWeight: someSelected || allSelected ? "var(--font-weight-bold)" : "var(--font-weight-normal)",
-          color: "var(--text-primary)",
-          display: "flex",
-          alignItems: "center",
-          gap: "var(--space-sm)",
         }}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
       >
         <span>{displayText()}</span>
         <span style={{ fontSize: "var(--font-size-xs)" }}>{isOpen ? "▲" : "▼"}</span>
-      </button>
+      </Button>
 
       {/* Dropdown Panel */}
       {isOpen && (
         <div
-          role="listbox"
-          aria-multiselectable="true"
-          onKeyDown={handleKeyDown}
           style={{
             position: "absolute",
             top: "100%",
             left: 0,
             marginTop: "var(--space-xs)",
             backgroundColor: "var(--surface-default)",
-            border: "var(--border-width-medium) solid var(--border-strong)",
-            borderRadius: "var(--radius-md)",
+            border: "none",
+            borderRadius: "var(--radius-lg)",
             boxShadow: "var(--shadow-dropdown)",
             width: tagsExpanded ? "520px" : "250px",
             maxWidth: "90vw",
             maxHeight: "400px",
-            overflowY: "auto",
+            overflow: "hidden",
             zIndex: "var(--z-dropdown-panel)" as any,
           }}
         >
           <div
+            role="listbox"
+            aria-multiselectable="true"
+            onKeyDown={handleKeyDown}
             style={{
-              position: "sticky",
-              top: 0,
-              zIndex: 1,
-              backgroundColor: "var(--bg-secondary)",
+              maxHeight: "400px",
+              overflowY: "auto",
             }}
           >
+            <div
+              style={{
+                position: "sticky",
+                top: 0,
+                zIndex: 1,
+                backgroundColor: "var(--bg-secondary)",
+              }}
+            >
             {/* Search Input */}
             <div
               style={{
                 padding: "var(--space-sm) var(--space-md)",
                 borderBottom: "var(--border-width-thin) solid var(--border-secondary)",
+                  backgroundColor: "var(--bg-tertiary)",
               }}
             >
               <input
@@ -655,7 +655,7 @@ export function LocationFilter({
                             border: "var(--border-width-thin) solid var(--border-secondary)",
                             borderRadius: "var(--radius-sm)",
                             padding: "var(--space-xs)",
-                            backgroundColor: isTagSelected ? "var(--interactive-selected)" : "var(--surface-default)",
+                            backgroundColor: isTagSelected ? "var(--interactive-selected)" : "var(--interactive-hover)",
                             display: "flex",
                             flexDirection: "column",
                             gap: "var(--space-xxs)",
@@ -745,41 +745,27 @@ export function LocationFilter({
               boxShadow: "0 -6px 12px rgba(0, 0, 0, 0.08)",
             }}
           >
-            <button
+              <Button
               onClick={() => {
                 onSelectionChange(new Set());
               }}
               tabIndex={-1}
-              style={{
-                padding: "6px var(--space-md)",
-                backgroundColor: "var(--surface-default)",
-                border: "var(--border-width-thin) solid var(--border-primary)",
-                borderRadius: "var(--radius-xs)",
-                cursor: "pointer",
-                fontSize: "var(--font-size-xs-sm)",
-                color: "var(--text-primary)",
-                flex: 1,
-              }}
+                variant="default"
+                size="sm"
+                style={{ flex: 1 }}
             >
               Clear
-            </button>
-            <button
+              </Button>
+              <Button
               onClick={() => setIsOpen(false)}
               tabIndex={-1}
-              style={{
-                padding: "6px var(--space-md)",
-                backgroundColor: "var(--button-primary-bg)",
-                border: "var(--border-width-thin) solid var(--button-primary-border)",
-                borderRadius: "var(--radius-xs)",
-                cursor: "pointer",
-                fontSize: "var(--font-size-xs-sm)",
-                color: "var(--text-inverse)",
-                fontWeight: "var(--font-weight-bold)",
-                flex: 1,
-              }}
+                variant="primary"
+                size="sm"
+                style={{ flex: 1 }}
             >
               Apply
-            </button>
+              </Button>
+            </div>
           </div>
         </div>
       )}

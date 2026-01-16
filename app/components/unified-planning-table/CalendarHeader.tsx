@@ -240,6 +240,7 @@ export const CalendarHeader = memo(function CalendarHeader({
               fontWeight: 'var(--font-weight-bold)',
               color: 'var(--sticky-header-text)',
               padding: 'var(--space-xs)',
+              borderRadius: '6px',
             }}
           >
             {span.monthYear}
@@ -274,6 +275,7 @@ export const CalendarHeader = memo(function CalendarHeader({
               color: 'var(--sticky-header-text)',
               padding: 'var(--space-xs)',
               opacity: 0.8,
+              borderRadius: '6px',
             }}
           >
             W{span.weekNumber} {span.year}
