@@ -207,6 +207,8 @@ export const CalendarHeader = memo(function CalendarHeader({
           textAlign: 'right',
           paddingRight: 'var(--space-md)',
           gridRow: 'span 3',
+          justifyContent: 'flex-end',
+          alignItems: 'flex-end',
         }}
       >
         Locations

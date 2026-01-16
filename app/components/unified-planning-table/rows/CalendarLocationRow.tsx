@@ -374,6 +374,7 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
           leftOffset={0}
           style={{
             ...cellStyle,
+            backgroundColor: 'var(--sticky-header-bg)',
             textAlign: 'right',
             fontWeight: 'var(--font-weight-bold)',
             fontSize: '11px',
