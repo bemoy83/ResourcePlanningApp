@@ -89,13 +89,11 @@ import { UnifiedPlanningTable } from '@/app/components/unified-planning-table';
 />
 ```
 
-### Access via Workspace V2
+### Access via Workspace
 
 The unified table is available at:
-- **URL**: `/workspace-v2`
-- **File**: `app/(planning)/workspace-v2/page.tsx`
-
-The original workspace remains at `/workspace` as fallback during transition.
+- **URL**: `/workspace`
+- **File**: `app/(planning)/workspace/page.tsx`
 
 ## Component Details
 
@@ -193,16 +191,9 @@ Potential improvements:
 - Export functionality
 - Keyboard navigation
 
-## Rollback Plan
+## Legacy Cleanup
 
-If issues arise with the unified table:
-1. Users can access original workspace at `/workspace`
-2. Original components remain untouched in codebase
-3. No breaking changes to API or data structures
-4. Easy to revert by changing route or component import
-
-Once unified table is proven stable, legacy code can be removed:
-- Delete `app/(planning)/workspace/` (old page)
+If the unified table remains stable, legacy code can be removed:
 - Delete `app/components/EventCalendar.tsx`
 - Delete `app/components/CrossEventContext.tsx`
 - Delete `app/components/PlanningBoardGrid.tsx` (keep WorkCategoryRow)
