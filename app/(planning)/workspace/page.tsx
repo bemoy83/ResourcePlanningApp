@@ -661,9 +661,6 @@ export default function WorkspacePage() {
             Planning Workspace (Unified Table)
           </h1>
 
-          <div style={{ fontSize: "var(--font-size-md)", color: "var(--text-secondary)", marginBottom: "var(--space-sm)" }}>
-            <strong>Unified Planning View</strong> - Single scroll container, no sync needed
-          </div>
           <div style={{ marginBottom: "var(--space-sm)", fontSize: "var(--font-size-sm)", color: "var(--text-tertiary)" }}>
             {events.length} event{events.length !== 1 ? 's' : ''} | {workCategories.length} work categor{workCategories.length !== 1 ? 'ies' : 'y'} | {locations.length} location{locations.length !== 1 ? 's' : ''}
           </div>

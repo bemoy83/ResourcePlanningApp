@@ -144,9 +144,9 @@ export function EventFilter({
         onClick={() => setIsOpen(!isOpen)}
         style={{
           padding: "var(--space-sm) var(--space-md)",
-          backgroundColor: someSelected || allSelected ? "var(--interactive-active)" : "var(--surface-default)",
+          backgroundColor: "var(--surface-default)",
           border: "var(--border-width-medium) solid var(--border-strong)",
-          borderRadius: "var(--radius-md)",
+          borderRadius: "var(--radius-lg)",
           cursor: "pointer",
           fontSize: "var(--font-size-sm)",
           fontWeight: someSelected || allSelected ? "var(--font-weight-bold)" : "var(--font-weight-normal)",
