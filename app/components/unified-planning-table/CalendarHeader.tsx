@@ -206,6 +206,7 @@ export const CalendarHeader = memo(function CalendarHeader({
           width: `${timeline.timelineOriginPx}px`,
           textAlign: 'right',
           paddingRight: 'var(--space-md)',
+          paddingBottom: 'var(--space-sm)',
           gridRow: 'span 3',
           justifyContent: 'flex-end',
           alignItems: 'flex-end',
