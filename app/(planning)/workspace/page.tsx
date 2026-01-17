@@ -8,6 +8,7 @@ import { FilterBar } from "../../components/FilterBar";
 import { LocationFilter } from "../../components/LocationFilter";
 import { EventFilter } from "../../components/EventFilter";
 import { DateRangeChipFilter } from "../../components/DateRangeChipFilter";
+import { UnifiedDateRangeButton } from "../../components/UnifiedDateRangeButton";
 import { TooltipToggle, useTooltipPreference } from "../../components/TooltipToggle";
 import { ThemeToggle } from "../../components/ThemeToggle";
 import { SegmentedControl } from "../../components/SegmentedControl";
@@ -735,6 +736,25 @@ export default function WorkspacePage() {
                   Clear Filters
                 </Button>
               </SegmentedControl>
+              <UnifiedDateRangeButton
+                selectedPreset={dateRangePreset}
+                customRange={customDateRange}
+                onPresetChange={handlePresetChange}
+                onCustomRangeChange={handleCustomRangeChange}
+                availableYears={availableYears}
+                selectedYear={selectedYear}
+                selectedMonth={selectedMonth}
+                onYearChange={handleYearChange}
+                onMonthChange={handleMonthChange}
+                activeDateRange={activeDateRange}
+                monthOffset={monthOffset}
+                onPreviousMonth={handlePreviousMonth}
+                onNextMonth={handleNextMonth}
+                onYearMonthPrevious={handleYearMonthPreviousWithAlert}
+                onYearMonthNext={handleYearMonthNextWithAlert}
+                yearMonthPrevDisabled={yearMonthPrevDisabled}
+                yearMonthNextDisabled={yearMonthNextDisabled}
+              />
               {hasNavigationSelection && (
                 <SegmentedControl
                   style={{
@@ -847,7 +867,8 @@ export default function WorkspacePage() {
               </div>
             )}
 
-            <div style={{ marginBottom: "var(--space-md)" }}>
+            {/* Legacy DateRangeChipFilter - kept as fallback, replaced by UnifiedDateRangeButton in FilterBar */}
+            {/* <div style={{ marginBottom: "var(--space-md)" }}>
               <DateRangeChipFilter
                 selectedPreset={dateRangePreset}
                 customRange={customDateRange}
@@ -866,7 +887,7 @@ export default function WorkspacePage() {
                 yearMonthPrevDisabled={yearMonthPrevDisabled}
                 yearMonthNextDisabled={yearMonthNextDisabled}
               />
-            </div>
+            </div> */}
           </>
         )}
       </PlanningToolbar>
