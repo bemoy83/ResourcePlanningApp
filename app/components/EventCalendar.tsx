@@ -1,7 +1,7 @@
 import { useMemo, memo, useState, useRef, useEffect } from "react";
-import { createPortal } from "react-dom";
 import { UnifiedEvent } from "../../types/calendar";
 import { buildDateFlags, DateFlags } from "../utils/date";
+import { Tooltip, TooltipState } from "./tooltip";
 
 interface TimelineLayout {
   dates: string[];
@@ -25,18 +25,6 @@ interface CalendarSpan {
   phaseName?: string; // Original phase name for tooltip
 }
 
-interface TooltipState {
-  visible: boolean;
-  content: {
-    eventName: string;
-    phaseName: string;
-    startDate: string;
-    endDate: string;
-    dayCount: number;
-  };
-  position: { top: number; left: number };
-}
-
 interface EventRow {
   eventId: string;
   eventName: string;
@@ -49,70 +37,6 @@ interface EventRow {
 
 const CELL_BORDER_WIDTH = 1; // Keep as number for calculations
 const ROW_LAYER_HEIGHT = 24; // Keep as number for calculations
-
-// Tooltip component for event phase information
-function EventPhaseTooltip({ tooltip }: { tooltip: TooltipState | null }) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
-  }, []);
-
-  if (!tooltip || !tooltip.visible || !mounted) return null;
-
-  const formatDate = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        year: 'numeric' 
-      });
-    } catch {
-      return dateStr;
-    }
-  };
-
-  const tooltipContent = (
-    <div
-      style={{
-        position: 'fixed',
-        top: `${tooltip.position.top}px`,
-        left: `${tooltip.position.left}px`,
-        backgroundColor: 'var(--text-secondary)',
-        color: 'var(--text-inverse)',
-        padding: 'var(--space-sm) var(--space-md)',
-        borderRadius: 'var(--radius-md)',
-        fontSize: 'var(--font-size-sm)',
-        zIndex: 'var(--z-tooltip)' as any,
-        boxShadow: 'var(--shadow-md)',
-        pointerEvents: 'none',
-        maxWidth: '250px',
-        lineHeight: 'var(--line-height-normal)',
-        wordBreak: 'break-word',
-        overflowWrap: 'break-word',
-        overflow: 'hidden',
-      }}
-    >
-      <div style={{ fontWeight: 'var(--font-weight-bold)', marginBottom: 'var(--space-xs)', borderBottom: 'var(--border-width-thin) solid var(--border-strong)', paddingBottom: 'var(--space-xs)' }}>
-        {tooltip.content.eventName}
-      </div>
-      <div style={{ marginBottom: '2px' }}>
-        <strong>Phase:</strong> {tooltip.content.phaseName}
-      </div>
-      <div style={{ marginBottom: '2px' }}>
-        <strong>Dates:</strong> {formatDate(tooltip.content.startDate)} - {formatDate(tooltip.content.endDate)}
-      </div>
-      <div>
-        <strong>Duration:</strong> {tooltip.content.dayCount} {tooltip.content.dayCount === 1 ? 'day' : 'days'}
-      </div>
-    </div>
-  );
-
-  // Render tooltip in a portal to document.body to avoid parent transform issues
-  return createPortal(tooltipContent, document.body);
-}
 
 // Phase 2.1: Memoize component to prevent unnecessary re-renders
 export const EventCalendar = memo(function EventCalendar({ events, timeline, tooltipsEnabled = true }: EventCalendarProps) {
@@ -443,7 +367,7 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
 
   return (
     <>
-      <EventPhaseTooltip tooltip={tooltip} />
+      <Tooltip tooltip={tooltip} />
       <section style={{ minWidth: `${scrollWidth}px` }}>
       {/* Header row with dates */}
       <header style={{

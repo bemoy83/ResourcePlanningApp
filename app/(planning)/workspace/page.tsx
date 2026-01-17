@@ -7,7 +7,6 @@ import { Button } from "../../components/Button";
 import { FilterBar } from "../../components/FilterBar";
 import { LocationFilter } from "../../components/LocationFilter";
 import { EventFilter } from "../../components/EventFilter";
-import { DateRangeChipFilter } from "../../components/DateRangeChipFilter";
 import { UnifiedDateRangeButton } from "../../components/UnifiedDateRangeButton";
 import { TooltipToggle, useTooltipPreference } from "../../components/TooltipToggle";
 import { ThemeToggle } from "../../components/ThemeToggle";
@@ -645,57 +644,24 @@ export default function WorkspacePage() {
       }}
     >
       <PlanningToolbar>
-        <div style={{ marginBottom: "var(--space-xl)" }}>
-          <div style={{ marginBottom: "var(--space-xs)", fontSize: "var(--font-size-xs)", fontWeight: "var(--font-weight-medium)", color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            Resource Planning
+        <div style={{ marginBottom: "var(--space-xl)", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ marginBottom: "var(--space-xs)", fontSize: "var(--font-size-xs)", fontWeight: "var(--font-weight-medium)", color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              Resource Planning
+            </div>
+            <h1 style={{
+              margin: "0 0 var(--space-sm) 0",
+              color: "var(--text-primary)",
+              fontSize: "var(--font-size-2xl)",
+              fontWeight: "var(--font-weight-semibold)",
+              letterSpacing: "var(--letter-spacing-tight)",
+            }}>
+              Planning Workspace
+            </h1>
           </div>
-          <h1 style={{
-            margin: "0 0 var(--space-sm) 0",
-            color: "var(--text-primary)",
-            fontSize: "var(--font-size-2xl)",
-            fontWeight: "var(--font-weight-semibold)",
-            letterSpacing: "var(--letter-spacing-tight)",
-          }}>
-            Planning Workspace
-          </h1>
-
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "var(--space-md)",
-            fontSize: "var(--font-size-sm)",
-            color: "var(--text-tertiary)"
-          }}>
-            <span style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "var(--space-xs)",
-              padding: "4px 12px",
-              backgroundColor: "var(--bg-tertiary)",
-              borderRadius: "var(--radius-full)",
-            }}>
-              {events.length} event{events.length !== 1 ? 's' : ''}
-            </span>
-            <span style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "var(--space-xs)",
-              padding: "4px 12px",
-              backgroundColor: "var(--bg-tertiary)",
-              borderRadius: "var(--radius-full)",
-            }}>
-              {workCategories.length} categor{workCategories.length !== 1 ? 'ies' : 'y'}
-            </span>
-            <span style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "var(--space-xs)",
-              padding: "4px 12px",
-              backgroundColor: "var(--bg-tertiary)",
-              borderRadius: "var(--radius-full)",
-            }}>
-              {locations.length} location{locations.length !== 1 ? 's' : ''}
-            </span>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-md)" }}>
+            <TooltipToggle enabled={tooltipsEnabled} onChange={setTooltipsEnabled} />
+            <ThemeToggle />
           </div>
         </div>
 
@@ -706,6 +672,7 @@ export default function WorkspacePage() {
                 style={{
                   flexWrap: "wrap",
                   gap: "var(--space-sm)",
+                  minHeight: "36px", // Ensure consistent height with other SegmentedControls
                 }}
               >
                 {events.length > 0 && (
@@ -798,10 +765,6 @@ export default function WorkspacePage() {
                   </span>
                 </SegmentedControl>
               )}
-              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "var(--space-md)" }}>
-                <TooltipToggle enabled={tooltipsEnabled} onChange={setTooltipsEnabled} />
-                <ThemeToggle />
-              </div>
             </FilterBar>
 
             {locationTagGroups.length > 0 && (
@@ -867,27 +830,6 @@ export default function WorkspacePage() {
               </div>
             )}
 
-            {/* Legacy DateRangeChipFilter - kept as fallback, replaced by UnifiedDateRangeButton in FilterBar */}
-            {/* <div style={{ marginBottom: "var(--space-md)" }}>
-              <DateRangeChipFilter
-                selectedPreset={dateRangePreset}
-                customRange={customDateRange}
-                onPresetChange={handlePresetChange}
-                onCustomRangeChange={handleCustomRangeChange}
-                availableYears={availableYears}
-                selectedYear={selectedYear}
-                selectedMonth={selectedMonth}
-                onYearChange={handleYearChange}
-                onMonthChange={handleMonthChange}
-                monthOffset={monthOffset}
-                onPreviousMonth={handlePreviousMonth}
-                onNextMonth={handleNextMonth}
-                onYearMonthPrevious={handleYearMonthPreviousWithAlert}
-                onYearMonthNext={handleYearMonthNextWithAlert}
-                yearMonthPrevDisabled={yearMonthPrevDisabled}
-                yearMonthNextDisabled={yearMonthNextDisabled}
-              />
-            </div> */}
           </>
         )}
       </PlanningToolbar>

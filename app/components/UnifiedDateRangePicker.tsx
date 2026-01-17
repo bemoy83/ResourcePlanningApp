@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { DateRange, DateRangePreset } from "./DateRangeChipFilter";
+import { DateRange, DateRangePreset } from "./dateRange";
 import {
   daysInMonth,
   formatDateLocal,
@@ -154,6 +154,8 @@ export function UnifiedDateRangePicker({
   const [pendingEndDate, setPendingEndDate] = useState<string | null>(customRange.endDate);
   const [pendingYear, setPendingYear] = useState<number | null>(selectedYear);
   const [pendingMonth, setPendingMonth] = useState<number | null>(selectedMonth);
+  const [startInput, setStartInput] = useState(customRange.startDate ?? "");
+  const [endInput, setEndInput] = useState(customRange.endDate ?? "");
 
   // Calendar navigation state
   const [leftCalendarYear, setLeftCalendarYear] = useState(currentYear);
@@ -191,6 +193,14 @@ export function UnifiedDateRangePicker({
       }
     }
   }, [isOpen, selectedPreset, customRange, selectedYear, selectedMonth, currentYear, currentMonth]);
+
+  useEffect(() => {
+    setStartInput(pendingStartDate ?? "");
+  }, [pendingStartDate]);
+
+  useEffect(() => {
+    setEndInput(pendingEndDate ?? "");
+  }, [pendingEndDate]);
 
   // Click outside to close
   useEffect(() => {
@@ -318,24 +328,75 @@ export function UnifiedDateRangePicker({
     }
   }, [selectionMode, pendingStartDate]);
 
-  const handleStartDateInput = useCallback((value: string) => {
-    setPendingStartDate(value || null);
+  const normalizeDateInput = useCallback((value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return null;
+    const [yearStr, monthStr, dayStr] = trimmed.split("-");
+    const year = Number(yearStr);
+    const month = Number(monthStr);
+    const day = Number(dayStr);
+    if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
+      return null;
+    }
+    if (month < 1 || month > 12) return null;
+    const maxDay = daysInMonth(year, month);
+    if (day < 1 || day > maxDay) return null;
+    return trimmed;
+  }, []);
+
+  const handleStartDateInput = useCallback((value: string | null) => {
+    const newStartDate = value || null;
+    // Prevent setting start date after end date
+    if (newStartDate && pendingEndDate && newStartDate > pendingEndDate) {
+      return;
+    }
+
+    setPendingStartDate(newStartDate);
     setPendingPreset("custom");
     setPendingYear(null);
     setPendingMonth(null);
-    if (value) {
-      const { year, month } = parseDateParts(value);
+
+    if (newStartDate) {
+      const { year, month } = parseDateParts(newStartDate);
       setLeftCalendarYear(year);
       setLeftCalendarMonth(month);
     }
-  }, []);
+  }, [pendingEndDate]);
 
-  const handleEndDateInput = useCallback((value: string) => {
-    setPendingEndDate(value || null);
+  const handleEndDateInput = useCallback((value: string | null) => {
+    const newEndDate = value || null;
+
+    // Prevent setting end date before start date
+    if (newEndDate && pendingStartDate && newEndDate < pendingStartDate) {
+      return;
+    }
+
+    setPendingEndDate(newEndDate);
     setPendingPreset("custom");
     setPendingYear(null);
     setPendingMonth(null);
-  }, []);
+  }, [pendingStartDate]);
+
+  const applyStartInput = useCallback(() => {
+    const normalized = normalizeDateInput(startInput);
+    if (!normalized) {
+      setStartInput(pendingStartDate ?? "");
+      return;
+    }
+    handleStartDateInput(normalized);
+    setStartInput(normalized);
+  }, [handleStartDateInput, normalizeDateInput, pendingStartDate, startInput]);
+
+  const applyEndInput = useCallback(() => {
+    const normalized = normalizeDateInput(endInput);
+    if (!normalized) {
+      setEndInput(pendingEndDate ?? "");
+      return;
+    }
+    handleEndDateInput(normalized);
+    setEndInput(normalized);
+  }, [endInput, handleEndDateInput, normalizeDateInput, pendingEndDate]);
 
   const handleApply = useCallback(() => {
     if (pendingPreset === "year-month" && pendingYear !== null && pendingMonth !== null) {
@@ -744,52 +805,62 @@ export function UnifiedDateRangePicker({
               gap: "var(--space-md)",
               paddingTop: "var(--space-md)",
               borderTop: "var(--border-width-thin) solid var(--border-secondary)",
+              justifyContent: (pendingPreset === "year-month" || showYearMonthPicker) ? "center" : "flex-start",
             }}
           >
-            {/* Date Inputs */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "var(--space-sm)",
-                padding: "6px 12px",
-                backgroundColor: "var(--bg-secondary)",
-                borderRadius: "var(--radius-full)",
-              }}
-            >
-              <input
-                type="date"
-                value={pendingStartDate || ""}
-                onChange={(e) => handleStartDateInput(e.target.value)}
+            {/* Date Inputs - Hidden when year-month is selected or when showing year/month picker */}
+            {pendingPreset !== "year-month" && !showYearMonthPicker && (
+              <div
                 style={{
-                  padding: "6px 10px",
-                  border: "var(--border-width-thin) solid var(--border-primary)",
-                  borderRadius: "var(--radius-md)",
-                  backgroundColor: "var(--surface-default)",
-                  color: "var(--text-primary)",
-                  fontSize: "var(--font-size-sm)",
-                  width: "130px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "var(--space-sm)",
                 }}
-              />
-              <span style={{ color: "var(--text-tertiary)", fontSize: "var(--font-size-sm)" }}>to</span>
-              <input
-                type="date"
-                value={pendingEndDate || ""}
-                onChange={(e) => handleEndDateInput(e.target.value)}
-                style={{
-                  padding: "6px 10px",
-                  border: "var(--border-width-thin) solid var(--border-primary)",
-                  borderRadius: "var(--radius-md)",
-                  backgroundColor: "var(--surface-default)",
-                  color: "var(--text-primary)",
-                  fontSize: "var(--font-size-sm)",
-                  width: "130px",
-                }}
-              />
-            </div>
+              >
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="YYYY-MM-DD"
+                  value={startInput}
+                  onChange={(e) => setStartInput(e.target.value)}
+                  onBlur={applyStartInput}
+                  style={{
+                    padding: "6px 10px",
+                    border: "var(--border-width-thin) solid var(--border-primary)",
+                    borderRadius: "var(--radius-full)",
+                    backgroundColor: "var(--surface-default)",
+                    color: "var(--text-primary)",
+                    fontSize: "var(--font-size-sm)",
+                    width: "130px",
+                  }}
+                />
+                <span style={{ color: "var(--text-tertiary)", fontSize: "var(--font-size-sm)" }}>
+                  to
+                </span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="YYYY-MM-DD"
+                  value={endInput}
+                  onChange={(e) => setEndInput(e.target.value)}
+                  onBlur={applyEndInput}
+                  style={{
+                    padding: "6px 10px",
+                    border: "var(--border-width-thin) solid var(--border-primary)",
+                    borderRadius: "var(--radius-full)",
+                    backgroundColor: "var(--surface-default)",
+                    color: "var(--text-primary)",
+                    fontSize: "var(--font-size-sm)",
+                    width: "130px",
+                  }}
+                />
+              </div>
+            )}
 
-            {/* Spacer */}
-            <div style={{ flex: 1 }} />
+            {/* Spacer - Only show when date inputs are present */}
+            {pendingPreset !== "year-month" && !showYearMonthPicker && (
+              <div style={{ flex: 1 }} />
+            )}
 
             {/* Action Buttons */}
             <button

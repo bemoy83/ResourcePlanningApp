@@ -1,10 +1,10 @@
 import { memo, useMemo, useState, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { TimelineLayout, Location, Event, EventPhase } from '../shared/types';
 import { DateCellsContainer } from '../shared/DateCellsContainer';
 import { StickyLeftCell } from '../shared/StickyLeftCell';
 import { LEFT_COLUMNS, calculateLeftColumnOffsets } from '../../layoutConstants';
 import { buildDateFlags } from '../../../utils/date';
+import { Tooltip, TooltipState } from '../../tooltip';
 
 interface CalendarSpan {
   eventId: string;
@@ -23,18 +23,6 @@ interface EventRow {
   row: number;
   rangeStartMs: number;
   rangeEndMs: number;
-}
-
-interface TooltipState {
-  visible: boolean;
-  content: {
-    eventName: string;
-    phaseName: string;
-    startDate: string;
-    endDate: string;
-    dayCount: number;
-  };
-  position: { top: number; left: number };
 }
 
 interface CalendarLocationRowProps {
@@ -313,54 +301,9 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
     justifyContent: 'center',
   };
 
-  const formatDate = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    } catch {
-      return dateStr;
-    }
-  };
-
   return (
     <>
-      {/* Tooltip */}
-      {tooltip && tooltip.visible && createPortal(
-        <div
-          style={{
-            position: 'fixed',
-            top: `${tooltip.position.top}px`,
-            left: `${tooltip.position.left}px`,
-            backgroundColor: 'var(--text-secondary)',
-            color: 'var(--text-inverse)',
-            padding: 'var(--space-sm) var(--space-md)',
-            borderRadius: 'var(--radius-md)',
-            fontSize: 'var(--font-size-sm)',
-            zIndex: 'var(--z-tooltip)' as any,
-            boxShadow: 'var(--shadow-md)',
-            pointerEvents: 'none',
-            maxWidth: '250px',
-            lineHeight: 'var(--line-height-normal)',
-            wordBreak: 'break-word',
-            overflowWrap: 'break-word',
-            overflow: 'hidden',
-          }}
-        >
-          <div style={{ fontWeight: 'var(--font-weight-bold)', marginBottom: 'var(--space-xs)', borderBottom: 'var(--border-width-thin) solid var(--border-strong)', paddingBottom: 'var(--space-xs)' }}>
-            {tooltip.content.eventName}
-          </div>
-          <div style={{ marginBottom: '2px' }}>
-            <strong>Phase:</strong> {tooltip.content.phaseName}
-          </div>
-          <div style={{ marginBottom: '2px' }}>
-            <strong>Dates:</strong> {formatDate(tooltip.content.startDate)} - {formatDate(tooltip.content.endDate)}
-          </div>
-          <div>
-            <strong>Duration:</strong> {tooltip.content.dayCount} {tooltip.content.dayCount === 1 ? 'day' : 'days'}
-          </div>
-        </div>,
-        document.body
-      )}
+      <Tooltip tooltip={tooltip} />
 
       {/* Row */}
       <div

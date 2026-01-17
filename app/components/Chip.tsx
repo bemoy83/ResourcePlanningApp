@@ -39,6 +39,7 @@ export function Chip({
         // This padding will override Button's size-based padding since style prop is merged last
         padding: "6px 14px",
         fontSize: "var(--button-font-size-sm)", // Explicitly set fontSize to match size="sm"
+        minHeight: "28px", // Ensure consistent height with other buttons
         // For segmented variant, adjust selected state styling
         ...(variant === "segmented" && selected
           ? {

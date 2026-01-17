@@ -26,6 +26,7 @@ export function SegmentedControl({ children, className, style, ...props }: Segme
         backgroundColor: "var(--bg-tertiary)",
         borderRadius: "var(--radius-full)",
         transition: "background-color var(--transition-normal)",
+        minHeight: "36px", // Ensure consistent height across all SegmentedControls
         ...style,
       }}
       {...props}

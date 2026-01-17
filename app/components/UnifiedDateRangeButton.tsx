@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Button } from "./Button";
 import { SegmentedControl } from "./SegmentedControl";
-import { DateRange, DateRangePreset } from "./DateRangeChipFilter";
+import { DateRange, DateRangePreset } from "./dateRange";
 import { UnifiedDateRangePicker } from "./UnifiedDateRangePicker";
 import { formatLabelDate, formatDateLocal, parseDateParts } from "../utils/date";
 
@@ -140,6 +140,7 @@ export function UnifiedDateRangeButton({
             display: "inline-flex",
             alignItems: "center",
             gap: "var(--space-xs)",
+            minHeight: "28px", // Ensure consistent height with other buttons
           }}
         >
           <svg
@@ -169,6 +170,7 @@ export function UnifiedDateRangeButton({
               disabled={isPrevDisabled}
               style={{
                 padding: "6px 14px",
+                minHeight: "28px", // Ensure consistent height with other buttons
               }}
             >
               Prev
@@ -180,6 +182,7 @@ export function UnifiedDateRangeButton({
               disabled={isNextDisabled}
               style={{
                 padding: "6px 14px",
+                minHeight: "28px", // Ensure consistent height with other buttons
               }}
             >
               Next
