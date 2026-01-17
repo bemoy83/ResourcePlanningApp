@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
+import { Chip } from "./Chip";
 import { Button } from "./Button";
 
 interface Location {
@@ -289,19 +290,13 @@ export function LocationFilter({
   return (
     <div ref={dropdownRef} style={{ position: "relative", display: "inline-block" }}>
       {/* Filter Button */}
-      <Button
+      <Chip
         onClick={() => setIsOpen(!isOpen)}
-        variant={someSelected || allSelected ? "selected" : "default"}
-        size="sm"
-        style={{
-          fontWeight: someSelected || allSelected ? "var(--font-weight-bold)" : "var(--font-weight-normal)",
-        }}
-        aria-expanded={isOpen}
-        aria-haspopup="listbox"
+        selected={someSelected || allSelected}
       >
         <span>{displayText()}</span>
-        <span style={{ fontSize: "var(--font-size-xs)" }}>{isOpen ? "▲" : "▼"}</span>
-      </Button>
+        <span style={{ fontSize: "var(--font-size-xs)", marginLeft: "var(--space-xs)" }}>{isOpen ? "▲" : "▼"}</span>
+      </Chip>
 
       {/* Dropdown Panel */}
       {isOpen && (
@@ -310,17 +305,15 @@ export function LocationFilter({
             position: "absolute",
             top: "100%",
             left: 0,
-            marginTop: "var(--space-sm)",
+            marginTop: "var(--space-xs)",
             backgroundColor: "var(--surface-default)",
-            border: "var(--border-width-thin) solid var(--border-secondary)",
-            borderRadius: "var(--radius-xl)",
-            boxShadow: "var(--shadow-dropdown)",
+            border: "var(--border-width-thin) solid var(--border-primary)",
+            borderRadius: "var(--radius-lg)",
             width: tagsExpanded ? "520px" : "280px",
             maxWidth: "90vw",
             maxHeight: "420px",
             overflow: "hidden",
             zIndex: "var(--z-dropdown-panel)" as any,
-            animation: "dropdownEnter 150ms var(--ease-out)",
           }}
         >
           <div
@@ -337,14 +330,13 @@ export function LocationFilter({
                 position: "sticky",
                 top: 0,
                 zIndex: 1,
-                backgroundColor: "var(--bg-secondary)",
+                backgroundColor: "var(--surface-default)",
               }}
             >
             {/* Search Input */}
             <div
               style={{
-                padding: "var(--space-md)",
-                borderBottom: "var(--border-width-thin) solid var(--border-tertiary)",
+                  padding: "var(--space-sm)",
                 backgroundColor: "var(--surface-default)",
               }}
             >
@@ -356,7 +348,7 @@ export function LocationFilter({
                 placeholder="Search locations..."
                 style={{
                   width: "100%",
-                  padding: "10px 16px",
+                  padding: "8px 12px",
                   fontSize: "var(--font-size-sm)",
                   border: "var(--border-width-thin) solid var(--border-primary)",
                   borderRadius: "var(--radius-full)",
@@ -364,7 +356,7 @@ export function LocationFilter({
                   outline: "none",
                   backgroundColor: "var(--bg-secondary)",
                   color: "var(--text-primary)",
-                  transition: "all var(--transition-fast)",
+                  transition: "border-color var(--transition-fast)",
                 }}
                 onFocus={(e) => {
                   e.currentTarget.style.borderColor = "var(--interactive-focus)";
@@ -380,7 +372,7 @@ export function LocationFilter({
                   style={{
                     fontSize: "var(--font-size-xs)",
                     color: "var(--text-tertiary)",
-                    marginTop: "var(--space-sm)",
+                      marginTop: "var(--space-xs)",
                     paddingLeft: "var(--space-xs)",
                   }}
                 >
@@ -395,8 +387,8 @@ export function LocationFilter({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                padding: "12px var(--space-md)",
-                borderBottom: "var(--border-width-thin) solid var(--border-tertiary)",
+                  padding: "10px var(--space-sm)",
+                  borderBottom: "var(--border-width-thin) solid var(--border-primary)",
                 backgroundColor: "var(--surface-default)",
                 color: "var(--text-primary)",
                 gap: "var(--space-sm)",
@@ -424,9 +416,9 @@ export function LocationFilter({
                   style={{
                     marginRight: "var(--space-sm)",
                     cursor: "pointer",
-                    width: "18px",
-                    height: "18px",
-                    accentColor: "var(--button-primary-bg)",
+                    width: "16px",
+                    height: "16px",
+                    accentColor: "var(--text-secondary)",
                   }}
                   aria-label="Select all locations"
                 />
@@ -437,14 +429,14 @@ export function LocationFilter({
                 onClick={() => setTagsExpanded((prev) => !prev)}
                 tabIndex={-1}
                 style={{
-                  border: "none",
-                  background: "var(--bg-tertiary)",
+                  border: "var(--border-width-thin) solid var(--border-primary)",
+                  background: "var(--surface-default)",
                   padding: "4px 10px",
                   borderRadius: "var(--radius-full)",
                   cursor: "pointer",
                   fontSize: "var(--font-size-xs)",
                   color: "var(--text-secondary)",
-                  transition: "all var(--transition-fast)",
+                  transition: "background-color var(--transition-fast)",
                 }}
                 aria-label={tagsExpanded ? "Collapse tags" : "Expand tags"}
               >
@@ -465,7 +457,7 @@ export function LocationFilter({
               {filteredLocations.length === 0 ? (
                 <div
                   style={{
-                    padding: "var(--space-lg) var(--space-md)",
+                      padding: "var(--space-lg) var(--space-sm)",
                     textAlign: "center",
                     fontSize: "var(--font-size-sm)",
                     color: "var(--text-tertiary)",
@@ -490,24 +482,19 @@ export function LocationFilter({
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        padding: "10px var(--space-md)",
+                        padding: "8px var(--space-sm)",
                         cursor: "pointer",
                         fontSize: "var(--font-size-sm)",
-                        backgroundColor: isFocused ? "var(--interactive-focus-bg)" : isChecked ? "var(--interactive-selected)" : "var(--surface-default)",
+                        backgroundColor: isFocused ? "var(--surface-hover)" : isChecked ? "var(--surface-hover)" : "var(--surface-default)",
                         color: "var(--text-primary)",
                         transition: "background-color var(--transition-fast)",
-                        outline: isFocused ? "2px solid var(--interactive-focus)" : "none",
-                        outlineOffset: "-2px",
+                        borderLeft: isChecked ? "2px solid var(--text-secondary)" : "2px solid transparent",
                       }}
                       onMouseEnter={(e) => {
-                        if (!isFocused) {
-                          e.currentTarget.style.backgroundColor = isChecked ? "var(--interactive-selected-hover)" : "var(--interactive-hover)";
-                        }
+                        e.currentTarget.style.backgroundColor = "var(--surface-hover)";
                       }}
                       onMouseLeave={(e) => {
-                        if (!isFocused) {
-                          e.currentTarget.style.backgroundColor = isChecked ? "var(--interactive-selected)" : "var(--surface-default)";
-                        }
+                        e.currentTarget.style.backgroundColor = isChecked ? "var(--surface-hover)" : "var(--surface-default)";
                       }}
                     >
                   <input
@@ -518,9 +505,9 @@ export function LocationFilter({
                     style={{
                       marginRight: "var(--space-sm)",
                       cursor: "pointer",
-                      width: "18px",
-                      height: "18px",
-                      accentColor: "var(--button-primary-bg)",
+                      width: "16px",
+                      height: "16px",
+                      accentColor: "var(--text-secondary)",
                     }}
                     aria-label={`Select ${location.name}`}
                   />
@@ -548,8 +535,8 @@ export function LocationFilter({
                                 style={{
                                   fontSize: "10px",
                                   padding: "2px 6px",
-                                  borderRadius: "999px",
-                                  border: "var(--border-width-thin) solid var(--border-tertiary)",
+                                  borderRadius: "var(--radius-full)",
+                                  border: "var(--border-width-thin) solid var(--border-primary)",
                                   backgroundColor: "var(--surface-default)",
                                   color: "var(--text-tertiary)",
                                   whiteSpace: "nowrap",
@@ -563,8 +550,8 @@ export function LocationFilter({
                                 style={{
                                   fontSize: "10px",
                                   padding: "2px 6px",
-                                  borderRadius: "999px",
-                                  border: "var(--border-width-thin) dashed var(--border-tertiary)",
+                                  borderRadius: "var(--radius-full)",
+                                  border: "var(--border-width-thin) dashed var(--border-primary)",
                                   backgroundColor: "var(--bg-secondary)",
                                   color: "var(--text-tertiary)",
                                   whiteSpace: "nowrap",
@@ -591,7 +578,7 @@ export function LocationFilter({
                   flex: "1 1 220px",
                   minWidth: "200px",
                   padding: "var(--space-sm)",
-                  borderLeft: "var(--border-width-thin) solid var(--border-secondary)",
+                    borderLeft: "var(--border-width-thin) solid var(--border-primary)",
                   backgroundColor: "var(--bg-secondary)",
                   display: "flex",
                   flexDirection: "column",
@@ -625,9 +612,21 @@ export function LocationFilter({
                       padding: "6px var(--space-sm)",
                       fontSize: "var(--font-size-xs-sm)",
                       border: "var(--border-width-thin) solid var(--border-primary)",
-                      borderRadius: "var(--radius-xs)",
+                      borderRadius: "var(--radius-full)",
                       boxSizing: "border-box",
-                    }}
+                        outline: "none",
+                        backgroundColor: "var(--surface-default)",
+                        color: "var(--text-primary)",
+                        transition: "border-color var(--transition-fast)",
+                      }}
+                      onFocus={(e) => {
+                        e.currentTarget.style.borderColor = "var(--interactive-focus)";
+                        e.currentTarget.style.boxShadow = "0 0 0 3px var(--interactive-focus-bg)";
+                      }}
+                      onBlur={(e) => {
+                        e.currentTarget.style.borderColor = "var(--border-primary)";
+                        e.currentTarget.style.boxShadow = "none";
+                      }}
                   />
                   <button
                     onClick={handleAddTag}
@@ -637,11 +636,12 @@ export function LocationFilter({
                       padding: "6px var(--space-sm)",
                       backgroundColor: "var(--surface-default)",
                       border: "var(--border-width-thin) solid var(--border-primary)",
-                      borderRadius: "var(--radius-xs)",
+                      borderRadius: "var(--radius-full)",
                       cursor: newTagName.trim().length === 0 ? "not-allowed" : "pointer",
                       fontSize: "var(--font-size-xs-sm)",
                       color: "var(--text-primary)",
-                      opacity: newTagName.trim().length === 0 ? 0.6 : 1,
+                      opacity: newTagName.trim().length === 0 ? 0.5 : 1,
+                      transition: "background-color var(--transition-fast)",
                     }}
                   >
                     Add
@@ -668,17 +668,18 @@ export function LocationFilter({
                         <div
                           key={tag.name}
                           style={{
-                            border: "var(--border-width-thin) solid var(--border-secondary)",
-                            borderRadius: "var(--radius-sm)",
+                            border: "var(--border-width-thin) solid var(--border-primary)",
+                            borderRadius: "var(--radius-lg)",
                             padding: "var(--space-xs)",
-                            backgroundColor: isTagSelected ? "var(--interactive-selected)" : "var(--interactive-hover)",
+                            backgroundColor: "var(--surface-default)",
+                            borderLeft: isTagSelected ? "2px solid var(--text-secondary)" : "2px solid transparent",
                             display: "flex",
                             flexDirection: "column",
                             gap: "var(--space-xxs)",
                           }}
                         >
                           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-xs)" }}>
-                            <span style={{ fontSize: "var(--font-size-xs-sm)", fontWeight: "var(--font-weight-bold)", color: "var(--text-primary)", wordBreak: "break-word" }}>
+                            <span style={{ fontSize: "var(--font-size-xs-sm)", fontWeight: "var(--font-weight-semibold)", color: "var(--text-primary)", wordBreak: "break-word" }}>
                               {tag.name}
                             </span>
                             <button
@@ -687,14 +688,15 @@ export function LocationFilter({
                               style={{
                                 padding: "2px var(--space-xs)",
                                 backgroundColor: "transparent",
-                                border: "var(--border-width-thin) solid var(--border-tertiary)",
-                                borderRadius: "var(--radius-xs)",
+                                border: "var(--border-width-thin) solid var(--border-primary)",
+                                borderRadius: "var(--radius-full)",
                                 cursor: "pointer",
                                 fontSize: "10px",
                                 color: "var(--text-tertiary)",
+                                transition: "background-color var(--transition-fast)",
                               }}
                             >
-                              Delete
+                              X
                             </button>
                           </div>
                           <div style={{ fontSize: "10px", color: "var(--text-tertiary)" }}>
@@ -710,11 +712,12 @@ export function LocationFilter({
                                 padding: "4px var(--space-xs)",
                                 backgroundColor: "var(--surface-default)",
                                 border: "var(--border-width-thin) solid var(--border-primary)",
-                                borderRadius: "var(--radius-xs)",
+                                borderRadius: "var(--radius-full)",
                                 cursor: selectedLocationCount === 0 ? "not-allowed" : "pointer",
                                 fontSize: "10px",
                                 color: "var(--text-primary)",
-                                opacity: selectedLocationCount === 0 ? 0.6 : 1,
+                                opacity: selectedLocationCount === 0 ? 0.5 : 1,
+                                transition: "background-color var(--transition-fast)",
                               }}
                             >
                               Add Selected
@@ -728,11 +731,12 @@ export function LocationFilter({
                                 padding: "4px var(--space-xs)",
                                 backgroundColor: "var(--surface-default)",
                                 border: "var(--border-width-thin) solid var(--border-primary)",
-                                borderRadius: "var(--radius-xs)",
+                                borderRadius: "var(--radius-full)",
                                 cursor: selectedLocationCount === 0 ? "not-allowed" : "pointer",
                                 fontSize: "10px",
                                 color: "var(--text-primary)",
-                                opacity: selectedLocationCount === 0 ? 0.6 : 1,
+                                opacity: selectedLocationCount === 0 ? 0.5 : 1,
+                                transition: "background-color var(--transition-fast)",
                               }}
                             >
                               Remove Selected
@@ -754,8 +758,8 @@ export function LocationFilter({
               bottom: 0,
               display: "flex",
               justifyContent: "space-between",
-              padding: "var(--space-md)",
-              borderTop: "var(--border-width-thin) solid var(--border-tertiary)",
+                padding: "var(--space-sm)",
+                borderTop: "var(--border-width-thin) solid var(--border-primary)",
               backgroundColor: "var(--surface-default)",
               gap: "var(--space-sm)",
             }}
@@ -765,7 +769,7 @@ export function LocationFilter({
                 onSelectionChange(new Set());
               }}
               tabIndex={-1}
-                variant="default"
+                variant="chip"
                 size="sm"
                 style={{ flex: 1 }}
             >
@@ -774,11 +778,11 @@ export function LocationFilter({
               <Button
               onClick={() => setIsOpen(false)}
               tabIndex={-1}
-                variant="primary"
+                variant="chip-selected"
                 size="sm"
                 style={{ flex: 1 }}
             >
-              Apply
+                Done
               </Button>
             </div>
           </div>

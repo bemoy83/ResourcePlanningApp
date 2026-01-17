@@ -308,6 +308,9 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
     backgroundColor: 'var(--surface-default)',
     color: 'var(--text-primary)',
     boxSizing: 'border-box' as const,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   };
 
   const formatDate = (dateStr: string) => {

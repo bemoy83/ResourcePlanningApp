@@ -9,9 +9,13 @@ export function ThemeToggle() {
   return (
     <Button
       onClick={toggleTheme}
-      variant="default"
+      variant="chip"
       size="sm"
       title={`Switch to ${theme === "light" ? "dark" : "light"} theme`}
+      style={{
+        padding: "6px 14px",
+        fontSize: "var(--button-font-size-sm)",
+      }}
     >
       {theme === "light" ? (
         <>

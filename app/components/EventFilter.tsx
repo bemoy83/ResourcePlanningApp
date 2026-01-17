@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { Chip } from "./Chip";
 import { Button } from "./Button";
 
 interface Event {
@@ -21,7 +22,7 @@ export function EventFilter({
 }: EventFilterProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [focusedIndex, setFocusedIndex] = useState(-1); // -1 = no focused option, 0+ = list items
+  const [focusedIndex, setFocusedIndex] = useState(-1);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const listItemRefs = useRef<Map<number, HTMLLabelElement>>(new Map());
@@ -141,19 +142,13 @@ export function EventFilter({
   return (
     <div ref={dropdownRef} style={{ position: "relative", display: "inline-block" }}>
       {/* Filter Button */}
-      <Button
+      <Chip
         onClick={() => setIsOpen(!isOpen)}
-        variant={someSelected || allSelected ? "selected" : "default"}
-        size="sm"
-        style={{
-          fontWeight: someSelected || allSelected ? "var(--font-weight-bold)" : "var(--font-weight-normal)",
-        }}
-        aria-expanded={isOpen}
-        aria-haspopup="listbox"
+        selected={someSelected || allSelected}
       >
         <span>{displayText()}</span>
-        <span style={{ fontSize: "var(--font-size-xs)" }}>{isOpen ? "▲" : "▼"}</span>
-      </Button>
+        <span style={{ fontSize: "var(--font-size-xs)", marginLeft: "var(--space-xs)" }}>{isOpen ? "▲" : "▼"}</span>
+      </Chip>
 
       {/* Dropdown Panel */}
       {isOpen && (
@@ -162,16 +157,14 @@ export function EventFilter({
             position: "absolute",
             top: "100%",
             left: 0,
-            marginTop: "var(--space-sm)",
+            marginTop: "var(--space-xs)",
             backgroundColor: "var(--surface-default)",
-            border: "var(--border-width-thin) solid var(--border-secondary)",
-            borderRadius: "var(--radius-xl)",
-            boxShadow: "var(--shadow-dropdown)",
+            border: "var(--border-width-thin) solid var(--border-primary)",
+            borderRadius: "var(--radius-lg)",
             minWidth: "280px",
             maxHeight: "420px",
             overflow: "hidden",
             zIndex: "var(--z-dropdown-panel)" as any,
-            animation: "dropdownEnter 150ms var(--ease-out)",
           }}
         >
           <div
@@ -188,14 +181,13 @@ export function EventFilter({
                 position: "sticky",
                 top: 0,
                 zIndex: 1,
-                backgroundColor: "var(--bg-secondary)",
+                backgroundColor: "var(--surface-default)",
               }}
             >
             {/* Search Input */}
             <div
               style={{
-                padding: "var(--space-md)",
-                borderBottom: "var(--border-width-thin) solid var(--border-tertiary)",
+                  padding: "var(--space-sm)",
                 backgroundColor: "var(--surface-default)",
               }}
             >
@@ -207,7 +199,7 @@ export function EventFilter({
                 placeholder="Search events..."
                 style={{
                   width: "100%",
-                  padding: "10px 16px",
+                  padding: "8px 12px",
                   fontSize: "var(--font-size-sm)",
                   border: "var(--border-width-thin) solid var(--border-primary)",
                   borderRadius: "var(--radius-full)",
@@ -215,7 +207,7 @@ export function EventFilter({
                   outline: "none",
                   backgroundColor: "var(--bg-secondary)",
                   color: "var(--text-primary)",
-                  transition: "all var(--transition-fast)",
+                  transition: "border-color var(--transition-fast)",
                 }}
                 onFocus={(e) => {
                   e.currentTarget.style.borderColor = "var(--interactive-focus)";
@@ -231,7 +223,7 @@ export function EventFilter({
                   style={{
                     fontSize: "var(--font-size-xs)",
                     color: "var(--text-tertiary)",
-                    marginTop: "var(--space-sm)",
+                      marginTop: "var(--space-xs)",
                     paddingLeft: "var(--space-xs)",
                   }}
                 >
@@ -245,11 +237,11 @@ export function EventFilter({
               style={{
                 display: "flex",
                 alignItems: "center",
-                padding: "12px var(--space-md)",
+                  padding: "10px var(--space-sm)",
                 cursor: "pointer",
                 fontSize: "var(--font-size-sm)",
                 fontWeight: "var(--font-weight-semibold)",
-                borderBottom: "var(--border-width-thin) solid var(--border-tertiary)",
+                  borderBottom: "var(--border-width-thin) solid var(--border-primary)",
                 backgroundColor: "var(--surface-default)",
                 color: "var(--text-primary)",
               }}
@@ -267,9 +259,9 @@ export function EventFilter({
                 style={{
                   marginRight: "var(--space-sm)",
                   cursor: "pointer",
-                  width: "18px",
-                  height: "18px",
-                  accentColor: "var(--button-primary-bg)",
+                  width: "16px",
+                  height: "16px",
+                  accentColor: "var(--text-secondary)",
                 }}
                 aria-label="Select all events"
               />
@@ -281,7 +273,7 @@ export function EventFilter({
           {filteredEvents.length === 0 ? (
             <div
               style={{
-                padding: "var(--space-lg) var(--space-md)",
+                  padding: "var(--space-lg) var(--space-sm)",
                 textAlign: "center",
                 fontSize: "var(--font-size-sm)",
                 color: "var(--text-tertiary)",
@@ -306,24 +298,19 @@ export function EventFilter({
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    padding: "10px var(--space-md)",
+                    padding: "8px var(--space-sm)",
                     cursor: "pointer",
                     fontSize: "var(--font-size-sm)",
-                    backgroundColor: isFocused ? "var(--interactive-focus-bg)" : isChecked ? "var(--interactive-selected)" : "var(--surface-default)",
+                    backgroundColor: isFocused ? "var(--surface-hover)" : isChecked ? "var(--surface-hover)" : "var(--surface-default)",
                     color: "var(--text-primary)",
                     transition: "background-color var(--transition-fast)",
-                    outline: isFocused ? "2px solid var(--interactive-focus)" : "none",
-                    outlineOffset: "-2px",
+                    borderLeft: isChecked ? "2px solid var(--text-secondary)" : "2px solid transparent",
                   }}
                   onMouseEnter={(e) => {
-                    if (!isFocused) {
-                      e.currentTarget.style.backgroundColor = isChecked ? "var(--interactive-selected-hover)" : "var(--interactive-hover)";
-                    }
+                    e.currentTarget.style.backgroundColor = "var(--surface-hover)";
                   }}
                   onMouseLeave={(e) => {
-                    if (!isFocused) {
-                      e.currentTarget.style.backgroundColor = isChecked ? "var(--interactive-selected)" : "var(--surface-default)";
-                    }
+                    e.currentTarget.style.backgroundColor = isChecked ? "var(--surface-hover)" : "var(--surface-default)";
                   }}
                 >
                   <input
@@ -334,9 +321,9 @@ export function EventFilter({
                     style={{
                       marginRight: "var(--space-sm)",
                       cursor: "pointer",
-                      width: "18px",
-                      height: "18px",
-                      accentColor: "var(--button-primary-bg)",
+                      width: "16px",
+                      height: "16px",
+                      accentColor: "var(--text-secondary)",
                     }}
                     aria-label={`Select ${event.name}`}
                   />
@@ -353,8 +340,8 @@ export function EventFilter({
               bottom: 0,
               display: "flex",
               justifyContent: "space-between",
-              padding: "var(--space-md)",
-              borderTop: "var(--border-width-thin) solid var(--border-tertiary)",
+                padding: "var(--space-sm)",
+                borderTop: "var(--border-width-thin) solid var(--border-primary)",
               backgroundColor: "var(--surface-default)",
               gap: "var(--space-sm)",
             }}
@@ -364,7 +351,7 @@ export function EventFilter({
                 onSelectionChange(new Set());
               }}
               tabIndex={-1}
-                variant="default"
+                variant="chip"
                 size="sm"
                 style={{ flex: 1 }}
             >
@@ -373,11 +360,11 @@ export function EventFilter({
               <Button
               onClick={() => setIsOpen(false)}
               tabIndex={-1}
-                variant="primary"
+                variant="chip-selected"
                 size="sm"
                 style={{ flex: 1 }}
             >
-              Apply
+                Done
               </Button>
             </div>
           </div>

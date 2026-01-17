@@ -60,6 +60,9 @@ export const CrossEventDemandRow = memo(function CrossEventDemandRow({
     color: 'var(--text-primary)',
     minHeight: 'var(--row-min-height)',
     boxSizing: 'border-box' as const,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   };
 
   return (
@@ -83,6 +86,9 @@ export const CrossEventDemandRow = memo(function CrossEventDemandRow({
           color: 'var(--sticky-corner-text)',
           fontWeight: 'var(--font-weight-bold)',
           textAlign: 'right',
+          flexDirection: 'column',
+          alignItems: 'flex-end',
+          justifyContent: 'center',
           paddingRight: 'var(--space-md)',
         }}
       >
@@ -132,7 +138,7 @@ export const CrossEventDemandRow = memo(function CrossEventDemandRow({
                 border: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
               }}
             >
-              {crossDemand && crossDemand.totalEffortHours > 0 ? `${crossDemand.totalEffortHours}h` : '—'}
+              {crossDemand && crossDemand.totalEffortHours > 0 ? `${crossDemand.totalEffortHours}h` : ''}
             </div>
           );
         })}

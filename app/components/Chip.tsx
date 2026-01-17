@@ -24,13 +24,15 @@ export function Chip({
     <Button
       onClick={onClick}
       disabled={disabled}
-      variant={selected ? "selected" : "default"}
+      variant={selected ? "chip-selected" : "chip"}
       size="sm"
       className={className}
       style={{
         // Slightly smaller padding for chips vs buttons
+        // This padding will override Button's size-based padding since style prop is merged last
         padding: "6px 14px",
-        ...style,
+        fontSize: "var(--button-font-size-sm)", // Explicitly set fontSize to match size="sm"
+        ...style, // Allow external style overrides
       }}
     >
       {children}

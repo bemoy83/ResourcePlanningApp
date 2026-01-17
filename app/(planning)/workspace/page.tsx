@@ -10,7 +10,8 @@ import { EventFilter } from "../../components/EventFilter";
 import { DateRangeChipFilter, DateRangePreset, DateRange, getDateRangeFromPreset } from "../../components/DateRangeChipFilter";
 import { TooltipToggle, useTooltipPreference } from "../../components/TooltipToggle";
 import { ThemeToggle } from "../../components/ThemeToggle";
-import { nextDateString } from "../../utils/date";
+import { SegmentedControl } from "../../components/SegmentedControl";
+import { daysInMonth, formatDateParts, nextDateString, parseDateParts } from "../../utils/date";
 
 interface Event {
   id: string;
@@ -145,6 +146,9 @@ export default function WorkspacePage() {
   const [locationTagGroups, setLocationTagGroups] = useState<LocationTagGroup[]>([]);
   const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>("next-3-months");
   const [customDateRange, setCustomDateRange] = useState<DateRange>({ startDate: null, endDate: null });
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const [dateRangeSource, setDateRangeSource] = useState<"preset" | "custom" | "year-month">("preset");
   const [tooltipsEnabled, setTooltipsEnabled] = useTooltipPreference();
   const [focusedEventId, setFocusedEventId] = useState<string | null>(null);
   const [currentEventIndex, setCurrentEventIndex] = useState(-1);
@@ -203,6 +207,31 @@ export default function WorkspacePage() {
     setSelectedLocationIds(new Set());
     setCurrentEventIndex(-1);
     setFocusedEventId(null);
+  }, []);
+
+  const handlePresetChange = useCallback((preset: DateRangePreset) => {
+    setDateRangePreset(preset);
+    if (preset !== "custom") {
+      setDateRangeSource("preset");
+    }
+  }, []);
+
+  const handleCustomRangeChange = useCallback((range: DateRange) => {
+    setCustomDateRange(range);
+    setDateRangeSource("custom");
+  }, []);
+
+  const handleYearChange = useCallback((year: number | null) => {
+    setSelectedYear(year);
+    setDateRangeSource("year-month");
+    if (year === null) {
+      setSelectedMonth(null);
+    }
+  }, []);
+
+  const handleMonthChange = useCallback((month: number | null) => {
+    setSelectedMonth(month);
+    setDateRangeSource("year-month");
   }, []);
 
   const handleLocatePrevious = useCallback(() => {
@@ -446,8 +475,76 @@ export default function WorkspacePage() {
     }
   }
 
-  // Calculate active date range from preset
-  const activeDateRange = getDateRangeFromPreset(dateRangePreset, customDateRange);
+  const eventsForYearOptions = useMemo(() => {
+    let filtered = events;
+
+    if (selectedEventIds.size > 0) {
+      filtered = filtered.filter((event) => selectedEventIds.has(event.id));
+    }
+
+    const eventsWithSelectedLocations =
+      selectedLocationIds.size > 0
+        ? new Set(
+            eventLocations
+              .filter((el) => selectedLocationIds.has(el.locationId))
+              .map((el) => el.eventId)
+          )
+        : null;
+
+    if (eventsWithSelectedLocations) {
+      filtered = filtered.filter((event) => eventsWithSelectedLocations.has(event.id));
+    }
+
+    return filtered;
+  }, [events, eventLocations, selectedEventIds, selectedLocationIds]);
+
+  const availableYears = useMemo(() => {
+    const years = new Set<number>();
+    for (const event of eventsForYearOptions) {
+      const range = resolveVisibleDateRange(event);
+      const startYear = parseDateParts(range.startDate).year;
+      const endYear = parseDateParts(range.endDate).year;
+      for (let year = startYear; year <= endYear; year += 1) {
+        years.add(year);
+      }
+    }
+    return Array.from(years).sort((a, b) => a - b);
+  }, [eventsForYearOptions]);
+
+  useEffect(() => {
+    if (selectedYear !== null && !availableYears.includes(selectedYear)) {
+      setSelectedYear(null);
+      setSelectedMonth(null);
+    }
+  }, [availableYears, selectedMonth, selectedYear]);
+
+  // Calculate active date range from last user selection
+  const activeDateRange = useMemo(() => {
+    if (dateRangeSource === "year-month") {
+      if (selectedYear !== null) {
+        if (selectedMonth !== null) {
+          const startDate = formatDateParts(selectedYear, selectedMonth, 1);
+          const endDate = formatDateParts(
+            selectedYear,
+            selectedMonth,
+            daysInMonth(selectedYear, selectedMonth)
+          );
+          return { startDate, endDate };
+        }
+        return {
+          startDate: formatDateParts(selectedYear, 1, 1),
+          endDate: formatDateParts(selectedYear, 12, 31),
+        };
+      }
+      return getDateRangeFromPreset(dateRangePreset, customDateRange);
+    }
+
+    if (dateRangeSource === "custom") {
+      return customDateRange;
+    }
+
+    return getDateRangeFromPreset(dateRangePreset, customDateRange);
+  }, [customDateRange, dateRangePreset, dateRangeSource, selectedMonth, selectedYear]);
 
   // Filter data
   const filteredData = useMemo(() => {
@@ -762,65 +859,47 @@ export default function WorkspacePage() {
               <Button
                 onClick={handleClearFilters}
                 disabled={!hasSelectionFilters}
-                variant="default"
+                variant="chip"
                 size="sm"
-                style={{ opacity: hasSelectionFilters ? 1 : 0.6 }}
+                style={{
+                  padding: "6px 14px",
+                  fontSize: "var(--button-font-size-sm)",
+                  opacity: hasSelectionFilters ? 1 : 0.6,
+                }}
               >
                 Clear Filters
               </Button>
               {hasNavigationSelection && (
-                <div
+                <SegmentedControl
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "var(--space-xs)",
                     marginLeft: "var(--space-sm)",
-                    padding: "4px",
-                    backgroundColor: "var(--bg-tertiary)",
-                    borderRadius: "var(--radius-full)",
                   }}
                   title={navigatorTitle}
                 >
-                  <button
-                    type="button"
+                  <Button
                     onClick={handleLocatePrevious}
                     disabled={!canLocatePrevious}
                     aria-label="Locate previous selected event"
+                    variant="segmented"
+                    size="sm"
                     style={{
                       padding: "6px 14px",
-                      backgroundColor: canLocatePrevious ? "var(--surface-default)" : "transparent",
-                      border: "none",
-                      borderRadius: "var(--radius-full)",
-                      cursor: canLocatePrevious ? "pointer" : "not-allowed",
-                      fontSize: "var(--font-size-sm)",
-                      fontWeight: "var(--font-weight-medium)",
-                      color: canLocatePrevious ? "var(--text-primary)" : "var(--text-tertiary)",
-                      boxShadow: canLocatePrevious ? "var(--shadow-pill)" : "none",
-                      transition: "all var(--transition-fast)",
                     }}
                   >
                     Prev
-                  </button>
-                  <button
-                    type="button"
+                  </Button>
+                  <Button
                     onClick={handleLocateNext}
                     disabled={!canLocateNext}
                     aria-label="Locate next selected event"
+                    variant="segmented"
+                    size="sm"
                     style={{
                       padding: "6px 14px",
-                      backgroundColor: canLocateNext ? "var(--surface-default)" : "transparent",
-                      border: "none",
-                      borderRadius: "var(--radius-full)",
-                      cursor: canLocateNext ? "pointer" : "not-allowed",
-                      fontSize: "var(--font-size-sm)",
-                      fontWeight: "var(--font-weight-medium)",
-                      color: canLocateNext ? "var(--text-primary)" : "var(--text-tertiary)",
-                      boxShadow: canLocateNext ? "var(--shadow-pill)" : "none",
-                      transition: "all var(--transition-fast)",
                     }}
                   >
                     Next
-                  </button>
+                  </Button>
                   <span
                     style={{
                       fontSize: "var(--font-size-xs)",
@@ -831,7 +910,7 @@ export default function WorkspacePage() {
                   >
                     {navigatorLabel}
                   </span>
-                </div>
+                </SegmentedControl>
               )}
               <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "var(--space-md)" }}>
                 <TooltipToggle enabled={tooltipsEnabled} onChange={setTooltipsEnabled} />
@@ -898,8 +977,13 @@ export default function WorkspacePage() {
               <DateRangeChipFilter
                 selectedPreset={dateRangePreset}
                 customRange={customDateRange}
-                onPresetChange={setDateRangePreset}
-                onCustomRangeChange={setCustomDateRange}
+                onPresetChange={handlePresetChange}
+                onCustomRangeChange={handleCustomRangeChange}
+                availableYears={availableYears}
+                selectedYear={selectedYear}
+                selectedMonth={selectedMonth}
+                onYearChange={handleYearChange}
+                onMonthChange={handleMonthChange}
               />
             </div>
           </>

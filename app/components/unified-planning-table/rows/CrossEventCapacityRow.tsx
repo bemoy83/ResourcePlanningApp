@@ -79,6 +79,7 @@ export const CrossEventCapacityRow = memo(function CrossEventCapacityRow({
           fontWeight: 'var(--font-weight-bold)',
           textAlign: 'right',
           alignItems: 'flex-end',
+          justifyContent: 'center',
           paddingRight: 'var(--space-md)',
         }}
       >
@@ -125,7 +126,6 @@ export const CrossEventCapacityRow = memo(function CrossEventCapacityRow({
                   border: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
                 }}
               >
-                —
               </div>
             );
           }
