@@ -310,16 +310,17 @@ export function LocationFilter({
             position: "absolute",
             top: "100%",
             left: 0,
-            marginTop: "var(--space-xs)",
+            marginTop: "var(--space-sm)",
             backgroundColor: "var(--surface-default)",
-            border: "none",
-            borderRadius: "var(--radius-lg)",
+            border: "var(--border-width-thin) solid var(--border-secondary)",
+            borderRadius: "var(--radius-xl)",
             boxShadow: "var(--shadow-dropdown)",
-            width: tagsExpanded ? "520px" : "250px",
+            width: tagsExpanded ? "520px" : "280px",
             maxWidth: "90vw",
-            maxHeight: "400px",
+            maxHeight: "420px",
             overflow: "hidden",
             zIndex: "var(--z-dropdown-panel)" as any,
+            animation: "dropdownEnter 150ms var(--ease-out)",
           }}
         >
           <div
@@ -342,9 +343,9 @@ export function LocationFilter({
             {/* Search Input */}
             <div
               style={{
-                padding: "var(--space-sm) var(--space-md)",
-                borderBottom: "var(--border-width-thin) solid var(--border-secondary)",
-                  backgroundColor: "var(--bg-tertiary)",
+                padding: "var(--space-md)",
+                borderBottom: "var(--border-width-thin) solid var(--border-tertiary)",
+                backgroundColor: "var(--surface-default)",
               }}
             >
               <input
@@ -355,12 +356,23 @@ export function LocationFilter({
                 placeholder="Search locations..."
                 style={{
                   width: "100%",
-                  padding: "6px var(--space-sm)",
+                  padding: "10px 16px",
                   fontSize: "var(--font-size-sm)",
                   border: "var(--border-width-thin) solid var(--border-primary)",
-                  borderRadius: "var(--radius-xs)",
+                  borderRadius: "var(--radius-full)",
                   boxSizing: "border-box",
                   outline: "none",
+                  backgroundColor: "var(--bg-secondary)",
+                  color: "var(--text-primary)",
+                  transition: "all var(--transition-fast)",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = "var(--interactive-focus)";
+                  e.currentTarget.style.boxShadow = "0 0 0 3px var(--interactive-focus-bg)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "var(--border-primary)";
+                  e.currentTarget.style.boxShadow = "none";
                 }}
               />
               {searchQuery && (
@@ -368,7 +380,8 @@ export function LocationFilter({
                   style={{
                     fontSize: "var(--font-size-xs)",
                     color: "var(--text-tertiary)",
-                    marginTop: "var(--space-xs)",
+                    marginTop: "var(--space-sm)",
+                    paddingLeft: "var(--space-xs)",
                   }}
                 >
                   Showing {filteredLocations.length} of {locations.length} locations
@@ -382,9 +395,9 @@ export function LocationFilter({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                padding: "10px var(--space-md)",
-                borderBottom: "var(--border-width-thin) solid var(--border-secondary)",
-                backgroundColor: "var(--bg-tertiary)",
+                padding: "12px var(--space-md)",
+                borderBottom: "var(--border-width-thin) solid var(--border-tertiary)",
+                backgroundColor: "var(--surface-default)",
                 color: "var(--text-primary)",
                 gap: "var(--space-sm)",
               }}
@@ -395,7 +408,7 @@ export function LocationFilter({
                   alignItems: "center",
                   cursor: "pointer",
                   fontSize: "var(--font-size-sm)",
-                  fontWeight: "var(--font-weight-bold)",
+                  fontWeight: "var(--font-weight-semibold)",
                 }}
               >
                 <input
@@ -411,8 +424,9 @@ export function LocationFilter({
                   style={{
                     marginRight: "var(--space-sm)",
                     cursor: "pointer",
-                    width: "16px",
-                    height: "16px",
+                    width: "18px",
+                    height: "18px",
+                    accentColor: "var(--button-primary-bg)",
                   }}
                   aria-label="Select all locations"
                 />
@@ -424,12 +438,13 @@ export function LocationFilter({
                 tabIndex={-1}
                 style={{
                   border: "none",
-                  background: "none",
-                  padding: 0,
-                  margin: 0,
+                  background: "var(--bg-tertiary)",
+                  padding: "4px 10px",
+                  borderRadius: "var(--radius-full)",
                   cursor: "pointer",
                   fontSize: "var(--font-size-xs)",
-                  color: "var(--text-tertiary)",
+                  color: "var(--text-secondary)",
+                  transition: "all var(--transition-fast)",
                 }}
                 aria-label={tagsExpanded ? "Collapse tags" : "Expand tags"}
               >
@@ -475,13 +490,13 @@ export function LocationFilter({
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        padding: "var(--space-sm) var(--space-md)",
+                        padding: "10px var(--space-md)",
                         cursor: "pointer",
                         fontSize: "var(--font-size-sm)",
                         backgroundColor: isFocused ? "var(--interactive-focus-bg)" : isChecked ? "var(--interactive-selected)" : "var(--surface-default)",
                         color: "var(--text-primary)",
-                        borderBottom: "var(--border-width-thin) solid var(--border-tertiary)",
-                        outline: isFocused ? "var(--border-width-medium) solid var(--interactive-focus)" : "none",
+                        transition: "background-color var(--transition-fast)",
+                        outline: isFocused ? "2px solid var(--interactive-focus)" : "none",
                         outlineOffset: "-2px",
                       }}
                       onMouseEnter={(e) => {
@@ -503,8 +518,9 @@ export function LocationFilter({
                     style={{
                       marginRight: "var(--space-sm)",
                       cursor: "pointer",
-                      width: "16px",
-                      height: "16px",
+                      width: "18px",
+                      height: "18px",
+                      accentColor: "var(--button-primary-bg)",
                     }}
                     aria-label={`Select ${location.name}`}
                   />
@@ -738,11 +754,10 @@ export function LocationFilter({
               bottom: 0,
               display: "flex",
               justifyContent: "space-between",
-              padding: "var(--space-sm) var(--space-md)",
-              borderTop: "var(--border-width-thin) solid var(--border-secondary)",
-              backgroundColor: "var(--bg-tertiary)",
+              padding: "var(--space-md)",
+              borderTop: "var(--border-width-thin) solid var(--border-tertiary)",
+              backgroundColor: "var(--surface-default)",
               gap: "var(--space-sm)",
-              boxShadow: "0 -6px 12px rgba(0, 0, 0, 0.08)",
             }}
           >
               <Button

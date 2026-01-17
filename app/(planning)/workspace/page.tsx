@@ -601,14 +601,24 @@ export default function WorkspacePage() {
   if (isLoading) {
     return (
       <div style={{
-        padding: "var(--space-xl)",
-        backgroundColor: "var(--bg-secondary)",
-        border: "var(--border-width-medium) solid var(--border-strong)",
-        margin: "var(--space-xl)",
-        color: "var(--text-primary)",
-        fontSize: "var(--font-size-lg)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "100vh",
+        backgroundColor: "var(--bg-primary)",
       }}>
-        Loading...
+        <div style={{
+          padding: "var(--space-xl) var(--space-2xl)",
+          backgroundColor: "var(--surface-default)",
+          border: "var(--border-width-thin) solid var(--border-secondary)",
+          borderRadius: "var(--radius-xl)",
+          boxShadow: "var(--shadow-lg)",
+          color: "var(--text-secondary)",
+          fontSize: "var(--font-size-md)",
+          fontWeight: "var(--font-weight-medium)",
+        }}>
+          Loading workspace...
+        </div>
       </div>
     );
   }
@@ -616,14 +626,24 @@ export default function WorkspacePage() {
   if (error) {
     return (
       <div style={{
-        padding: "var(--space-xl)",
-        backgroundColor: "var(--bg-tertiary)",
-        border: "var(--border-width-medium) solid var(--text-primary)",
-        margin: "var(--space-xl)",
-        color: "var(--text-primary)",
-        fontSize: "var(--font-size-lg)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "100vh",
+        backgroundColor: "var(--bg-primary)",
       }}>
-        Error: {error}
+        <div style={{
+          padding: "var(--space-xl) var(--space-2xl)",
+          backgroundColor: "var(--surface-default)",
+          border: "var(--border-width-thin) solid var(--status-error)",
+          borderRadius: "var(--radius-xl)",
+          boxShadow: "var(--shadow-lg)",
+          color: "var(--status-error)",
+          fontSize: "var(--font-size-md)",
+          fontWeight: "var(--font-weight-medium)",
+        }}>
+          Error: {error}
+        </div>
       </div>
     );
   }
@@ -631,14 +651,24 @@ export default function WorkspacePage() {
   if (events.length === 0 && !isLoading) {
     return (
       <div style={{
-        padding: "var(--space-xl)",
-        backgroundColor: "var(--bg-secondary)",
-        border: "var(--border-width-medium) solid var(--border-strong)",
-        margin: "var(--space-xl)",
-        color: "var(--text-primary)",
-        fontSize: "var(--font-size-lg)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "100vh",
+        backgroundColor: "var(--bg-primary)",
       }}>
-        No active events
+        <div style={{
+          padding: "var(--space-xl) var(--space-2xl)",
+          backgroundColor: "var(--surface-default)",
+          border: "var(--border-width-thin) solid var(--border-secondary)",
+          borderRadius: "var(--radius-xl)",
+          boxShadow: "var(--shadow-lg)",
+          color: "var(--text-secondary)",
+          fontSize: "var(--font-size-md)",
+          fontWeight: "var(--font-weight-medium)",
+        }}>
+          No active events
+        </div>
       </div>
     );
   }
@@ -657,13 +687,57 @@ export default function WorkspacePage() {
       }}
     >
       <PlanningToolbar>
-        <div style={{ marginBottom: "var(--space-lg)" }}>
-          <h1 style={{ marginBottom: "var(--space-sm)", color: "var(--text-primary)", borderBottom: "var(--border-width-medium) solid var(--border-emphasis)", paddingBottom: "var(--space-sm)" }}>
-            Planning Workspace (Unified Table)
+        <div style={{ marginBottom: "var(--space-xl)" }}>
+          <div style={{ marginBottom: "var(--space-xs)", fontSize: "var(--font-size-xs)", fontWeight: "var(--font-weight-medium)", color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            Resource Planning
+          </div>
+          <h1 style={{
+            margin: "0 0 var(--space-sm) 0",
+            color: "var(--text-primary)",
+            fontSize: "var(--font-size-2xl)",
+            fontWeight: "var(--font-weight-semibold)",
+            letterSpacing: "var(--letter-spacing-tight)",
+          }}>
+            Planning Workspace
           </h1>
 
-          <div style={{ marginBottom: "var(--space-sm)", fontSize: "var(--font-size-sm)", color: "var(--text-tertiary)" }}>
-            {events.length} event{events.length !== 1 ? 's' : ''} | {workCategories.length} work categor{workCategories.length !== 1 ? 'ies' : 'y'} | {locations.length} location{locations.length !== 1 ? 's' : ''}
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "var(--space-md)",
+            fontSize: "var(--font-size-sm)",
+            color: "var(--text-tertiary)"
+          }}>
+            <span style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "var(--space-xs)",
+              padding: "4px 12px",
+              backgroundColor: "var(--bg-tertiary)",
+              borderRadius: "var(--radius-full)",
+            }}>
+              {events.length} event{events.length !== 1 ? 's' : ''}
+            </span>
+            <span style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "var(--space-xs)",
+              padding: "4px 12px",
+              backgroundColor: "var(--bg-tertiary)",
+              borderRadius: "var(--radius-full)",
+            }}>
+              {workCategories.length} categor{workCategories.length !== 1 ? 'ies' : 'y'}
+            </span>
+            <span style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "var(--space-xs)",
+              padding: "4px 12px",
+              backgroundColor: "var(--bg-tertiary)",
+              borderRadius: "var(--radius-full)",
+            }}>
+              {locations.length} location{locations.length !== 1 ? 's' : ''}
+            </span>
           </div>
         </div>
 
@@ -701,6 +775,9 @@ export default function WorkspacePage() {
                     alignItems: "center",
                     gap: "var(--space-xs)",
                     marginLeft: "var(--space-sm)",
+                    padding: "4px",
+                    backgroundColor: "var(--bg-tertiary)",
+                    borderRadius: "var(--radius-full)",
                   }}
                   title={navigatorTitle}
                 >
@@ -710,14 +787,16 @@ export default function WorkspacePage() {
                     disabled={!canLocatePrevious}
                     aria-label="Locate previous selected event"
                     style={{
-                      padding: "6px var(--space-sm)",
-                      backgroundColor: "var(--surface-default)",
-                      border: "var(--border-width-medium) solid var(--border-strong)",
-                      borderRadius: "var(--radius-sm)",
+                      padding: "6px 14px",
+                      backgroundColor: canLocatePrevious ? "var(--surface-default)" : "transparent",
+                      border: "none",
+                      borderRadius: "var(--radius-full)",
                       cursor: canLocatePrevious ? "pointer" : "not-allowed",
                       fontSize: "var(--font-size-sm)",
-                      color: "var(--text-primary)",
-                      opacity: canLocatePrevious ? 1 : 0.4,
+                      fontWeight: "var(--font-weight-medium)",
+                      color: canLocatePrevious ? "var(--text-primary)" : "var(--text-tertiary)",
+                      boxShadow: canLocatePrevious ? "var(--shadow-pill)" : "none",
+                      transition: "all var(--transition-fast)",
                     }}
                   >
                     Prev
@@ -728,14 +807,16 @@ export default function WorkspacePage() {
                     disabled={!canLocateNext}
                     aria-label="Locate next selected event"
                     style={{
-                      padding: "6px var(--space-sm)",
-                      backgroundColor: "var(--surface-default)",
-                      border: "var(--border-width-medium) solid var(--border-strong)",
-                      borderRadius: "var(--radius-sm)",
+                      padding: "6px 14px",
+                      backgroundColor: canLocateNext ? "var(--surface-default)" : "transparent",
+                      border: "none",
+                      borderRadius: "var(--radius-full)",
                       cursor: canLocateNext ? "pointer" : "not-allowed",
                       fontSize: "var(--font-size-sm)",
-                      color: "var(--text-primary)",
-                      opacity: canLocateNext ? 1 : 0.4,
+                      fontWeight: "var(--font-weight-medium)",
+                      color: canLocateNext ? "var(--text-primary)" : "var(--text-tertiary)",
+                      boxShadow: canLocateNext ? "var(--shadow-pill)" : "none",
+                      transition: "all var(--transition-fast)",
                     }}
                   >
                     Next
@@ -744,7 +825,8 @@ export default function WorkspacePage() {
                     style={{
                       fontSize: "var(--font-size-xs)",
                       color: "var(--text-tertiary)",
-                      minWidth: "120px",
+                      padding: "0 var(--space-sm)",
+                      minWidth: "100px",
                     }}
                   >
                     {navigatorLabel}
@@ -854,16 +936,18 @@ export default function WorkspacePage() {
           aria-live="polite"
           style={{
             position: "fixed",
-            right: "var(--space-lg)",
-            bottom: "var(--space-lg)",
-            padding: "var(--space-sm) var(--space-md)",
-            backgroundColor: "var(--bg-tertiary)",
-            border: "var(--border-width-medium) solid var(--border-strong)",
-            borderRadius: "var(--radius-md)",
-            boxShadow: "var(--shadow-dropdown)",
+            right: "var(--space-xl)",
+            bottom: "var(--space-xl)",
+            padding: "12px 20px",
+            backgroundColor: "var(--surface-default)",
+            border: "var(--border-width-thin) solid var(--border-secondary)",
+            borderRadius: "var(--radius-full)",
+            boxShadow: "var(--shadow-lg)",
             color: "var(--text-primary)",
             fontSize: "var(--font-size-sm)",
+            fontWeight: "var(--font-weight-medium)",
             zIndex: 2000,
+            animation: "dropdownEnter 200ms var(--ease-spring)",
           }}
         >
           {toastMessage}

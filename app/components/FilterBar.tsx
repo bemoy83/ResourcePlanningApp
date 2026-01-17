@@ -12,20 +12,20 @@ export function FilterBar({ children }: FilterBarProps) {
       style={{
         display: "flex",
         alignItems: "center",
-        gap: "var(--space-md)",
+        gap: "var(--space-sm)",
         flexWrap: "wrap",
-        marginBottom: "var(--space-md)",
+        marginBottom: "var(--space-lg)",
       }}
     >
       <span
         style={{
           fontSize: "var(--font-size-sm)",
-          fontWeight: "var(--font-weight-bold)",
-          color: "var(--text-primary)",
+          fontWeight: "var(--font-weight-medium)",
+          color: "var(--text-tertiary)",
           marginRight: "var(--space-xs)",
         }}
       >
-        Filters:
+        Filters
       </span>
       {children}
     </div>

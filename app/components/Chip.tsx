@@ -27,7 +27,11 @@ export function Chip({
       variant={selected ? "selected" : "default"}
       size="sm"
       className={className}
-      style={style}
+      style={{
+        // Slightly smaller padding for chips vs buttons
+        padding: "6px 14px",
+        ...style,
+      }}
     >
       {children}
     </Button>

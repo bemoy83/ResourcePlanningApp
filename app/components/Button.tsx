@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, CSSProperties, ButtonHTMLAttributes } from "react";
+import { ReactNode, CSSProperties, ButtonHTMLAttributes, useState } from "react";
 
 type ButtonSize = "sm" | "md" | "lg";
 type ButtonVariant = "default" | "primary" | "selected";
@@ -32,19 +32,38 @@ const variantStyles: Record<ButtonVariant, CSSProperties> = {
   default: {
     backgroundColor: "var(--surface-default)",
     color: "var(--text-primary)",
-    border: "var(--border-width-medium) solid var(--border-primary)",
+    border: "var(--border-width-thin) solid var(--border-primary)",
+    boxShadow: "var(--shadow-pill)",
   },
   primary: {
     backgroundColor: "var(--button-primary-bg)",
     color: "var(--text-inverse)",
-    border: "var(--border-width-medium) solid var(--button-primary-border)",
-    fontWeight: "var(--font-weight-bold)",
+    border: "var(--border-width-thin) solid var(--button-primary-border)",
+    fontWeight: "var(--font-weight-semibold)",
+    boxShadow: "var(--shadow-primary-glow)",
   },
   selected: {
     backgroundColor: "var(--button-primary-bg)",
     color: "var(--text-inverse)",
-    border: "var(--border-width-medium) solid var(--button-primary-border)",
-    fontWeight: "var(--font-weight-bold)",
+    border: "var(--border-width-thin) solid var(--button-primary-border)",
+    fontWeight: "var(--font-weight-semibold)",
+    boxShadow: "var(--shadow-primary-glow)",
+  },
+};
+
+const hoverStyles: Record<ButtonVariant, CSSProperties> = {
+  default: {
+    backgroundColor: "var(--surface-hover)",
+    boxShadow: "var(--shadow-pill-hover)",
+    transform: "translateY(-1px)",
+  },
+  primary: {
+    backgroundColor: "var(--button-primary-hover)",
+    transform: "translateY(-1px)",
+  },
+  selected: {
+    backgroundColor: "var(--button-primary-hover)",
+    transform: "translateY(-1px)",
   },
 };
 
@@ -59,33 +78,45 @@ export function Button({
   onMouseLeave,
   ...props
 }: ButtonProps) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isPressed, setIsPressed] = useState(false);
+
   const baseStyle: CSSProperties = {
     borderRadius: "var(--radius-full)",
     cursor: disabled ? "not-allowed" : "pointer",
     transition: "all var(--transition-fast)",
     whiteSpace: "nowrap",
-    opacity: disabled ? 0.6 : 1,
+    opacity: disabled ? 0.5 : 1,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    gap: "var(--space-sm)",
+    gap: "var(--space-xs)",
+    fontWeight: "var(--font-weight-medium)",
+    letterSpacing: "var(--letter-spacing-tight)",
     ...sizeStyles[size],
     ...variantStyles[variant],
+    ...(isHovered && !disabled ? hoverStyles[variant] : {}),
+    ...(isPressed && !disabled ? { transform: "scale(0.98)" } : {}),
     ...style,
   };
 
   const handleMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (!disabled && variant === "default") {
-      e.currentTarget.style.backgroundColor = "var(--interactive-hover)";
-    }
+    setIsHovered(true);
     onMouseEnter?.(e);
   };
 
   const handleMouseLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (!disabled && variant === "default") {
-      e.currentTarget.style.backgroundColor = "var(--surface-default)";
-    }
+    setIsHovered(false);
+    setIsPressed(false);
     onMouseLeave?.(e);
+  };
+
+  const handleMouseDown = () => {
+    if (!disabled) setIsPressed(true);
+  };
+
+  const handleMouseUp = () => {
+    setIsPressed(false);
   };
 
   return (
@@ -96,6 +127,8 @@ export function Button({
       style={baseStyle}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
     >
       {children}
     </button>

@@ -102,12 +102,12 @@ export function DateRangeChipFilter({
         <span
           style={{
             fontSize: "var(--font-size-sm)",
-            fontWeight: "var(--font-weight-bold)",
-            color: "var(--text-primary)",
+            fontWeight: "var(--font-weight-medium)",
+            color: "var(--text-tertiary)",
             marginRight: "var(--space-xs)",
           }}
         >
-          Date Range:
+          Date Range
         </span>
         {presets.map((preset) => {
           const isSelected = selectedPreset === preset.id;
@@ -134,8 +134,10 @@ export function DateRangeChipFilter({
               left: 0,
               right: 0,
               bottom: 0,
-              backgroundColor: "rgba(0, 0, 0, 0.5)",
+              backgroundColor: "rgba(0, 0, 0, 0.4)",
+              backdropFilter: "blur(4px)",
               zIndex: "var(--z-modal-backdrop)" as any,
+              animation: "fadeIn 150ms var(--ease-out)",
             }}
             onClick={handleCustomCancel}
           />
@@ -148,20 +150,22 @@ export function DateRangeChipFilter({
               left: "50%",
               transform: "translate(-50%, -50%)",
               backgroundColor: "var(--surface-default)",
-              border: "var(--border-width-medium) solid var(--border-strong)",
+              border: "var(--border-width-thin) solid var(--border-secondary)",
               borderRadius: "var(--radius-xl)",
               padding: "var(--space-2xl)",
               zIndex: "var(--z-modal)" as any,
-              minWidth: "400px",
+              minWidth: "380px",
               boxShadow: "var(--shadow-xl)",
+              animation: "modalEnter 200ms var(--ease-spring)",
             }}
           >
             <h3
               style={{
-                margin: "0 0 var(--space-lg) 0",
-                fontSize: "var(--font-size-lg)",
-                fontWeight: "var(--font-weight-bold)",
+                margin: "0 0 var(--space-xl) 0",
+                fontSize: "var(--font-size-xl)",
+                fontWeight: "var(--font-weight-semibold)",
                 color: "var(--text-primary)",
+                letterSpacing: "var(--letter-spacing-tight)",
               }}
             >
               Custom Date Range
@@ -172,9 +176,9 @@ export function DateRangeChipFilter({
                 style={{
                   display: "block",
                   fontSize: "var(--font-size-sm)",
-                  fontWeight: "var(--font-weight-bold)",
-                  marginBottom: "var(--space-xs)",
-                  color: "var(--text-primary)",
+                  fontWeight: "var(--font-weight-medium)",
+                  marginBottom: "var(--space-sm)",
+                  color: "var(--text-secondary)",
                 }}
               >
                 Start Date
@@ -185,11 +189,23 @@ export function DateRangeChipFilter({
                 onChange={(e) => setTempStartDate(e.target.value)}
                 style={{
                   width: "100%",
-                  padding: "var(--space-sm)",
+                  padding: "12px 16px",
                   fontSize: "var(--font-size-sm)",
-                  border: "var(--border-width-medium) solid var(--border-primary)",
-                  borderRadius: "var(--radius-md)",
+                  border: "var(--border-width-thin) solid var(--border-primary)",
+                  borderRadius: "var(--radius-lg)",
                   boxSizing: "border-box",
+                  backgroundColor: "var(--bg-secondary)",
+                  color: "var(--text-primary)",
+                  outline: "none",
+                  transition: "all var(--transition-fast)",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = "var(--interactive-focus)";
+                  e.currentTarget.style.boxShadow = "0 0 0 3px var(--interactive-focus-bg)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "var(--border-primary)";
+                  e.currentTarget.style.boxShadow = "none";
                 }}
               />
             </div>
@@ -199,9 +215,9 @@ export function DateRangeChipFilter({
                 style={{
                   display: "block",
                   fontSize: "var(--font-size-sm)",
-                  fontWeight: "var(--font-weight-bold)",
-                  marginBottom: "var(--space-xs)",
-                  color: "var(--text-primary)",
+                  fontWeight: "var(--font-weight-medium)",
+                  marginBottom: "var(--space-sm)",
+                  color: "var(--text-secondary)",
                 }}
               >
                 End Date
@@ -212,11 +228,23 @@ export function DateRangeChipFilter({
                 onChange={(e) => setTempEndDate(e.target.value)}
                 style={{
                   width: "100%",
-                  padding: "var(--space-sm)",
+                  padding: "12px 16px",
                   fontSize: "var(--font-size-sm)",
-                  border: "var(--border-width-medium) solid var(--border-primary)",
-                  borderRadius: "var(--radius-md)",
+                  border: "var(--border-width-thin) solid var(--border-primary)",
+                  borderRadius: "var(--radius-lg)",
                   boxSizing: "border-box",
+                  backgroundColor: "var(--bg-secondary)",
+                  color: "var(--text-primary)",
+                  outline: "none",
+                  transition: "all var(--transition-fast)",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = "var(--interactive-focus)";
+                  e.currentTarget.style.boxShadow = "0 0 0 3px var(--interactive-focus-bg)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "var(--border-primary)";
+                  e.currentTarget.style.boxShadow = "none";
                 }}
               />
             </div>
@@ -231,13 +259,16 @@ export function DateRangeChipFilter({
               <button
                 onClick={handleCustomCancel}
                 style={{
-                  padding: "var(--space-sm) var(--space-lg)",
+                  padding: "10px 20px",
                   fontSize: "var(--font-size-sm)",
+                  fontWeight: "var(--font-weight-medium)",
                   color: "var(--text-primary)",
                   backgroundColor: "var(--surface-default)",
-                  border: "var(--border-width-medium) solid var(--border-primary)",
-                  borderRadius: "var(--radius-md)",
+                  border: "var(--border-width-thin) solid var(--border-primary)",
+                  borderRadius: "var(--radius-full)",
                   cursor: "pointer",
+                  transition: "all var(--transition-fast)",
+                  boxShadow: "var(--shadow-pill)",
                 }}
               >
                 Cancel
@@ -246,15 +277,17 @@ export function DateRangeChipFilter({
                 onClick={handleCustomApply}
                 disabled={!tempStartDate || !tempEndDate}
                 style={{
-                  padding: "var(--space-sm) var(--space-lg)",
+                  padding: "10px 20px",
                   fontSize: "var(--font-size-sm)",
-                  fontWeight: "var(--font-weight-bold)",
+                  fontWeight: "var(--font-weight-semibold)",
                   color: "var(--text-inverse)",
-                  backgroundColor: tempStartDate && tempEndDate ? "var(--button-primary-bg)" : "var(--border-primary)",
-                  border: "var(--border-width-medium) solid var(--button-primary-border)",
-                  borderRadius: "var(--radius-md)",
+                  backgroundColor: tempStartDate && tempEndDate ? "var(--button-primary-bg)" : "var(--border-strong)",
+                  border: "var(--border-width-thin) solid transparent",
+                  borderRadius: "var(--radius-full)",
                   cursor: tempStartDate && tempEndDate ? "pointer" : "not-allowed",
-                  opacity: tempStartDate && tempEndDate ? 1 : 0.6,
+                  opacity: tempStartDate && tempEndDate ? 1 : 0.5,
+                  transition: "all var(--transition-fast)",
+                  boxShadow: tempStartDate && tempEndDate ? "var(--shadow-primary-glow)" : "none",
                 }}
               >
                 Apply

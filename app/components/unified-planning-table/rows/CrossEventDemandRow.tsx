@@ -109,7 +109,7 @@ export const CrossEventDemandRow = memo(function CrossEventDemandRow({
             ? holidayBackground
             : dateFlags?.isWeekend
             ? weekendBackground
-            : 'var(--surface-default)';
+            : 'var(--calendar-weekday-bg)';
           const borderColor = dateFlags?.isHoliday
             ? 'var(--calendar-holiday-border)'
             : dateFlags?.isWeekend

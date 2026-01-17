@@ -162,15 +162,16 @@ export function EventFilter({
             position: "absolute",
             top: "100%",
             left: 0,
-            marginTop: "var(--space-xs)",
+            marginTop: "var(--space-sm)",
             backgroundColor: "var(--surface-default)",
-            border: "none",
-            borderRadius: "var(--radius-lg)",
+            border: "var(--border-width-thin) solid var(--border-secondary)",
+            borderRadius: "var(--radius-xl)",
             boxShadow: "var(--shadow-dropdown)",
-            minWidth: "250px",
-            maxHeight: "400px",
+            minWidth: "280px",
+            maxHeight: "420px",
             overflow: "hidden",
             zIndex: "var(--z-dropdown-panel)" as any,
+            animation: "dropdownEnter 150ms var(--ease-out)",
           }}
         >
           <div
@@ -193,8 +194,9 @@ export function EventFilter({
             {/* Search Input */}
             <div
               style={{
-                padding: "var(--space-sm) var(--space-md)",
-                borderBottom: "var(--border-width-thin) solid var(--border-secondary)",
+                padding: "var(--space-md)",
+                borderBottom: "var(--border-width-thin) solid var(--border-tertiary)",
+                backgroundColor: "var(--surface-default)",
               }}
             >
               <input
@@ -205,12 +207,23 @@ export function EventFilter({
                 placeholder="Search events..."
                 style={{
                   width: "100%",
-                  padding: "6px var(--space-sm)",
+                  padding: "10px 16px",
                   fontSize: "var(--font-size-sm)",
                   border: "var(--border-width-thin) solid var(--border-primary)",
-                  borderRadius: "var(--radius-xs)",
+                  borderRadius: "var(--radius-full)",
                   boxSizing: "border-box",
                   outline: "none",
+                  backgroundColor: "var(--bg-secondary)",
+                  color: "var(--text-primary)",
+                  transition: "all var(--transition-fast)",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = "var(--interactive-focus)";
+                  e.currentTarget.style.boxShadow = "0 0 0 3px var(--interactive-focus-bg)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "var(--border-primary)";
+                  e.currentTarget.style.boxShadow = "none";
                 }}
               />
               {searchQuery && (
@@ -218,7 +231,8 @@ export function EventFilter({
                   style={{
                     fontSize: "var(--font-size-xs)",
                     color: "var(--text-tertiary)",
-                    marginTop: "var(--space-xs)",
+                    marginTop: "var(--space-sm)",
+                    paddingLeft: "var(--space-xs)",
                   }}
                 >
                   Showing {filteredEvents.length} of {events.length} events
@@ -231,12 +245,12 @@ export function EventFilter({
               style={{
                 display: "flex",
                 alignItems: "center",
-                padding: "10px var(--space-md)",
+                padding: "12px var(--space-md)",
                 cursor: "pointer",
                 fontSize: "var(--font-size-sm)",
-                fontWeight: "var(--font-weight-bold)",
-                borderBottom: "var(--border-width-thin) solid var(--border-secondary)",
-                backgroundColor: "var(--bg-tertiary)",
+                fontWeight: "var(--font-weight-semibold)",
+                borderBottom: "var(--border-width-thin) solid var(--border-tertiary)",
+                backgroundColor: "var(--surface-default)",
                 color: "var(--text-primary)",
               }}
             >
@@ -253,8 +267,9 @@ export function EventFilter({
                 style={{
                   marginRight: "var(--space-sm)",
                   cursor: "pointer",
-                  width: "16px",
-                  height: "16px",
+                  width: "18px",
+                  height: "18px",
+                  accentColor: "var(--button-primary-bg)",
                 }}
                 aria-label="Select all events"
               />
@@ -291,13 +306,13 @@ export function EventFilter({
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    padding: "var(--space-sm) var(--space-md)",
+                    padding: "10px var(--space-md)",
                     cursor: "pointer",
                     fontSize: "var(--font-size-sm)",
                     backgroundColor: isFocused ? "var(--interactive-focus-bg)" : isChecked ? "var(--interactive-selected)" : "var(--surface-default)",
                     color: "var(--text-primary)",
-                    borderBottom: "var(--border-width-thin) solid var(--border-tertiary)",
-                    outline: isFocused ? "var(--border-width-medium) solid var(--interactive-focus)" : "none",
+                    transition: "background-color var(--transition-fast)",
+                    outline: isFocused ? "2px solid var(--interactive-focus)" : "none",
                     outlineOffset: "-2px",
                   }}
                   onMouseEnter={(e) => {
@@ -319,8 +334,9 @@ export function EventFilter({
                     style={{
                       marginRight: "var(--space-sm)",
                       cursor: "pointer",
-                      width: "16px",
-                      height: "16px",
+                      width: "18px",
+                      height: "18px",
+                      accentColor: "var(--button-primary-bg)",
                     }}
                     aria-label={`Select ${event.name}`}
                   />
@@ -337,11 +353,10 @@ export function EventFilter({
               bottom: 0,
               display: "flex",
               justifyContent: "space-between",
-              padding: "var(--space-sm) var(--space-md)",
-              borderTop: "var(--border-width-thin) solid var(--border-secondary)",
-              backgroundColor: "var(--bg-tertiary)",
+              padding: "var(--space-md)",
+              borderTop: "var(--border-width-thin) solid var(--border-tertiary)",
+              backgroundColor: "var(--surface-default)",
               gap: "var(--space-sm)",
-              boxShadow: "0 -6px 12px rgba(0, 0, 0, 0.08)",
             }}
           >
               <Button

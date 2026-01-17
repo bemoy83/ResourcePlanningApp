@@ -404,7 +404,7 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
               ? holidayBackground
               : dateFlags?.isWeekend
               ? weekendBackground
-              : 'var(--surface-default)';
+              : 'var(--calendar-weekday-bg)';
             const borderColor = dateFlags?.isHoliday
               ? 'var(--calendar-holiday-border)'
               : dateFlags?.isWeekend
