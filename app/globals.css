@@ -5,31 +5,31 @@
 :root {
   /* === Color Palette === */
 
-  /* Background Colors - Soft, warm neutrals */
+  /* Background Colors - Unified warm neutral scale (zinc-based) */
   --bg-primary: #fafafa;
-  --bg-secondary: #f5f5f7;
-  --bg-tertiary: #eeeff2;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #efefef;
   --bg-elevated: #ffffff;
 
-  /* Text Colors - Refined hierarchy with good contrast */
-  --text-primary: #1a1d23;
-  --text-secondary: #4a5568;
-  --text-tertiary: #718096;
+  /* Text Colors - Clear hierarchy with proper contrast */
+  --text-primary: #18181b;
+  --text-secondary: #52525b;
+  --text-tertiary: #a1a1aa;
   --text-inverse: #ffffff;
 
-  /* Border Colors - Lighter, more subtle */
-  --border-primary: #e2e4e9;
-  --border-secondary: #ebedf0;
-  --border-tertiary: #f3f4f6;
-  --border-strong: #d1d5db;
-  --border-emphasis: #9ca3af;
+  /* Border Colors - Warm zinc-based neutrals */
+  --border-primary: #e4e4e7;
+  --border-secondary: #f4f4f5;
+  --border-tertiary: #fafafa;
+  --border-strong: #d4d4d8;
+  --border-emphasis: #a1a1aa;
 
   /* Surface Colors - Elevated surfaces with depth */
   --surface-default: #ffffff;
-  --surface-hover: #f9fafb;
-  --surface-active: #f3f4f6;
-  --surface-disabled: #e5e7eb;
-  --surface-progress-track: #e5e7eb;
+  --surface-hover: #fafafa;
+  --surface-active: #f5f5f5;
+  --surface-disabled: #e4e4e7;
+  --surface-progress-track: #e4e4e7;
 
   /* Event Phase Colors - Soft, muted pastels */
   --phase-planning: #dbeafe;
@@ -51,16 +51,16 @@
   --status-error: #ef4444;
   --status-info: #6366f1;
 
-  /* Capacity Indicators - Enhanced contrast */
+  /* Capacity Indicators - Semantic colors (red = over, green = under/available) */
   --capacity-over: #fee2e2;
   --capacity-over-text: #dc2626;
-  --capacity-under: #fef3c7;
-  --capacity-under-text: #059669;
-  --capacity-balanced: #d1fae5;
+  --capacity-under: #dcfce7;
+  --capacity-under-text: #166534;
+  --capacity-balanced: #f0fdf4;
 
   /* Interactive States - Vibrant indigo accent system */
-  --interactive-hover: #f9fafb;
-  --interactive-active: #f3f4f6;
+  --interactive-hover: #fafafa;
+  --interactive-active: #f5f5f5;
   --interactive-focus: #6366f1;
   --interactive-focus-bg: #eef2ff;
   --interactive-selected: #eef2ff;
@@ -83,27 +83,29 @@
   --button-padding-x-lg: 28px;
   --button-font-size-lg: 15px;
 
-  /* Calendar Specific - Better visual separation */
-  --calendar-weekday-bg: #fcfcfd;
-  --calendar-weekend-bg: #f9fafb;
-  --calendar-weekend-border: #e5e7eb;
+  /* Calendar/Timeline Specific - Refined visual hierarchy */
+  --calendar-weekday-bg: #fafafa;
+  --calendar-weekend-bg: #f5f5f5;
+  --calendar-weekend-border: rgba(0, 0, 0, 0.04);
   --calendar-holiday-border: #fca5a5;
-  --calendar-holiday-bg: #fee2e2;
+  --calendar-holiday-bg: #fef2f2;
   --calendar-header-bg: #f3f4f6;
   --calendar-span-bg: #e5e7eb;
+  --calendar-grid-line: rgba(0, 0, 0, 0.04);
+  --calendar-row-separator: rgba(0, 0, 0, 0.04);
 
-  /* Sticky Section Specific - Elevated appearance */
-    --sticky-header-bg: #f9fafb;
-    --sticky-header-cell-bg: #ffffff;
-    --sticky-header-border: var(--border-strong);
-    --sticky-header-text: #4a5568;
-    --sticky-header-cell-border: var(--border-primary);
-    --sticky-column-bg: #ffffff;
-    --sticky-column-text: var(--text-primary);
-    --sticky-column-border: var(--border-primary);
-    --sticky-corner-bg: #fafbfc;
-    --sticky-corner-text: var(--text-secondary);
-    --sticky-corner-border: var(--border-primary);
+  /* Sticky Section Specific - Sidebar-style grounded appearance */
+  --sticky-header-bg: #f3f4f6;
+  --sticky-header-cell-bg: #f3f4f6;
+  --sticky-header-border: rgba(0, 0, 0, 0.08);
+  --sticky-header-text: #374151;
+  --sticky-header-cell-border: rgba(0, 0, 0, 0.06);
+  --sticky-column-bg: #f3f4f6;
+  --sticky-column-text: #374151;
+  --sticky-column-border: rgba(0, 0, 0, 0.06);
+  --sticky-corner-bg: #f3f4f6;
+  --sticky-corner-text: #374151;
+  --sticky-corner-border: rgba(0, 0, 0, 0.06);
   /* === Spacing === */
   --space-xs: 4px;
   --space-sm: 8px;
@@ -194,22 +196,22 @@
    ============================================ */
 
 [data-theme="dark"] {
-  /* Background Colors - Modern slate-inspired darks */
-  --bg-primary: #0c0d10;
-  --bg-secondary: #131416;
-  --bg-tertiary: #1a1b1f;
-  --bg-elevated: #202124;
+  /* Background Colors - Pure zinc-based darks (no blue/purple tint) */
+  --bg-primary: #09090b;
+  --bg-secondary: #121214;
+  --bg-tertiary: #18181b;
+  --bg-elevated: #1c1c1f;
 
-  /* Text Colors - Refined hierarchy */
-  --text-primary: #f4f4f5;
+  /* Text Colors - Improved contrast hierarchy */
+  --text-primary: #fafafa;
   --text-secondary: #a1a1aa;
   --text-tertiary: #71717a;
-  --text-inverse: #0c0d10;
+  --text-inverse: #09090b;
 
-  /* Border Colors - More visible in dark mode */
+  /* Border Colors - Pure zinc, more visible */
   --border-primary: #27272a;
-  --border-secondary: #232326;
-  --border-tertiary: #1f1f22;
+  --border-secondary: #1f1f22;
+  --border-tertiary: #18181b;
   --border-strong: #3f3f46;
   --border-emphasis: #52525b;
 
@@ -217,7 +219,7 @@
   --surface-default: #18181b;
   --surface-hover: #27272a;
   --surface-active: #3f3f46;
-  --surface-disabled: #18181b;
+  --surface-disabled: #27272a;
   --surface-progress-track: #27272a;
 
   /* Event Phase Colors - Sophisticated muted tones */
@@ -240,12 +242,12 @@
   --status-error: #f56565;
   --status-info: #818cf8;
 
-  /* Capacity Indicators - Enhanced contrast */
+  /* Capacity Indicators - Semantic colors (red = over, green = under/available) */
   --capacity-over: #2d1a1a;
-  --capacity-over-text: #f56565;
-  --capacity-under: #1a2d1a;
-  --capacity-under-text: #52c97c;
-  --capacity-balanced: #1a2a2d;
+  --capacity-over-text: #fca5a5;
+  --capacity-under: #14532d;
+  --capacity-under-text: #86efac;
+  --capacity-balanced: #052e16;
 
   /* Interactive States - Vibrant indigo accent system */
   --interactive-hover: #27272a;
@@ -261,27 +263,29 @@
   --button-primary-border: #818cf8;
   --button-primary-shadow: rgba(129, 140, 248, 0.3);
 
-  /* Calendar Specific - Better visual separation */
-  --calendar-weekday-bg: #1a1b1f;
-  --calendar-weekend-bg: #13151a;
-  --calendar-weekend-border: #15171c;
-  --calendar-holiday-border: #1f1818;
-    --calendar-holiday-bg: #251c1c;
-    --calendar-header-bg: #1a1c23;
-    --calendar-span-bg: #2a2d35;
+  /* Calendar/Timeline Specific - Refined visual hierarchy */
+  --calendar-weekday-bg: #18181b;
+  --calendar-weekend-bg: #1c1c1f;
+  --calendar-weekend-border: rgba(255, 255, 255, 0.04);
+  --calendar-holiday-border: #7f1d1d;
+  --calendar-holiday-bg: #1c1515;
+  --calendar-header-bg: #18181b;
+  --calendar-span-bg: #27272a;
+  --calendar-grid-line: rgba(255, 255, 255, 0.04);
+  --calendar-row-separator: rgba(255, 255, 255, 0.04);
 
-    /* Sticky Section Specific - Elevated appearance */
-    --sticky-header-bg: #12141a;
-    --sticky-header-cell-bg: #15171d;
-    --sticky-header-border: #1a1c22;
-    --sticky-header-text: #8b8f9b;
-    --sticky-header-cell-border: #1c1e24;
-    --sticky-column-bg: #13151b;
-    --sticky-column-text: #8b8f9b;
-    --sticky-column-border: #14161c;
-    --sticky-corner-bg: #0f1117;
-    --sticky-corner-text: #959aa7;
-    --sticky-corner-border: #11131a;
+  /* Sticky Section Specific - Sidebar-style grounded appearance (pure zinc) */
+  --sticky-header-bg: #1c1c1f;
+  --sticky-header-cell-bg: #1c1c1f;
+  --sticky-header-border: rgba(255, 255, 255, 0.08);
+  --sticky-header-text: #a1a1aa;
+  --sticky-header-cell-border: rgba(255, 255, 255, 0.06);
+  --sticky-column-bg: #1c1c1f;
+  --sticky-column-text: #a1a1aa;
+  --sticky-column-border: rgba(255, 255, 255, 0.06);
+  --sticky-corner-bg: #1c1c1f;
+  --sticky-corner-text: #a1a1aa;
+  --sticky-corner-border: rgba(255, 255, 255, 0.06);
 
   /* Shadows - Deeper, more refined */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);

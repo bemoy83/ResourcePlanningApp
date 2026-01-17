@@ -193,12 +193,12 @@ export function WorkCategoryRow({
             ? holidayBackground
             : dateFlags?.isWeekend
             ? weekendBackground
-            : 'var(--surface-default)';
+            : 'var(--calendar-weekday-bg)';
           const borderColor = dateFlags?.isHoliday
             ? "var(--calendar-holiday-border)"
             : dateFlags?.isWeekend
             ? "var(--calendar-weekend-border)"
-            : "var(--border-primary)";
+            : "var(--calendar-grid-line)";
 
           return (
             <div

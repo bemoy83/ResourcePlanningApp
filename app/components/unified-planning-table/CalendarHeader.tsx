@@ -236,11 +236,11 @@ export const CalendarHeader = memo(function CalendarHeader({
               backgroundColor: 'var(--sticky-header-bg)',
               border: `${CELL_BORDER_WIDTH}px solid var(--sticky-header-border)`,
               borderBottom: 'none',
-              fontSize: 'var(--font-size-sm)',
-              fontWeight: 'var(--font-weight-bold)',
+              fontSize: '11px',
+              fontWeight: 'var(--font-weight-medium)',
               color: 'var(--sticky-header-text)',
               padding: 'var(--space-xs)',
-              borderRadius: '6px',
+              letterSpacing: '0.01em',
             }}
           >
             {span.monthYear}
@@ -270,15 +270,14 @@ export const CalendarHeader = memo(function CalendarHeader({
               backgroundColor: 'var(--sticky-header-bg)',
               border: `${CELL_BORDER_WIDTH}px solid var(--sticky-header-border)`,
               borderBottom: 'none',
-              fontSize: 'var(--font-size-xs)',
-              fontWeight: 'var(--font-weight-normal)',
-              color: 'var(--sticky-header-text)',
+              fontSize: '10px',
+              fontWeight: 'var(--font-weight-medium)',
+              color: 'var(--text-tertiary)',
               padding: 'var(--space-xs)',
-              opacity: 0.8,
-              borderRadius: '6px',
+              letterSpacing: '0.02em',
             }}
           >
-            W{span.weekNumber} {span.year}
+            W{span.weekNumber}
           </div>
         ))}
       </DateCellsContainer>
@@ -316,10 +315,20 @@ export const CalendarHeader = memo(function CalendarHeader({
                 border: `${CELL_BORDER_WIDTH}px solid var(--sticky-header-border)`,
               }}
             >
-              <div style={{ fontSize: 'var(--font-size-xs)', fontWeight: 'var(--font-weight-normal)', opacity: 0.8 }}>
+              <div style={{
+                fontSize: '10px',
+                fontWeight: 'var(--font-weight-medium)',
+                color: 'var(--text-tertiary)',
+                textTransform: 'uppercase' as const,
+                letterSpacing: '0.02em',
+              }}>
                 {dayName}
               </div>
-              <div style={{ fontSize: 'var(--font-size-lg)', fontWeight: 'var(--font-weight-bold)' }}>
+              <div style={{
+                fontSize: 'var(--font-size-md)',
+                fontWeight: 'var(--font-weight-semibold)',
+                color: 'var(--sticky-header-text)',
+              }}>
                 {day}
               </div>
             </div>

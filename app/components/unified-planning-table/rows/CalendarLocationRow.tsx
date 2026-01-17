@@ -338,7 +338,9 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
             pointerEvents: 'none',
             maxWidth: '250px',
             lineHeight: 'var(--line-height-normal)',
-            whiteSpace: 'nowrap',
+            wordBreak: 'break-word',
+            overflowWrap: 'break-word',
+            overflow: 'hidden',
           }}
         >
           <div style={{ fontWeight: 'var(--font-weight-bold)', marginBottom: 'var(--space-xs)', borderBottom: 'var(--border-width-thin) solid var(--border-strong)', paddingBottom: 'var(--space-xs)' }}>
@@ -362,7 +364,7 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
         style={{
           display: 'grid',
           gridTemplateColumns: LEFT_COLUMNS.map(col => `${col.width}px`).join(' '),
-          borderBottom: `1px solid var(--sticky-column-bg)`,
+          borderBottom: `1px solid var(--calendar-row-separator)`,
           position: 'relative',
           height: `${rowHeight}px`,
           boxSizing: 'border-box',
@@ -374,18 +376,20 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
           leftOffset={0}
           style={{
             ...cellStyle,
-            backgroundColor: 'var(--sticky-header-bg)',
+            backgroundColor: 'var(--sticky-column-bg)',
             textAlign: 'right',
-            fontWeight: 'var(--font-weight-bold)',
+            fontWeight: 'var(--font-weight-medium)',
             fontSize: '11px',
+            color: 'var(--sticky-column-text)',
             height: `${rowHeight}px`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'flex-end',
-            border: '1px solid var(--calendar-weekend-border)',
+            borderRight: '1px solid var(--sticky-column-border)',
+            borderBottom: '1px solid var(--calendar-row-separator)',
             paddingRight: 'var(--space-md)',
-            gridColumn: '1 / -1', // Span all grid columns
-            width: `${timeline.timelineOriginPx}px`, // Match total left columns width
+            gridColumn: '1 / -1',
+            width: `${timeline.timelineOriginPx}px`,
           }}
         >
           {location.name}
@@ -407,9 +411,7 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
               : 'var(--calendar-weekday-bg)';
             const borderColor = dateFlags?.isHoliday
               ? 'var(--calendar-holiday-border)'
-              : dateFlags?.isWeekend
-              ? 'var(--calendar-weekend-border)'
-              : 'var(--border-primary)';
+              : 'var(--calendar-grid-line)';
 
             return (
               <div
@@ -459,12 +461,11 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
                     width: `${blockWidth}px`,
                     height: `${spanHeight}px`,
                     backgroundColor: getPhaseBackgroundColor(span.phaseName),
-                    border: `${CELL_BORDER_WIDTH}px solid var(--border-primary)`,
                     borderRadius: 'var(--radius-sm)',
-                    padding: 'var(--space-sm)',
-                    fontWeight: 'var(--font-weight-bold)',
+                    padding: '4px 10px',
+                    fontWeight: 'var(--font-weight-semibold)',
                     fontSize: '11px',
-                    color: 'var(--text-primary)',
+                    color: 'var(--text-inverse)',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',

@@ -852,8 +852,8 @@ export default function WorkspacePage() {
                 <span
                   style={{
                     fontSize: "var(--font-size-sm)",
-                    fontWeight: "var(--font-weight-bold)",
-                    color: "var(--text-primary)",
+                    fontWeight: "var(--font-weight-medium)",
+                    color: "var(--text-tertiary)",
                     marginRight: "var(--space-xs)",
                   }}
                 >

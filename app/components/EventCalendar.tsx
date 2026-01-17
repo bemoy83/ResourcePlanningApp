@@ -90,7 +90,9 @@ function EventPhaseTooltip({ tooltip }: { tooltip: TooltipState | null }) {
         pointerEvents: 'none',
         maxWidth: '250px',
         lineHeight: 'var(--line-height-normal)',
-        whiteSpace: 'nowrap',
+        wordBreak: 'break-word',
+        overflowWrap: 'break-word',
+        overflow: 'hidden',
       }}
     >
       <div style={{ fontWeight: 'var(--font-weight-bold)', marginBottom: 'var(--space-xs)', borderBottom: 'var(--border-width-thin) solid var(--border-strong)', paddingBottom: 'var(--space-xs)' }}>

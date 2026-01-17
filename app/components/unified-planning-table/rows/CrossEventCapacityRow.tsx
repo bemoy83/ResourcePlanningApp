@@ -108,7 +108,7 @@ export const CrossEventCapacityRow = memo(function CrossEventCapacityRow({
             ? 'var(--calendar-holiday-border)'
             : dateFlags?.isWeekend
             ? 'var(--calendar-weekend-border)'
-            : 'var(--border-primary)';
+            : 'var(--calendar-grid-line)';
 
           if (!crossComparison || crossComparison.capacityHours === 0) {
             return (

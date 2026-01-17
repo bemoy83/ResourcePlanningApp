@@ -29,7 +29,13 @@ export function TooltipToggle({ enabled, onChange }: TooltipToggleProps) {
           height: "16px",
         }}
       />
-      <span style={{ fontWeight: enabled ? "bold" : "normal" }}>
+      <span
+        style={{
+          fontSize: "var(--font-size-sm)",
+          fontWeight: "var(--font-weight-medium)",
+          color: "var(--text-tertiary)",
+        }}
+      >
         Show Tooltips
       </span>
     </label>

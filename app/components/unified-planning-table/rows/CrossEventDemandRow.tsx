@@ -114,7 +114,7 @@ export const CrossEventDemandRow = memo(function CrossEventDemandRow({
             ? 'var(--calendar-holiday-border)'
             : dateFlags?.isWeekend
             ? 'var(--calendar-weekend-border)'
-            : 'var(--border-primary)';
+            : 'var(--calendar-grid-line)';
 
           return (
             <div
