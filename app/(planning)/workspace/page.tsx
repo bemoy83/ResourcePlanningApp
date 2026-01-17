@@ -7,92 +7,26 @@ import { Button } from "../../components/Button";
 import { FilterBar } from "../../components/FilterBar";
 import { LocationFilter } from "../../components/LocationFilter";
 import { EventFilter } from "../../components/EventFilter";
-import { DateRangeChipFilter, DateRangePreset, DateRange, getDateRangeFromPreset } from "../../components/DateRangeChipFilter";
+import { DateRangeChipFilter } from "../../components/DateRangeChipFilter";
 import { TooltipToggle, useTooltipPreference } from "../../components/TooltipToggle";
 import { ThemeToggle } from "../../components/ThemeToggle";
 import { SegmentedControl } from "../../components/SegmentedControl";
-import { daysInMonth, formatDateLocal, formatDateParts, nextDateString, parseDateParts } from "../../utils/date";
-
-interface Event {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  status: string;
-  phases?: EventPhase[];
-}
-
-interface EventPhase {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-}
-
-interface WorkCategory {
-  id: string;
-  eventId: string;
-  name: string;
-  estimatedEffortHours: number;
-}
-
-interface Location {
-  id: string;
-  name: string;
-}
+import {
+  usePlanningFilters,
+  Allocation,
+  AllocationDraft,
+  DailyCapacityComparison,
+  DailyDemand,
+  Evaluation,
+  EventLocation,
+  Location,
+  PlanningEvent,
+  WorkCategory,
+} from "../../components/usePlanningFilters";
 
 interface LocationTagGroup {
   name: string;
   locationIds: string[];
-}
-
-interface EventLocation {
-  id: string;
-  eventId: string;
-  locationId: string;
-}
-
-interface Allocation {
-  id: string;
-  eventId: string;
-  workCategoryId: string;
-  date: string;
-  effortHours: number;
-}
-
-interface DailyDemand {
-  date: string;
-  totalEffortHours: number;
-}
-
-interface DailyCapacityComparison {
-  date: string;
-  demandHours: number;
-  capacityHours: number;
-  isOverAllocated: boolean;
-  isUnderAllocated: boolean;
-}
-
-interface WorkCategoryPressure {
-  workCategoryId: string;
-  remainingEffortHours: number;
-  remainingDays: number;
-  isUnderPressure: boolean;
-}
-
-interface AllocationDraft {
-  allocationId: string | null;
-  key: string;
-  workCategoryId: string;
-  date: string;
-  effortValue: number;
-  effortUnit: "HOURS" | "FTE";
-}
-
-interface Evaluation {
-  dailyDemand: DailyDemand[];
-  dailyCapacityComparison: DailyCapacityComparison[];
-  workCategoryPressure: WorkCategoryPressure[];
 }
 
 interface CrossEventEvaluation {
@@ -104,26 +38,8 @@ function PlanningToolbar({ children }: { children: ReactNode }) {
   return <div>{children}</div>;
 }
 
-function resolveVisibleDateRange(event: Event) {
-  let minDate = event.startDate;
-  let maxDate = event.endDate;
-
-  if (event.phases) {
-    for (const phase of event.phases) {
-      if (phase.startDate < minDate) {
-        minDate = phase.startDate;
-      }
-      if (phase.endDate > maxDate) {
-        maxDate = phase.endDate;
-      }
-    }
-  }
-
-  return { startDate: minDate, endDate: maxDate };
-}
-
 export default function WorkspacePage() {
-  const [events, setEvents] = useState<Event[]>([]);
+  const [events, setEvents] = useState<PlanningEvent[]>([]);
   const [workCategories, setWorkCategories] = useState<WorkCategory[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [eventLocations, setEventLocations] = useState<EventLocation[]>([]);
@@ -141,20 +57,49 @@ export default function WorkspacePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorsByCellKey, setErrorsByCellKey] = useState<Record<string, string>>({});
-  const [selectedLocationIds, setSelectedLocationIds] = useState<Set<string>>(new Set());
-  const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set());
   const [locationTagGroups, setLocationTagGroups] = useState<LocationTagGroup[]>([]);
-  const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>("next-3-months");
-  const [customDateRange, setCustomDateRange] = useState<DateRange>({ startDate: null, endDate: null });
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
-  const [dateRangeSource, setDateRangeSource] = useState<"preset" | "custom" | "year-month">("preset");
-  const [monthOffset, setMonthOffset] = useState(0); // 0 = current month, -1 = previous month, +1 = next month
   const [tooltipsEnabled, setTooltipsEnabled] = useTooltipPreference();
   const [focusedEventId, setFocusedEventId] = useState<string | null>(null);
   const [currentEventIndex, setCurrentEventIndex] = useState(-1);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimeoutRef = useRef<number | null>(null);
+  const lastAlertKeyRef = useRef<string | null>(null);
+
+  const {
+    selectedLocationIds,
+    setSelectedLocationIds,
+    selectedEventIds,
+    setSelectedEventIds,
+    dateRangePreset,
+    customDateRange,
+    selectedYear,
+    selectedMonth,
+    monthOffset,
+    availableYears,
+    activeDateRange,
+    filteredData,
+    dates,
+    hasSelectionFilters,
+    eventIdsForSelectedLocations,
+    eventIdsInActiveDateRange,
+    handlePresetChange,
+    handleCustomRangeChange,
+    handleYearChange,
+    handleMonthChange,
+    handlePreviousMonth,
+    handleNextMonth,
+    handleYearMonthPrevious,
+    handleYearMonthNext,
+  } = usePlanningFilters({
+    events,
+    locations,
+    workCategories,
+    eventLocations,
+    allocations,
+    evaluation,
+    drafts,
+    errorsByCellKey,
+  });
 
   const selectedEventsForNavigation = useMemo(() => {
     return events
@@ -169,6 +114,19 @@ export default function WorkspacePage() {
   const selectedEventKey = useMemo(() => {
     return [...selectedEventIds].sort().join("|");
   }, [selectedEventIds]);
+
+  const selectedLocationKey = useMemo(() => {
+    return [...selectedLocationIds].sort().join("|");
+  }, [selectedLocationIds]);
+
+  const filterAlertKey = useMemo(() => {
+    return [
+      selectedEventKey,
+      selectedLocationKey,
+      activeDateRange.startDate ?? "",
+      activeDateRange.endDate ?? "",
+    ].join("::");
+  }, [activeDateRange.endDate, activeDateRange.startDate, selectedEventKey, selectedLocationKey]);
 
   useEffect(() => {
     setCurrentEventIndex(-1);
@@ -203,69 +161,94 @@ export default function WorkspacePage() {
     }, 2500);
   }, []);
 
+  useEffect(() => {
+    if (filteredData.events.length > 0 && toastMessage) {
+      setToastMessage(null);
+      if (toastTimeoutRef.current !== null) {
+        window.clearTimeout(toastTimeoutRef.current);
+        toastTimeoutRef.current = null;
+      }
+    }
+  }, [filteredData.events.length, toastMessage]);
+
+  useEffect(() => {
+    if (lastAlertKeyRef.current === filterAlertKey) {
+      return;
+    }
+    lastAlertKeyRef.current = filterAlertKey;
+    if (!filterAlertKey) return;
+    if (filteredData.events.length > 0) {
+      return;
+    }
+    if (
+      selectedEventIds.size === 0 &&
+      selectedLocationIds.size === 0 &&
+      !activeDateRange.startDate &&
+      !activeDateRange.endDate
+    ) {
+      return;
+    }
+
+    const hasDateRange = !!activeDateRange.startDate && !!activeDateRange.endDate;
+    const hasEventSelection = selectedEventIds.size > 0;
+    const hasLocationSelection = selectedLocationIds.size > 0;
+
+    if (hasEventSelection && hasDateRange && eventIdsInActiveDateRange) {
+      const hasEventInRange = [...selectedEventIds].some((id) =>
+        eventIdsInActiveDateRange.has(id)
+      );
+      if (!hasEventInRange) {
+        showToast("Selected events are outside the current date range.");
+        return;
+      }
+    }
+
+    if (hasLocationSelection && hasDateRange && eventIdsForSelectedLocations && eventIdsInActiveDateRange) {
+      const hasLocationInRange = [...eventIdsForSelectedLocations].some((id) =>
+        eventIdsInActiveDateRange.has(id)
+      );
+      if (!hasLocationInRange) {
+        showToast("Selected locations have no events in the current date range.");
+        return;
+      }
+    }
+
+    if (hasEventSelection && hasLocationSelection && eventIdsForSelectedLocations) {
+      const hasOverlap = [...selectedEventIds].some((id) =>
+        eventIdsForSelectedLocations.has(id)
+      );
+      if (!hasOverlap) {
+        showToast("Selected events are not scheduled at the selected locations.");
+        return;
+      }
+    }
+
+    if (hasDateRange && !hasEventSelection && !hasLocationSelection && eventIdsInActiveDateRange) {
+      if (eventIdsInActiveDateRange.size === 0) {
+        showToast("No events fall within the selected date range.");
+        return;
+      }
+    }
+
+    showToast("No events match the current filters.");
+  }, [
+    activeDateRange.endDate,
+    activeDateRange.startDate,
+    eventIdsForSelectedLocations,
+    eventIdsInActiveDateRange,
+    filteredData.events.length,
+    filterAlertKey,
+    selectedEventIds,
+    selectedLocationIds,
+    showToast,
+  ]);
+
   const handleClearFilters = useCallback(() => {
     setSelectedEventIds(new Set());
     setSelectedLocationIds(new Set());
     setCurrentEventIndex(-1);
     setFocusedEventId(null);
   }, []);
-
-  const handlePresetChange = useCallback((preset: DateRangePreset) => {
-    setDateRangePreset(preset);
-    if (preset !== "custom") {
-      setDateRangeSource("preset");
-    }
-    // Reset month offset when switching away from "this-month"
-    if (preset !== "this-month") {
-      setMonthOffset(0);
-    }
-  }, []);
-
-  const handleCustomRangeChange = useCallback((range: DateRange) => {
-    setCustomDateRange(range);
-    setDateRangeSource("custom");
-  }, []);
-
-  const handleYearChange = useCallback((year: number | null) => {
-    setSelectedYear(year);
-    setDateRangeSource("year-month");
-    if (year === null) {
-      setSelectedMonth(null);
-    }
-  }, []);
-
-  const handleMonthChange = useCallback((month: number | null) => {
-    setSelectedMonth(month);
-    setDateRangeSource("year-month");
-  }, []);
-
-  const handlePreviousMonth = useCallback(() => {
-    setMonthOffset((prev) => prev - 1);
-  }, []);
-
-  const handleNextMonth = useCallback(() => {
-    setMonthOffset((prev) => prev + 1);
-  }, []);
-
-  const getCurrentMonthName = useCallback((): string => {
-    const today = formatDateLocal(new Date());
-    const { year, month } = parseDateParts(today);
-    let targetYear = year;
-    let targetMonth = month + monthOffset;
-    
-    // Handle year rollover
-    while (targetMonth < 1) {
-      targetMonth += 12;
-      targetYear -= 1;
-    }
-    while (targetMonth > 12) {
-      targetMonth -= 12;
-      targetYear += 1;
-    }
-    
-    const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    return `${monthLabels[targetMonth - 1]} ${targetYear}`;
-  }, [monthOffset]);
 
   const handleLocatePrevious = useCallback(() => {
     if (selectedEventsForNavigation.length === 0) return;
@@ -286,6 +269,58 @@ export default function WorkspacePage() {
     setCurrentEventIndex(nextIndex);
     setFocusedEventId(nextEvent.id);
   }, [currentEventIndex, selectedEventsForNavigation]);
+
+  const yearMonthPrevDisabled = useMemo(() => {
+    if (selectedYear === null || selectedMonth === null) return true;
+    let year = selectedYear;
+    let month = selectedMonth - 1;
+    if (month < 1) {
+      month = 12;
+      year -= 1;
+    }
+    return availableYears.length > 0 && !availableYears.includes(year);
+  }, [availableYears, selectedMonth, selectedYear]);
+
+  const yearMonthNextDisabled = useMemo(() => {
+    if (selectedYear === null || selectedMonth === null) return true;
+    let year = selectedYear;
+    let month = selectedMonth + 1;
+    if (month > 12) {
+      month = 1;
+      year += 1;
+    }
+    return availableYears.length > 0 && !availableYears.includes(year);
+  }, [availableYears, selectedMonth, selectedYear]);
+
+  const handleYearMonthPreviousWithAlert = useCallback(() => {
+    if (selectedYear === null || selectedMonth === null) return;
+    let year = selectedYear;
+    let month = selectedMonth - 1;
+    if (month < 1) {
+      month = 12;
+      year -= 1;
+    }
+    if (availableYears.length > 0 && !availableYears.includes(year)) {
+      showToast(`No events exist in ${year}.`);
+      return;
+    }
+    handleYearMonthPrevious();
+  }, [availableYears, handleYearMonthPrevious, selectedMonth, selectedYear, showToast]);
+
+  const handleYearMonthNextWithAlert = useCallback(() => {
+    if (selectedYear === null || selectedMonth === null) return;
+    let year = selectedYear;
+    let month = selectedMonth + 1;
+    if (month > 12) {
+      month = 1;
+      year += 1;
+    }
+    if (availableYears.length > 0 && !availableYears.includes(year)) {
+      showToast(`No events exist in ${year}.`);
+      return;
+    }
+    handleYearMonthNext();
+  }, [availableYears, handleYearMonthNext, selectedMonth, selectedYear, showToast]);
 
   // Load all data
   useEffect(() => {
@@ -508,237 +543,7 @@ export default function WorkspacePage() {
     }
   }
 
-  const eventsForYearOptions = useMemo(() => {
-    let filtered = events;
-
-    if (selectedEventIds.size > 0) {
-      filtered = filtered.filter((event) => selectedEventIds.has(event.id));
-    }
-
-    const eventsWithSelectedLocations =
-      selectedLocationIds.size > 0
-        ? new Set(
-            eventLocations
-              .filter((el) => selectedLocationIds.has(el.locationId))
-              .map((el) => el.eventId)
-          )
-        : null;
-
-    if (eventsWithSelectedLocations) {
-      filtered = filtered.filter((event) => eventsWithSelectedLocations.has(event.id));
-    }
-
-    return filtered;
-  }, [events, eventLocations, selectedEventIds, selectedLocationIds]);
-
-  const availableYears = useMemo(() => {
-    const years = new Set<number>();
-    for (const event of eventsForYearOptions) {
-      const range = resolveVisibleDateRange(event);
-      const startYear = parseDateParts(range.startDate).year;
-      const endYear = parseDateParts(range.endDate).year;
-      for (let year = startYear; year <= endYear; year += 1) {
-        years.add(year);
-      }
-    }
-    return Array.from(years).sort((a, b) => a - b);
-  }, [eventsForYearOptions]);
-
-  useEffect(() => {
-    if (selectedYear !== null && !availableYears.includes(selectedYear)) {
-      setSelectedYear(null);
-      setSelectedMonth(null);
-    }
-  }, [availableYears, selectedMonth, selectedYear]);
-
-  // Calculate active date range from last user selection
-  const activeDateRange = useMemo(() => {
-    if (dateRangeSource === "year-month") {
-      if (selectedYear !== null) {
-        if (selectedMonth !== null) {
-          const startDate = formatDateParts(selectedYear, selectedMonth, 1);
-          const endDate = formatDateParts(
-            selectedYear,
-            selectedMonth,
-            daysInMonth(selectedYear, selectedMonth)
-          );
-          return { startDate, endDate };
-        }
-        return {
-          startDate: formatDateParts(selectedYear, 1, 1),
-          endDate: formatDateParts(selectedYear, 12, 31),
-        };
-      }
-      return getDateRangeFromPreset(dateRangePreset, customDateRange);
-    }
-
-    if (dateRangeSource === "custom") {
-      return customDateRange;
-    }
-
-    // Handle month offset for "this-month" preset
-    if (dateRangePreset === "this-month" && monthOffset !== 0) {
-      const today = formatDateLocal(new Date());
-      const { year, month } = parseDateParts(today);
-      let targetYear = year;
-      let targetMonth = month + monthOffset;
-      
-      // Handle year rollover
-      while (targetMonth < 1) {
-        targetMonth += 12;
-        targetYear -= 1;
-      }
-      while (targetMonth > 12) {
-        targetMonth -= 12;
-        targetYear += 1;
-      }
-      
-      const startDate = formatDateParts(targetYear, targetMonth, 1);
-      const endDate = formatDateParts(targetYear, targetMonth, daysInMonth(targetYear, targetMonth));
-      return { startDate, endDate };
-    }
-
-    return getDateRangeFromPreset(dateRangePreset, customDateRange);
-  }, [customDateRange, dateRangePreset, dateRangeSource, selectedMonth, selectedYear, monthOffset]);
-
-  // Filter data
-  const filteredData = useMemo(() => {
-    let filtered = events;
-
-    if (selectedEventIds.size > 0) {
-      filtered = filtered.filter((event) => selectedEventIds.has(event.id));
-    }
-
-    const eventsWithSelectedLocations =
-      selectedLocationIds.size > 0
-        ? new Set(
-            eventLocations
-              .filter((el) => selectedLocationIds.has(el.locationId))
-              .map((el) => el.eventId)
-          )
-        : null;
-
-    if (eventsWithSelectedLocations) {
-      filtered = filtered.filter((event) => eventsWithSelectedLocations.has(event.id));
-    }
-
-    if (activeDateRange.startDate && activeDateRange.endDate) {
-      filtered = filtered.filter((event) => {
-        const eventStart = event.startDate;
-        const eventEnd = event.endDate;
-        return eventEnd >= activeDateRange.startDate! && eventStart <= activeDateRange.endDate!;
-      });
-    }
-
-    const filteredEventIds = new Set(filtered.map((e) => e.id));
-    const filteredWorkCategories = workCategories.filter((wc) => filteredEventIds.has(wc.eventId));
-    const filteredAllocations = allocations.filter((a) => filteredEventIds.has(a.eventId));
-    const filteredEventLocations = eventLocations.filter((el) => {
-      if (!filteredEventIds.has(el.eventId)) {
-        return false;
-      }
-      if (selectedLocationIds.size > 0 && !selectedLocationIds.has(el.locationId)) {
-        return false;
-      }
-      return true;
-    });
-
-    const filteredWorkCategoryIds = new Set(filteredWorkCategories.map((wc) => wc.id));
-    const filteredEvaluation: Evaluation = {
-      dailyDemand: evaluation.dailyDemand.filter((dd) => {
-        if (activeDateRange.startDate && activeDateRange.endDate) {
-          return dd.date >= activeDateRange.startDate && dd.date <= activeDateRange.endDate;
-        }
-        return true;
-      }),
-      dailyCapacityComparison: evaluation.dailyCapacityComparison.filter((dcc) => {
-        if (activeDateRange.startDate && activeDateRange.endDate) {
-          return dcc.date >= activeDateRange.startDate && dcc.date <= activeDateRange.endDate;
-        }
-        return true;
-      }),
-      workCategoryPressure: evaluation.workCategoryPressure.filter((wcp) =>
-        filteredWorkCategoryIds.has(wcp.workCategoryId)
-      ),
-    };
-
-    const filteredDrafts = drafts.filter((d) => filteredWorkCategoryIds.has(d.workCategoryId));
-
-    const filteredErrorsByCellKey: Record<string, string> = {};
-    for (const [cellKey, error] of Object.entries(errorsByCellKey)) {
-      const [workCategoryId] = cellKey.split('::');
-      if (filteredWorkCategoryIds.has(workCategoryId)) {
-        filteredErrorsByCellKey[cellKey] = error;
-      }
-    }
-
-    // Filter locations to only those with filtered events
-    const filteredLocationIds = new Set(
-      filteredEventLocations.map((el) => el.locationId)
-    );
-    const filteredLocations = locations.filter((loc) =>
-      filteredLocationIds.has(loc.id)
-    );
-
-    return {
-      events: filtered,
-      locations: filteredLocations,
-      workCategories: filteredWorkCategories,
-      allocations: filteredAllocations,
-      evaluation: filteredEvaluation,
-      eventLocations: filteredEventLocations,
-      drafts: filteredDrafts,
-      errorsByCellKey: filteredErrorsByCellKey,
-    };
-  }, [
-    events,
-    locations,
-    workCategories,
-    allocations,
-    evaluation,
-    eventLocations,
-    drafts,
-    errorsByCellKey,
-    selectedEventIds,
-    selectedLocationIds,
-    activeDateRange,
-  ]);
-
-  // Calculate date range
-  const { dates, minDate, maxDate } = useMemo(() => {
-    let min: string | null = null;
-    let max: string | null = null;
-
-    if (activeDateRange.startDate && activeDateRange.endDate) {
-      min = activeDateRange.startDate;
-      max = activeDateRange.endDate;
-    } else {
-      for (const event of filteredData.events) {
-        const range = resolveVisibleDateRange(event);
-        if (!min || range.startDate < min) {
-          min = range.startDate;
-        }
-        if (!max || range.endDate > max) {
-          max = range.endDate;
-        }
-      }
-    }
-
-    const datesArray: string[] = [];
-    if (min && max) {
-      let current = min;
-      while (current <= max) {
-        datesArray.push(current);
-        current = nextDateString(current);
-      }
-    }
-
-    return { dates: datesArray, minDate: min, maxDate: max };
-  }, [activeDateRange, filteredData.events]);
-
   const hasNavigationSelection = selectedEventsForNavigation.length > 0;
-  const hasSelectionFilters =
-    selectedEventIds.size > 0 || selectedLocationIds.size > 0;
   const canLocatePrevious = hasNavigationSelection && currentEventIndex > 0;
   const canLocateNext =
     hasNavigationSelection && currentEventIndex < selectedEventsForNavigation.length - 1;
@@ -1056,6 +861,10 @@ export default function WorkspacePage() {
                 monthOffset={monthOffset}
                 onPreviousMonth={handlePreviousMonth}
                 onNextMonth={handleNextMonth}
+                onYearMonthPrevious={handleYearMonthPreviousWithAlert}
+                onYearMonthNext={handleYearMonthNextWithAlert}
+                yearMonthPrevDisabled={yearMonthPrevDisabled}
+                yearMonthNextDisabled={yearMonthNextDisabled}
               />
             </div>
           </>
@@ -1093,7 +902,7 @@ export default function WorkspacePage() {
           style={{
             position: "fixed",
             right: "var(--space-xl)",
-            bottom: "var(--space-xl)",
+            top: "var(--space-xl)",
             padding: "12px 20px",
             backgroundColor: "var(--surface-default)",
             border: "var(--border-width-thin) solid var(--border-secondary)",
@@ -1104,6 +913,8 @@ export default function WorkspacePage() {
             fontWeight: "var(--font-weight-medium)",
             zIndex: 2000,
             animation: "dropdownEnter 200ms var(--ease-spring)",
+            maxWidth: "min(80vw, 480px)",
+            textAlign: "center",
           }}
         >
           {toastMessage}

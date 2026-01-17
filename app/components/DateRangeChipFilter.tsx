@@ -21,6 +21,7 @@ export type DateRangePreset =
   | "next-3-months"
   | "next-6-months"
   | "this-year"
+  | "year-month"
   | "custom";
 
 export interface DateRange {
@@ -41,6 +42,10 @@ interface DateRangeChipFilterProps {
   monthOffset?: number;
   onPreviousMonth?: () => void;
   onNextMonth?: () => void;
+  onYearMonthPrevious?: () => void;
+  onYearMonthNext?: () => void;
+  yearMonthPrevDisabled?: boolean;
+  yearMonthNextDisabled?: boolean;
 }
 
 const presets: Array<{ id: DateRangePreset; label: string }> = [
@@ -66,6 +71,10 @@ export function DateRangeChipFilter({
   monthOffset = 0,
   onPreviousMonth,
   onNextMonth,
+  onYearMonthPrevious,
+  onYearMonthNext,
+  yearMonthPrevDisabled = false,
+  yearMonthNextDisabled = false,
 }: DateRangeChipFilterProps) {
   const [showCustomModal, setShowCustomModal] = useState(false);
   const [tempStartDate, setTempStartDate] = useState(customRange.startDate || "");
@@ -175,6 +184,17 @@ export function DateRangeChipFilter({
     return `${monthLabels[targetMonth - 1]} ${targetYear}`;
   };
 
+  const showMonthStepper =
+    selectedPreset === "this-month" ||
+    (selectedPreset === "year-month" && selectedYear !== null && selectedMonth !== null);
+
+  const getYearMonthLabel = (): string => {
+    if (selectedYear === null || selectedMonth === null) {
+      return "Year / Month";
+    }
+    return `${monthLabels[selectedMonth - 1]} ${selectedYear}`;
+  };
+
   return (
     <>
       <div
@@ -215,29 +235,39 @@ export function DateRangeChipFilter({
           );
         })}
       </SegmentedControl>
-      {selectedPreset === "this-month" && onPreviousMonth && onNextMonth && (
+      {showMonthStepper && (
         <SegmentedControl
           style={{
             marginLeft: "var(--space-sm)",
           }}
         >
           <Button
-            onClick={onPreviousMonth}
+            onClick={selectedPreset === "year-month" ? onYearMonthPrevious : onPreviousMonth}
             variant="segmented"
             size="sm"
             style={{
               padding: "6px 14px",
             }}
+            disabled={
+              selectedPreset === "year-month"
+                ? !onYearMonthPrevious || yearMonthPrevDisabled
+                : !onPreviousMonth
+            }
           >
             Prev
           </Button>
           <Button
-            onClick={onNextMonth}
+            onClick={selectedPreset === "year-month" ? onYearMonthNext : onNextMonth}
             variant="segmented"
             size="sm"
             style={{
               padding: "6px 14px",
             }}
+            disabled={
+              selectedPreset === "year-month"
+                ? !onYearMonthNext || yearMonthNextDisabled
+                : !onNextMonth
+            }
           >
             Next
           </Button>
@@ -249,7 +279,7 @@ export function DateRangeChipFilter({
               minWidth: "100px",
             }}
           >
-            {getCurrentMonthName()}
+            {selectedPreset === "year-month" ? getYearMonthLabel() : getCurrentMonthName()}
           </span>
         </SegmentedControl>
       )}
@@ -405,14 +435,14 @@ export function DateRangeChipFilter({
                     padding: "10px 18px",
                     fontSize: "var(--font-size-sm)",
                     fontWeight: "var(--font-weight-semibold)",
-                    color: "var(--text-inverse)",
-                    backgroundColor: tempStartDate && tempEndDate ? "var(--button-primary-bg)" : "var(--border-strong)",
+                    color: tempStartDate && tempEndDate ? "var(--chip-selected-text)" : "var(--text-primary)",
+                    backgroundColor: tempStartDate && tempEndDate ? "var(--chip-selected-bg)" : "var(--border-strong)",
                     border: "var(--border-width-thin) solid transparent",
                     borderRadius: "var(--radius-full)",
                     cursor: tempStartDate && tempEndDate ? "pointer" : "not-allowed",
                     opacity: tempStartDate && tempEndDate ? 1 : 0.5,
                     transition: "all var(--transition-fast)",
-                    boxShadow: tempStartDate && tempEndDate ? "var(--shadow-primary-glow)" : "none",
+                    boxShadow: "none",
                   }}
                 >
                   Apply
@@ -426,7 +456,7 @@ export function DateRangeChipFilter({
           style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "var(--space-sm)", position: "relative" }}
         >
           <Chip
-            selected={selectedYear !== null || selectedMonth !== null}
+            selected={selectedPreset === "year-month"}
             onClick={() => {
               setShowYearMonthModal((prev) => !prev);
             }}
@@ -566,8 +596,8 @@ export function DateRangeChipFilter({
                         padding: "8px 12px",
                         fontSize: "var(--font-size-sm)",
                         fontWeight: isSelected ? "var(--font-weight-semibold)" : "var(--font-weight-medium)",
-                        color: isSelected ? "var(--text-inverse)" : "var(--text-primary)",
-                        backgroundColor: isSelected ? "var(--button-primary-bg)" : "var(--surface-default)",
+                        color: isSelected ? "var(--chip-selected-text)" : "var(--text-primary)",
+                        backgroundColor: isSelected ? "var(--chip-selected-bg)" : "var(--surface-default)",
                         border: "var(--border-width-thin) solid var(--border-primary)",
                         borderRadius: "var(--radius-full)",
                         cursor: modalYear === null ? "not-allowed" : "pointer",
@@ -709,6 +739,8 @@ export function getDateRangeFromPreset(preset: DateRangePreset, customRange: Dat
     }
 
     case "custom":
+      return customRange;
+    case "year-month":
       return customRange;
 
     default:
