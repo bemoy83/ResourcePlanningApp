@@ -10,6 +10,7 @@ interface ChipProps {
   disabled?: boolean;
   style?: CSSProperties;
   className?: string;
+  variant?: "chip" | "segmented";
 }
 
 export function Chip({
@@ -19,12 +20,18 @@ export function Chip({
   disabled = false,
   style,
   className,
+  variant = "chip",
 }: ChipProps) {
+  // Determine the button variant based on chip variant and selected state
+  const buttonVariant = variant === "segmented" 
+    ? "segmented"
+    : (selected ? "chip-selected" : "chip");
+
   return (
     <Button
       onClick={onClick}
       disabled={disabled}
-      variant={selected ? "chip-selected" : "chip"}
+      variant={buttonVariant}
       size="sm"
       className={className}
       style={{
@@ -32,6 +39,13 @@ export function Chip({
         // This padding will override Button's size-based padding since style prop is merged last
         padding: "6px 14px",
         fontSize: "var(--button-font-size-sm)", // Explicitly set fontSize to match size="sm"
+        // For segmented variant, adjust selected state styling
+        ...(variant === "segmented" && selected
+          ? {
+              backgroundColor: "var(--chip-selected-bg)",
+              color: "var(--chip-selected-text)",
+            }
+          : {}),
         ...style, // Allow external style overrides
       }}
     >

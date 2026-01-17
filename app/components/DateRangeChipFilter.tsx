@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Chip } from "./Chip";
+import { SegmentedControl } from "./SegmentedControl";
+import { Button } from "./Button";
 import {
   addDays,
   daysInMonth,
@@ -36,6 +38,9 @@ interface DateRangeChipFilterProps {
   selectedMonth: number | null;
   onYearChange: (year: number | null) => void;
   onMonthChange: (month: number | null) => void;
+  monthOffset?: number;
+  onPreviousMonth?: () => void;
+  onNextMonth?: () => void;
 }
 
 const presets: Array<{ id: DateRangePreset; label: string }> = [
@@ -58,6 +63,9 @@ export function DateRangeChipFilter({
   selectedMonth,
   onYearChange,
   onMonthChange,
+  monthOffset = 0,
+  onPreviousMonth,
+  onNextMonth,
 }: DateRangeChipFilterProps) {
   const [showCustomModal, setShowCustomModal] = useState(false);
   const [tempStartDate, setTempStartDate] = useState(customRange.startDate || "");
@@ -114,7 +122,7 @@ export function DateRangeChipFilter({
 
   const handleChipClick = (preset: DateRangePreset) => {
     if (preset === "custom") {
-      setShowCustomModal(true);
+      setShowCustomModal((prev) => !prev);
     } else {
       onPresetChange(preset);
     }
@@ -148,6 +156,25 @@ export function DateRangeChipFilter({
 
   const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
+  const getCurrentMonthName = (): string => {
+    const today = formatDateLocal(new Date());
+    const { year, month } = parseDateParts(today);
+    let targetYear = year;
+    let targetMonth = month + monthOffset;
+    
+    // Handle year rollover
+    while (targetMonth < 1) {
+      targetMonth += 12;
+      targetYear -= 1;
+    }
+    while (targetMonth > 12) {
+      targetMonth -= 12;
+      targetYear += 1;
+    }
+    
+    return `${monthLabels[targetMonth - 1]} ${targetYear}`;
+  };
+
   return (
     <>
       <div
@@ -168,22 +195,76 @@ export function DateRangeChipFilter({
         >
           Date Range
         </span>
-        {presets.filter((preset) => preset.id !== "custom").map((preset) => {
+        <SegmentedControl
+          style={{
+            flexWrap: "wrap",
+            gap: "var(--space-sm)",
+          }}
+        >
+          {presets.filter((preset) => preset.id !== "custom").map((preset) => {
           const isSelected = selectedPreset === preset.id;
           return (
             <Chip
               key={preset.id}
               selected={isSelected}
               onClick={() => handleChipClick(preset.id)}
+              variant="segmented"
             >
               {getChipLabel(preset.id)}
             </Chip>
           );
         })}
+      </SegmentedControl>
+      {selectedPreset === "this-month" && onPreviousMonth && onNextMonth && (
+        <SegmentedControl
+          style={{
+            marginLeft: "var(--space-sm)",
+          }}
+        >
+          <Button
+            onClick={onPreviousMonth}
+            variant="segmented"
+            size="sm"
+            style={{
+              padding: "6px 14px",
+            }}
+          >
+            Prev
+          </Button>
+          <Button
+            onClick={onNextMonth}
+            variant="segmented"
+            size="sm"
+            style={{
+              padding: "6px 14px",
+            }}
+          >
+            Next
+          </Button>
+          <span
+            style={{
+              fontSize: "var(--font-size-xs)",
+              color: "var(--text-tertiary)",
+              padding: "0 var(--space-sm)",
+              minWidth: "100px",
+            }}
+          >
+            {getCurrentMonthName()}
+          </span>
+        </SegmentedControl>
+      )}
+      <SegmentedControl
+        style={{
+          flexWrap: "wrap",
+          gap: "var(--space-sm)",
+          marginLeft: "auto",
+        }}
+      >
         <div ref={customAnchorRef} style={{ position: "relative", display: "inline-flex" }}>
           <Chip
             selected={selectedPreset === "custom"}
             onClick={() => handleChipClick("custom")}
+            variant="segmented"
           >
             {getChipLabel("custom")}
           </Chip>
@@ -192,7 +273,7 @@ export function DateRangeChipFilter({
               style={{
                 position: "absolute",
                 top: "100%",
-                left: 0,
+                right: 0,
                 marginTop: "var(--space-sm)",
                 backgroundColor: "var(--surface-default)",
                 border: "var(--border-width-thin) solid var(--border-secondary)",
@@ -340,7 +421,6 @@ export function DateRangeChipFilter({
             </div>
           )}
         </div>
-
         <div
           ref={yearMonthAnchorRef}
           style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "var(--space-sm)", position: "relative" }}
@@ -350,6 +430,7 @@ export function DateRangeChipFilter({
             onClick={() => {
               setShowYearMonthModal((prev) => !prev);
             }}
+            variant="segmented"
           >
             <span>
               {selectedYear !== null && selectedMonth !== null
@@ -560,6 +641,7 @@ export function DateRangeChipFilter({
             </div>
           )}
         </div>
+      </SegmentedControl>
       </div>
 
 

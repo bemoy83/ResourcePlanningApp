@@ -145,6 +145,7 @@ export function EventFilter({
       <Chip
         onClick={() => setIsOpen(!isOpen)}
         selected={someSelected || allSelected}
+        variant="segmented"
       >
         <span>{displayText()}</span>
         <span style={{ fontSize: "var(--font-size-xs)", marginLeft: "var(--space-xs)" }}>{isOpen ? "▲" : "▼"}</span>

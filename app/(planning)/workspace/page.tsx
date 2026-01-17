@@ -11,7 +11,7 @@ import { DateRangeChipFilter, DateRangePreset, DateRange, getDateRangeFromPreset
 import { TooltipToggle, useTooltipPreference } from "../../components/TooltipToggle";
 import { ThemeToggle } from "../../components/ThemeToggle";
 import { SegmentedControl } from "../../components/SegmentedControl";
-import { daysInMonth, formatDateParts, nextDateString, parseDateParts } from "../../utils/date";
+import { daysInMonth, formatDateLocal, formatDateParts, nextDateString, parseDateParts } from "../../utils/date";
 
 interface Event {
   id: string;
@@ -149,6 +149,7 @@ export default function WorkspacePage() {
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [dateRangeSource, setDateRangeSource] = useState<"preset" | "custom" | "year-month">("preset");
+  const [monthOffset, setMonthOffset] = useState(0); // 0 = current month, -1 = previous month, +1 = next month
   const [tooltipsEnabled, setTooltipsEnabled] = useTooltipPreference();
   const [focusedEventId, setFocusedEventId] = useState<string | null>(null);
   const [currentEventIndex, setCurrentEventIndex] = useState(-1);
@@ -214,6 +215,10 @@ export default function WorkspacePage() {
     if (preset !== "custom") {
       setDateRangeSource("preset");
     }
+    // Reset month offset when switching away from "this-month"
+    if (preset !== "this-month") {
+      setMonthOffset(0);
+    }
   }, []);
 
   const handleCustomRangeChange = useCallback((range: DateRange) => {
@@ -233,6 +238,34 @@ export default function WorkspacePage() {
     setSelectedMonth(month);
     setDateRangeSource("year-month");
   }, []);
+
+  const handlePreviousMonth = useCallback(() => {
+    setMonthOffset((prev) => prev - 1);
+  }, []);
+
+  const handleNextMonth = useCallback(() => {
+    setMonthOffset((prev) => prev + 1);
+  }, []);
+
+  const getCurrentMonthName = useCallback((): string => {
+    const today = formatDateLocal(new Date());
+    const { year, month } = parseDateParts(today);
+    let targetYear = year;
+    let targetMonth = month + monthOffset;
+    
+    // Handle year rollover
+    while (targetMonth < 1) {
+      targetMonth += 12;
+      targetYear -= 1;
+    }
+    while (targetMonth > 12) {
+      targetMonth -= 12;
+      targetYear += 1;
+    }
+    
+    const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return `${monthLabels[targetMonth - 1]} ${targetYear}`;
+  }, [monthOffset]);
 
   const handleLocatePrevious = useCallback(() => {
     if (selectedEventsForNavigation.length === 0) return;
@@ -543,8 +576,30 @@ export default function WorkspacePage() {
       return customDateRange;
     }
 
+    // Handle month offset for "this-month" preset
+    if (dateRangePreset === "this-month" && monthOffset !== 0) {
+      const today = formatDateLocal(new Date());
+      const { year, month } = parseDateParts(today);
+      let targetYear = year;
+      let targetMonth = month + monthOffset;
+      
+      // Handle year rollover
+      while (targetMonth < 1) {
+        targetMonth += 12;
+        targetYear -= 1;
+      }
+      while (targetMonth > 12) {
+        targetMonth -= 12;
+        targetYear += 1;
+      }
+      
+      const startDate = formatDateParts(targetYear, targetMonth, 1);
+      const endDate = formatDateParts(targetYear, targetMonth, daysInMonth(targetYear, targetMonth));
+      return { startDate, endDate };
+    }
+
     return getDateRangeFromPreset(dateRangePreset, customDateRange);
-  }, [customDateRange, dateRangePreset, dateRangeSource, selectedMonth, selectedYear]);
+  }, [customDateRange, dateRangePreset, dateRangeSource, selectedMonth, selectedYear, monthOffset]);
 
   // Filter data
   const filteredData = useMemo(() => {
@@ -841,34 +896,40 @@ export default function WorkspacePage() {
         {(events.length > 0 || locations.length > 0) && (
           <>
             <FilterBar>
-              {events.length > 0 && (
-                <EventFilter
-                  events={events}
-                  selectedEventIds={selectedEventIds}
-                  onSelectionChange={setSelectedEventIds}
-                />
-              )}
-              {locations.length > 0 && (
-                <LocationFilter
-                  locations={locations}
-                  selectedLocationIds={selectedLocationIds}
-                  onSelectionChange={setSelectedLocationIds}
-                  onTagsChange={setLocationTagGroups}
-                />
-              )}
-              <Button
-                onClick={handleClearFilters}
-                disabled={!hasSelectionFilters}
-                variant="chip"
-                size="sm"
+              <SegmentedControl
                 style={{
-                  padding: "6px 14px",
-                  fontSize: "var(--button-font-size-sm)",
-                  opacity: hasSelectionFilters ? 1 : 0.6,
+                  flexWrap: "wrap",
+                  gap: "var(--space-sm)",
                 }}
               >
-                Clear Filters
-              </Button>
+                {events.length > 0 && (
+                  <EventFilter
+                    events={events}
+                    selectedEventIds={selectedEventIds}
+                    onSelectionChange={setSelectedEventIds}
+                  />
+                )}
+                {locations.length > 0 && (
+                  <LocationFilter
+                    locations={locations}
+                    selectedLocationIds={selectedLocationIds}
+                    onSelectionChange={setSelectedLocationIds}
+                    onTagsChange={setLocationTagGroups}
+                  />
+                )}
+                <Button
+                  onClick={handleClearFilters}
+                  disabled={!hasSelectionFilters}
+                  variant="segmented"
+                  size="sm"
+                  style={{
+                    padding: "6px 14px",
+                    opacity: hasSelectionFilters ? 1 : 0.6,
+                  }}
+                >
+                  Clear Filters
+                </Button>
+              </SegmentedControl>
               {hasNavigationSelection && (
                 <SegmentedControl
                   style={{
@@ -938,38 +999,46 @@ export default function WorkspacePage() {
                 >
                   Location Tags:
                 </span>
-                {locationTagGroups.map((group) => {
-                  const tagCount = group.locationIds.length;
-                  const matchingCount = group.locationIds.filter((id) =>
-                    selectedLocationIds.has(id)
-                  ).length;
-                  const isTagSelected = tagCount > 0 && matchingCount === tagCount;
-                  return (
-                    <Chip
-                      key={group.name}
-                      selected={isTagSelected}
-                      disabled={tagCount === 0}
-                      onClick={() => {
-                        if (tagCount === 0) return;
-                        if (matchingCount === tagCount) {
+                <SegmentedControl
+                  style={{
+                    flexWrap: "wrap",
+                    gap: "var(--space-sm)",
+                  }}
+                >
+                  {locationTagGroups.map((group) => {
+                    const tagCount = group.locationIds.length;
+                    const matchingCount = group.locationIds.filter((id) =>
+                      selectedLocationIds.has(id)
+                    ).length;
+                    const isTagSelected = tagCount > 0 && matchingCount === tagCount;
+                    return (
+                      <Chip
+                        key={group.name}
+                        selected={isTagSelected}
+                        disabled={tagCount === 0}
+                        onClick={() => {
+                          if (tagCount === 0) return;
+                          if (matchingCount === tagCount) {
+                            const nextSelection = new Set(selectedLocationIds);
+                            for (const id of group.locationIds) {
+                              nextSelection.delete(id);
+                            }
+                            setSelectedLocationIds(nextSelection);
+                            return;
+                          }
                           const nextSelection = new Set(selectedLocationIds);
                           for (const id of group.locationIds) {
-                            nextSelection.delete(id);
+                            nextSelection.add(id);
                           }
                           setSelectedLocationIds(nextSelection);
-                          return;
-                        }
-                        const nextSelection = new Set(selectedLocationIds);
-                        for (const id of group.locationIds) {
-                          nextSelection.add(id);
-                        }
-                        setSelectedLocationIds(nextSelection);
-                      }}
-                    >
-                      {group.name} ({tagCount})
-                    </Chip>
-                  );
-                })}
+                        }}
+                        variant="segmented"
+                      >
+                        {group.name} ({tagCount})
+                      </Chip>
+                    );
+                  })}
+                </SegmentedControl>
               </div>
             )}
 
@@ -984,6 +1053,9 @@ export default function WorkspacePage() {
                 selectedMonth={selectedMonth}
                 onYearChange={handleYearChange}
                 onMonthChange={handleMonthChange}
+                monthOffset={monthOffset}
+                onPreviousMonth={handlePreviousMonth}
+                onNextMonth={handleNextMonth}
               />
             </div>
           </>

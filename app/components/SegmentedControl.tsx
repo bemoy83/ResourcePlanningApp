@@ -25,6 +25,7 @@ export function SegmentedControl({ children, className, style, ...props }: Segme
         padding: "4px",
         backgroundColor: "var(--bg-tertiary)",
         borderRadius: "var(--radius-full)",
+        transition: "background-color var(--transition-normal)",
         ...style,
       }}
       {...props}
