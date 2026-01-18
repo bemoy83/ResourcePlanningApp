@@ -224,6 +224,7 @@ export const CalendarHeader = memo(function CalendarHeader({
         timelineOriginPx={timeline.timelineOriginPx}
         timelineWidth={timelineWidth}
         height={MONTH_HEADER_HEIGHT}
+        style={{ left: `${timeline.timelineOriginPx - CELL_BORDER_WIDTH}px` }}
       >
         {monthSpans.map((span, index) => (
           <div
@@ -257,7 +258,10 @@ export const CalendarHeader = memo(function CalendarHeader({
         timelineOriginPx={timeline.timelineOriginPx}
         timelineWidth={timelineWidth}
         height={WEEK_HEADER_HEIGHT}
-        style={{ top: `${MONTH_HEADER_HEIGHT}px` }}
+        style={{ 
+          top: `${MONTH_HEADER_HEIGHT}px`,
+          left: `${timeline.timelineOriginPx - CELL_BORDER_WIDTH}px`
+        }}
       >
         {weekSpans.map((span, index) => (
           <div
@@ -291,7 +295,10 @@ export const CalendarHeader = memo(function CalendarHeader({
         timelineOriginPx={timeline.timelineOriginPx}
         timelineWidth={timelineWidth}
         height="var(--row-min-height)"
-        style={{ top: `${MONTH_HEADER_HEIGHT + WEEK_HEADER_HEIGHT}px` }}
+        style={{ 
+          top: `${MONTH_HEADER_HEIGHT + WEEK_HEADER_HEIGHT}px`,
+          left: `${timeline.timelineOriginPx - CELL_BORDER_WIDTH}px`
+        }}
       >
         {timeline.dates.map((date, index) => {
           const dateObj = new Date(date);

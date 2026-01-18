@@ -357,6 +357,8 @@ export function UnifiedPlanningTable({
               fontWeight: 'var(--font-weight-bold)',
               fontSize: 'var(--font-size-sm)',
               minWidth: `${scrollWidth}px`,
+              alignItems: 'stretch',
+              boxSizing: 'border-box',
             }}
           >
             <StickyLeftCell
@@ -366,7 +368,13 @@ export function UnifiedPlanningTable({
                 textAlign: 'center',
                 backgroundColor: 'var(--sticky-corner-bg)',
                 color: 'var(--sticky-corner-text)',
-                border: '1px solid var(--sticky-corner-border)',
+                borderTop: 'none',
+                borderBottom: 'none',
+                borderLeft: '1px solid var(--sticky-corner-border)',
+                borderRight: '1px solid var(--sticky-corner-border)',
+                height: '100%',
+                alignSelf: 'stretch',
+                boxSizing: 'border-box',
               }}
             >
               Event
@@ -378,7 +386,13 @@ export function UnifiedPlanningTable({
                 textAlign: 'center',
                 backgroundColor: 'var(--sticky-corner-bg)',
                 color: 'var(--sticky-corner-text)',
-                border: '1px solid var(--sticky-corner-border)',
+                borderTop: 'none',
+                borderBottom: 'none',
+                borderLeft: '1px solid var(--sticky-corner-border)',
+                borderRight: '1px solid var(--sticky-corner-border)',
+                height: '100%',
+                alignSelf: 'stretch',
+                boxSizing: 'border-box',
               }}
             >
               Work Category
@@ -390,7 +404,13 @@ export function UnifiedPlanningTable({
                 textAlign: 'center',
                 backgroundColor: 'var(--sticky-corner-bg)',
                 color: 'var(--sticky-corner-text)',
-                border: '1px solid var(--sticky-corner-border)',
+                borderTop: 'none',
+                borderBottom: 'none',
+                borderLeft: '1px solid var(--sticky-corner-border)',
+                borderRight: '1px solid var(--sticky-corner-border)',
+                height: '100%',
+                alignSelf: 'stretch',
+                boxSizing: 'border-box',
               }}
             >
               Estimate
@@ -402,7 +422,13 @@ export function UnifiedPlanningTable({
                 textAlign: 'center',
                 backgroundColor: 'var(--sticky-corner-bg)',
                 color: 'var(--sticky-corner-text)',
-                border: '1px solid var(--sticky-corner-border)',
+                borderTop: 'none',
+                borderBottom: 'none',
+                borderLeft: '1px solid var(--sticky-corner-border)',
+                borderRight: '1px solid var(--sticky-corner-border)',
+                height: '100%',
+                alignSelf: 'stretch',
+                boxSizing: 'border-box',
               }}
             >
               Allocated
@@ -414,7 +440,13 @@ export function UnifiedPlanningTable({
                 textAlign: 'center',
                 backgroundColor: 'var(--sticky-corner-bg)',
                 color: 'var(--sticky-corner-text)',
-                border: '1px solid var(--sticky-corner-border)',
+                borderTop: 'none',
+                borderBottom: 'none',
+                borderLeft: '1px solid var(--sticky-corner-border)',
+                borderRight: '1px solid var(--sticky-corner-border)',
+                height: '100%',
+                alignSelf: 'stretch',
+                boxSizing: 'border-box',
               }}
             >
               Remaining

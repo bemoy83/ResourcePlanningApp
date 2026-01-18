@@ -62,8 +62,6 @@ export const CrossEventCapacityRow = memo(function CrossEventCapacityRow({
         display: 'grid',
         gridTemplateColumns: CROSS_EVENT_LEFT_COLUMNS.map((col) => `${col.width}px`).join(' '),
         backgroundColor: 'var(--sticky-header-bg)',
-        marginTop: '2px',
-        border: 'var(--border-width-medium) solid var(--sticky-header-border)',
         position: 'relative',
         minWidth: `${timeline.timelineOriginPx + timelineWidth}px`,
       }}

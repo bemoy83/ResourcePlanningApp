@@ -41,7 +41,7 @@ export const TIMELINE_DATE_COLUMN_WIDTH = 100;
 /**
  * Calendar header row heights (in pixels).
  */
-export const CALENDAR_MONTH_HEADER_HEIGHT = 28;
+export const CALENDAR_MONTH_HEADER_HEIGHT = 24;
 export const CALENDAR_WEEK_HEADER_HEIGHT = 24;
 export const CALENDAR_DATE_ROW_HEIGHT = 46; // Matches --row-min-height CSS variable
 
