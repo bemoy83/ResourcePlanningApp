@@ -350,7 +350,7 @@ export default function WorkspacePage() {
           throw new Error("Failed to load work categories");
         }
 
-        const eventsData: Event[] = await eventsRes.json();
+        const eventsData: PlanningEvent[] = await eventsRes.json();
         const activeEvents = eventsData.filter((e) => e.status === "ACTIVE");
         const workCategoriesData: WorkCategory[] = await workCategoriesRes.json();
         const allocationsData: Allocation[] = allocationsRes.ok ? await allocationsRes.json() : [];
