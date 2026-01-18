@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { DateRange, DateRangePreset } from "./dateRange";
 import {
+  addDays,
   daysInMonth,
   formatDateLocal,
   formatDateParts,
@@ -47,6 +48,23 @@ const presets: Array<{ id: DateRangePreset; label: string }> = [
 
 const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const dayLabels = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+function addMonthsToDate(date: string, deltaMonths: number): string {
+  if (deltaMonths === 0) return date;
+  const { year, month, day } = parseDateParts(date);
+  let targetYear = year;
+  let targetMonth = month + deltaMonths;
+  while (targetMonth > 12) {
+    targetMonth -= 12;
+    targetYear += 1;
+  }
+  while (targetMonth < 1) {
+    targetMonth += 12;
+    targetYear -= 1;
+  }
+  const maxDay = daysInMonth(targetYear, targetMonth);
+  return formatDateParts(targetYear, targetMonth, Math.min(day, maxDay));
+}
 
 function buildCalendarDays(
   year: number,
@@ -163,6 +181,12 @@ export function UnifiedDateRangePicker({
 
   // Selection mode for custom range
   const [selectionMode, setSelectionMode] = useState<"start" | "end">("start");
+  const [focusedDate, setFocusedDate] = useState<string | null>(null);
+  const [activeCalendar, setActiveCalendar] = useState<"left" | "right">("left");
+  const dayButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const shouldFocusDateRef = useRef(false);
+  const presetButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const shouldFocusPresetRef = useRef(false);
 
   // Year/Month picker view
   const [showYearMonthPicker, setShowYearMonthPicker] = useState(false);
@@ -178,6 +202,10 @@ export function UnifiedDateRangePicker({
       setPendingMonth(selectedMonth);
       setSelectionMode("start");
       setShowYearMonthPicker(false);
+      setFocusedDate(customRange.startDate ?? customRange.endDate ?? today);
+      setActiveCalendar("left");
+      shouldFocusDateRef.current = false;
+      shouldFocusPresetRef.current = true;
 
       // Set calendar to show current range or current month
       if (customRange.startDate) {
@@ -192,7 +220,7 @@ export function UnifiedDateRangePicker({
         setLeftCalendarMonth(currentMonth);
       }
     }
-  }, [isOpen, selectedPreset, customRange, selectedYear, selectedMonth, currentYear, currentMonth]);
+  }, [isOpen, selectedPreset, customRange, selectedYear, selectedMonth, currentYear, currentMonth, today]);
 
   useEffect(() => {
     setStartInput(pendingStartDate ?? "");
@@ -245,6 +273,85 @@ export function UnifiedDateRangePicker({
     [rightCalendarYear, rightCalendarMonth, pendingStartDate, pendingEndDate]
   );
 
+  const leftFocusDate = useMemo(() => {
+    if (activeCalendar === "left" && focusedDate && leftDays.some((day) => day.date === focusedDate)) {
+      return focusedDate;
+    }
+    return formatDateParts(leftCalendarYear, leftCalendarMonth, 1);
+  }, [activeCalendar, focusedDate, leftCalendarYear, leftCalendarMonth, leftDays]);
+
+  const rightFocusDate = useMemo(() => {
+    if (activeCalendar === "right" && focusedDate && rightDays.some((day) => day.date === focusedDate)) {
+      return focusedDate;
+    }
+    return formatDateParts(rightCalendarYear, rightCalendarMonth, 1);
+  }, [activeCalendar, focusedDate, rightCalendarYear, rightCalendarMonth, rightDays]);
+
+  const ensureDateInView = useCallback(
+    (date: string, calendar: "left" | "right") => {
+      const days = calendar === "left" ? leftDays : rightDays;
+      const isVisible = days.some((day) => day.date === date);
+      if (isVisible) return;
+      const { year, month } = parseDateParts(date);
+      if (calendar === "left") {
+        setLeftCalendarYear(year);
+        setLeftCalendarMonth(month);
+        return;
+      }
+      let adjustedYear = year;
+      let adjustedMonth = month - 1;
+      if (adjustedMonth < 1) {
+        adjustedMonth = 12;
+        adjustedYear -= 1;
+      }
+      setLeftCalendarYear(adjustedYear);
+      setLeftCalendarMonth(adjustedMonth);
+    },
+    [leftDays, rightDays]
+  );
+
+  useEffect(() => {
+    if (!isOpen || showYearMonthPicker || !focusedDate) return;
+    const days = activeCalendar === "left" ? leftDays : rightDays;
+    const isVisible = days.some((day) => day.date === focusedDate);
+    if (isVisible) return;
+    const fallbackDate = activeCalendar === "left"
+      ? formatDateParts(leftCalendarYear, leftCalendarMonth, 1)
+      : formatDateParts(rightCalendarYear, rightCalendarMonth, 1);
+    setFocusedDate(fallbackDate);
+  }, [
+    activeCalendar,
+    focusedDate,
+    isOpen,
+    leftCalendarMonth,
+    leftCalendarYear,
+    leftDays,
+    rightCalendarMonth,
+    rightCalendarYear,
+    rightDays,
+    showYearMonthPicker,
+  ]);
+
+  useEffect(() => {
+    if (!isOpen || showYearMonthPicker || !focusedDate || !shouldFocusDateRef.current) return;
+    const key = `${activeCalendar}:${focusedDate}`;
+    const button = dayButtonRefs.current[key];
+    if (button) {
+      button.focus();
+      shouldFocusDateRef.current = false;
+    }
+  }, [activeCalendar, focusedDate, isOpen, showYearMonthPicker]);
+
+  useEffect(() => {
+    if (!isOpen || !shouldFocusPresetRef.current) return;
+    const targetKey = pendingPreset === "year-month" ? "year-month" : pendingPreset;
+    const button = presetButtonRefs.current[targetKey] ?? presetButtonRefs.current[presets[0]?.id ?? ""];
+    if (button) {
+      button.focus();
+      shouldFocusPresetRef.current = false;
+    }
+  }, [isOpen, pendingPreset]);
+
   const handlePrevMonth = useCallback(() => {
     setLeftCalendarMonth((prev) => {
       if (prev === 1) {
@@ -275,13 +382,15 @@ export function UnifiedDateRangePicker({
     const range = calculatePresetRange(preset);
     setPendingStartDate(range.startDate);
     setPendingEndDate(range.endDate);
+    setFocusedDate(range.startDate ?? range.endDate ?? today);
+    setActiveCalendar("left");
 
     if (range.startDate) {
       const { year, month } = parseDateParts(range.startDate);
       setLeftCalendarYear(year);
       setLeftCalendarMonth(month);
     }
-  }, []);
+  }, [today]);
 
   const handleYearMonthClick = useCallback(() => {
     setShowYearMonthPicker(true);
@@ -302,6 +411,8 @@ export function UnifiedDateRangePicker({
     const endDate = formatDateParts(yearPickerYear, month, daysInMonth(yearPickerYear, month));
     setPendingStartDate(startDate);
     setPendingEndDate(endDate);
+    setFocusedDate(startDate);
+    setActiveCalendar("left");
 
     setLeftCalendarYear(yearPickerYear);
     setLeftCalendarMonth(month);
@@ -327,6 +438,105 @@ export function UnifiedDateRangePicker({
       setSelectionMode("start");
     }
   }, [selectionMode, pendingStartDate]);
+
+  const handleDayFocus = useCallback((date: string, calendar: "left" | "right") => {
+    setFocusedDate((prev) => (prev === date ? prev : date));
+    setActiveCalendar((prev) => (prev === calendar ? prev : calendar));
+  }, []);
+
+  const setDayButtonRef = useCallback((calendar: "left" | "right", date: string, node: HTMLButtonElement | null) => {
+    dayButtonRefs.current[`${calendar}:${date}`] = node;
+  }, []);
+
+  const setPresetButtonRef = useCallback((key: string, node: HTMLButtonElement | null) => {
+    presetButtonRefs.current[key] = node;
+  }, []);
+
+  const handlePresetKeyDown = useCallback((event: ReactKeyboardEvent<HTMLButtonElement>, index: number) => {
+    const total = presets.length + 1;
+    if (total === 0) return;
+    let nextIndex = index;
+
+    switch (event.key) {
+      case "ArrowDown":
+      case "ArrowRight":
+        nextIndex = (index + 1) % total;
+        break;
+      case "ArrowUp":
+      case "ArrowLeft":
+        nextIndex = (index - 1 + total) % total;
+        break;
+      case "Home":
+        nextIndex = 0;
+        break;
+      case "End":
+        nextIndex = total - 1;
+        break;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    if (nextIndex === presets.length) {
+      presetButtonRefs.current["year-month"]?.focus();
+      return;
+    }
+    presetButtonRefs.current[presets[nextIndex]?.id ?? ""]?.focus();
+  }, []);
+
+  const handleDayKeyDown = useCallback(
+    (event: ReactKeyboardEvent<HTMLButtonElement>, date: string, calendar: "left" | "right") => {
+      let nextDate: string | null = null;
+
+      switch (event.key) {
+        case "ArrowLeft":
+          nextDate = addDays(date, -1);
+          break;
+        case "ArrowRight":
+          nextDate = addDays(date, 1);
+          break;
+        case "ArrowUp":
+          nextDate = addDays(date, -7);
+          break;
+        case "ArrowDown":
+          nextDate = addDays(date, 7);
+          break;
+        case "Home": {
+          const dayOfWeek = getDayOfWeek(date);
+          nextDate = addDays(date, -dayOfWeek);
+          break;
+        }
+        case "End": {
+          const dayOfWeek = getDayOfWeek(date);
+          nextDate = addDays(date, 6 - dayOfWeek);
+          break;
+        }
+        case "PageUp":
+          nextDate = addMonthsToDate(date, event.shiftKey ? -12 : -1);
+          break;
+        case "PageDown":
+          nextDate = addMonthsToDate(date, event.shiftKey ? 12 : 1);
+          break;
+        case "Enter":
+        case " ":
+          event.preventDefault();
+          handleDayClick(date);
+          setFocusedDate(date);
+          setActiveCalendar(calendar);
+          return;
+        default:
+          return;
+      }
+
+      if (!nextDate) return;
+      event.preventDefault();
+      setFocusedDate(nextDate);
+      setActiveCalendar(calendar);
+      ensureDateInView(nextDate, calendar);
+      shouldFocusDateRef.current = true;
+    },
+    [ensureDateInView, handleDayClick]
+  );
 
   const normalizeDateInput = useCallback((value: string) => {
     const trimmed = value.trim();
@@ -358,6 +568,8 @@ export function UnifiedDateRangePicker({
     setPendingMonth(null);
 
     if (newStartDate) {
+      setFocusedDate(newStartDate);
+      setActiveCalendar("left");
       const { year, month } = parseDateParts(newStartDate);
       setLeftCalendarYear(year);
       setLeftCalendarMonth(month);
@@ -397,6 +609,45 @@ export function UnifiedDateRangePicker({
     handleEndDateInput(normalized);
     setEndInput(normalized);
   }, [endInput, handleEndDateInput, normalizeDateInput, pendingEndDate]);
+
+  const handleTrapKeyDown = useCallback((event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Tab") return;
+    if (!modalRef.current) return;
+
+    const focusableSelectors = [
+      "a[href]",
+      "button:not([disabled])",
+      "input:not([disabled]):not([type=\"hidden\"])",
+      "select:not([disabled])",
+      "textarea:not([disabled])",
+      "[tabindex]:not([tabindex=\"-1\"])",
+    ];
+    const focusable = Array.from(
+      modalRef.current.querySelectorAll<HTMLElement>(focusableSelectors.join(","))
+    ).filter((el) => el.getClientRects().length > 0);
+
+    if (focusable.length === 0) {
+      event.preventDefault();
+      return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = document.activeElement as HTMLElement | null;
+
+    if (event.shiftKey) {
+      if (active === first || !active) {
+        event.preventDefault();
+        last.focus();
+      }
+      return;
+    }
+
+    if (active === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }, []);
 
   const handleApply = useCallback(() => {
     if (pendingPreset === "year-month" && pendingYear !== null && pendingMonth !== null) {
@@ -463,6 +714,10 @@ export function UnifiedDateRangePicker({
     >
       <div
         ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Date range picker"
+        onKeyDown={handleTrapKeyDown}
         style={{
           backgroundColor: "var(--surface-default)",
           borderRadius: "var(--radius-xl)",
@@ -486,10 +741,12 @@ export function UnifiedDateRangePicker({
             backgroundColor: "var(--bg-secondary)",
           }}
         >
-          {presets.map((preset) => (
+          {presets.map((preset, presetIndex) => (
             <button
               key={preset.id}
               onClick={() => handlePresetClick(preset.id)}
+              ref={(node) => setPresetButtonRef(preset.id, node)}
+              onKeyDown={(event) => handlePresetKeyDown(event, presetIndex)}
               style={{
                 padding: "var(--space-sm) var(--space-lg)",
                 border: "none",
@@ -517,6 +774,8 @@ export function UnifiedDateRangePicker({
 
           <button
             onClick={handleYearMonthClick}
+            ref={(node) => setPresetButtonRef("year-month", node)}
+            onKeyDown={(event) => handlePresetKeyDown(event, presets.length)}
             style={{
               padding: "var(--space-sm) var(--space-lg)",
               border: "none",
@@ -556,6 +815,7 @@ export function UnifiedDateRangePicker({
                     if (idx > 0) setYearPickerYear(availableYears[idx - 1]);
                   }}
                   disabled={availableYears.indexOf(yearPickerYear) <= 0}
+                  aria-label="Previous year"
                   style={{
                     padding: "6px 12px",
                     border: "var(--border-width-thin) solid var(--border-primary)",
@@ -584,6 +844,7 @@ export function UnifiedDateRangePicker({
                     if (idx >= 0 && idx < availableYears.length - 1) setYearPickerYear(availableYears[idx + 1]);
                   }}
                   disabled={availableYears.indexOf(yearPickerYear) >= availableYears.length - 1}
+                  aria-label="Next year"
                   style={{
                     padding: "6px 12px",
                     border: "var(--border-width-thin) solid var(--border-primary)",
@@ -662,6 +923,7 @@ export function UnifiedDateRangePicker({
               >
                 <button
                   onClick={handlePrevMonth}
+                  aria-label="Previous month"
                   style={{
                     padding: "6px 12px",
                     border: "var(--border-width-thin) solid var(--border-primary)",
@@ -700,6 +962,7 @@ export function UnifiedDateRangePicker({
                 </div>
                 <button
                   onClick={handleNextMonth}
+                  aria-label="Next month"
                   style={{
                     padding: "6px 12px",
                     border: "var(--border-width-thin) solid var(--border-primary)",
@@ -747,9 +1010,19 @@ export function UnifiedDateRangePicker({
                       gridTemplateColumns: "repeat(7, 36px)",
                       gap: "2px",
                     }}
+                    role="grid"
+                    aria-label={`${monthLabels[leftCalendarMonth - 1]} ${leftCalendarYear}`}
                   >
                     {leftDays.map((dayInfo, idx) => (
-                      <CalendarDayButton key={idx} dayInfo={dayInfo} onClick={handleDayClick} />
+                      <CalendarDayButton
+                        key={idx}
+                        dayInfo={dayInfo}
+                        onClick={handleDayClick}
+                        onFocus={(date) => handleDayFocus(date, "left")}
+                        onKeyDown={(event, date) => handleDayKeyDown(event, date, "left")}
+                        tabIndex={dayInfo.date === leftFocusDate ? 0 : -1}
+                        buttonRef={(node) => setDayButtonRef("left", dayInfo.date, node)}
+                      />
                     ))}
                   </div>
                 </div>
@@ -785,9 +1058,19 @@ export function UnifiedDateRangePicker({
                       gridTemplateColumns: "repeat(7, 36px)",
                       gap: "2px",
                     }}
+                    role="grid"
+                    aria-label={`${monthLabels[rightCalendarMonth - 1]} ${rightCalendarYear}`}
                   >
                     {rightDays.map((dayInfo, idx) => (
-                      <CalendarDayButton key={idx} dayInfo={dayInfo} onClick={handleDayClick} />
+                      <CalendarDayButton
+                        key={idx}
+                        dayInfo={dayInfo}
+                        onClick={handleDayClick}
+                        onFocus={(date) => handleDayFocus(date, "right")}
+                        onKeyDown={(event, date) => handleDayKeyDown(event, date, "right")}
+                        tabIndex={dayInfo.date === rightFocusDate ? 0 : -1}
+                        buttonRef={(node) => setDayButtonRef("right", dayInfo.date, node)}
+                      />
                     ))}
                   </div>
                 </div>
@@ -824,6 +1107,12 @@ export function UnifiedDateRangePicker({
                   value={startInput}
                   onChange={(e) => setStartInput(e.target.value)}
                   onBlur={applyStartInput}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      applyStartInput();
+                    }
+                  }}
                   style={{
                     padding: "6px 10px",
                     border: "var(--border-width-thin) solid var(--border-primary)",
@@ -832,6 +1121,7 @@ export function UnifiedDateRangePicker({
                     color: "var(--text-primary)",
                     fontSize: "var(--font-size-sm)",
                     width: "130px",
+                    textAlign: "center",
                   }}
                 />
                 <span style={{ color: "var(--text-tertiary)", fontSize: "var(--font-size-sm)" }}>
@@ -844,6 +1134,12 @@ export function UnifiedDateRangePicker({
                   value={endInput}
                   onChange={(e) => setEndInput(e.target.value)}
                   onBlur={applyEndInput}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      applyEndInput();
+                    }
+                  }}
                   style={{
                     padding: "6px 10px",
                     border: "var(--border-width-thin) solid var(--border-primary)",
@@ -852,6 +1148,7 @@ export function UnifiedDateRangePicker({
                     color: "var(--text-primary)",
                     fontSize: "var(--font-size-sm)",
                     width: "130px",
+                    textAlign: "center",
                   }}
                 />
               </div>
@@ -905,11 +1202,26 @@ export function UnifiedDateRangePicker({
 function CalendarDayButton({
   dayInfo,
   onClick,
+  onFocus,
+  onKeyDown,
+  tabIndex,
+  buttonRef,
 }: {
   dayInfo: CalendarDay;
   onClick: (date: string) => void;
+  onFocus: (date: string) => void;
+  onKeyDown: (event: ReactKeyboardEvent<HTMLButtonElement>, date: string) => void;
+  tabIndex: number;
+  buttonRef: (node: HTMLButtonElement | null) => void;
 }) {
   const { date, day, isCurrentMonth, isToday, isSelected, isInRange, isRangeStart, isRangeEnd } = dayInfo;
+  const { year, month } = parseDateParts(date);
+  const labelBase = `${monthLabels[month - 1]} ${day}, ${year}`;
+  const statusLabels: string[] = [];
+  if (isToday) statusLabels.push("today");
+  if (isRangeStart) statusLabels.push("start date");
+  if (isRangeEnd) statusLabels.push("end date");
+  const ariaLabel = statusLabels.length > 0 ? `${labelBase} (${statusLabels.join(", ")})` : labelBase;
 
   let backgroundColor = "transparent";
   let color = isCurrentMonth ? "var(--text-primary)" : "var(--text-tertiary)";
@@ -921,7 +1233,7 @@ function CalendarDayButton({
     color = "var(--chip-selected-text)";
     fontWeight = "var(--font-weight-semibold)";
   } else if (isInRange) {
-    backgroundColor = "var(--bg-tertiary)";
+    backgroundColor = "var(--surface-hover)";
     borderRadius = "0";
   }
 
@@ -933,7 +1245,15 @@ function CalendarDayButton({
 
   return (
     <button
+      ref={buttonRef}
+      type="button"
       onClick={() => onClick(date)}
+      onFocus={() => onFocus(date)}
+      onKeyDown={(event) => onKeyDown(event, date)}
+      tabIndex={tabIndex}
+      aria-label={ariaLabel}
+      aria-selected={isSelected}
+      aria-current={isToday ? "date" : undefined}
       style={{
         width: "36px",
         height: "36px",
