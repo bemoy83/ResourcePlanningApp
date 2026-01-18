@@ -33,7 +33,29 @@ interface DailyDemand {
   totalEffortHours: number;
 }
 
+interface DailyCapacityComparison {
+  date: string;
+  demandHours: number;
+  capacityHours: number;
+  isOverAllocated: boolean;
+  isUnderAllocated: boolean;
+}
+
+interface WorkCategoryPressure {
+  workCategoryId: string;
+  remainingEffortHours: number;
+  remainingDays: number;
+  isUnderPressure: boolean;
+}
+
+interface Evaluation {
+  dailyDemand: DailyDemand[];
+  dailyCapacityComparison: DailyCapacityComparison[];
+  workCategoryPressure: WorkCategoryPressure[];
+}
+
 interface AllocationDraft {
+  allocationId: string | null;
   key: string;
   workCategoryId: string;
   date: string;
@@ -53,7 +75,11 @@ export default function PlanningBoardPage() {
   const [event, setEvent] = useState<Event | null>(null);
   const [workCategories, setWorkCategories] = useState<WorkCategory[]>([]);
   const [allocations, setAllocations] = useState<Allocation[]>([]);
-  const [dailyDemand, setDailyDemand] = useState<DailyDemand[]>([]);
+  const [evaluation, setEvaluation] = useState<Evaluation>({
+    dailyDemand: [],
+    dailyCapacityComparison: [],
+    workCategoryPressure: [],
+  });
   const [drafts, setDrafts] = useState<AllocationDraft[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -100,7 +126,11 @@ export default function PlanningBoardPage() {
         setEvent(eventData);
         setWorkCategories(workCategoriesData);
         setAllocations(allocationsData);
-        setDailyDemand(evaluationData.dailyDemand || []);
+        setEvaluation({
+          dailyDemand: evaluationData.dailyDemand || [],
+          dailyCapacityComparison: evaluationData.dailyCapacityComparison || [],
+          workCategoryPressure: evaluationData.workCategoryPressure || [],
+        });
 
         if (eventData.startDate && eventData.endDate) {
           setVisibleDateRange({
@@ -128,7 +158,11 @@ export default function PlanningBoardPage() {
           return;
         }
         const evaluationData = await res.json();
-        setDailyDemand(evaluationData.dailyDemand || []);
+        setEvaluation({
+          dailyDemand: evaluationData.dailyDemand || [],
+          dailyCapacityComparison: evaluationData.dailyCapacityComparison || [],
+          workCategoryPressure: evaluationData.workCategoryPressure || [],
+        });
       } catch (err) {
         // Silently fail - evaluation refresh is non-critical
       }
@@ -137,33 +171,55 @@ export default function PlanningBoardPage() {
     refreshEvaluation();
   }, [eventId, allocations]);
 
-  function startEdit(workCategoryId: string, date: string) {
-  const draftKey = `${workCategoryId}::${date}`;
+  function startCreate(workCategoryId: string, date: string) {
+    const draftKey = `${workCategoryId}::${date}`;
 
-  // Do not create duplicate drafts
-  const existingDraft = drafts.find((d) => d.key === draftKey);
-  if (existingDraft) {
-    return;
+    // Do not create duplicate drafts
+    const existingDraft = drafts.find((d) => d.key === draftKey);
+    if (existingDraft) {
+      return;
+    }
+
+    // Do not allow editing if an allocation already exists for this cell
+    const existingAllocation = allocations.find(
+      (a) => a.workCategoryId === workCategoryId && a.date === date
+    );
+    if (existingAllocation) {
+      return;
+    }
+
+    const draft: AllocationDraft = {
+      allocationId: null,
+      key: draftKey,
+      workCategoryId,
+      date,
+      effortValue: 0,
+      effortUnit: "HOURS",
+    };
+
+    setDrafts((prev) => [...prev, draft]);
   }
 
-  // Do not allow editing if an allocation already exists for this cell
-  const existingAllocation = allocations.find(
-    (a) => a.workCategoryId === workCategoryId && a.date === date
-  );
-  if (existingAllocation) {
-    return;
+  function startEdit(allocationId: string, workCategoryId: string, date: string, effortHours: number) {
+    const draftKey = `${workCategoryId}::${date}`;
+
+    // Do not create duplicate drafts
+    const existingDraft = drafts.find((d) => d.key === draftKey);
+    if (existingDraft) {
+      return;
+    }
+
+    const draft: AllocationDraft = {
+      allocationId,
+      key: draftKey,
+      workCategoryId,
+      date,
+      effortValue: effortHours,
+      effortUnit: "HOURS",
+    };
+
+    setDrafts((prev) => [...prev, draft]);
   }
-
-  const draft: AllocationDraft = {
-    key: draftKey,
-    workCategoryId,
-    date,
-    effortValue: 0,
-    effortUnit: "HOURS",
-  };
-
-  setDrafts((prev) => [...prev, draft]);
-}
 
   function changeDraft(draftKey: string, effortValue: number, effortUnit: "HOURS" | "FTE") {
     setDrafts(drafts.map(d =>
@@ -183,8 +239,14 @@ export default function PlanningBoardPage() {
     setError(null);
 
     try {
-      const res = await fetch("/api/schedule/allocations", {
-        method: "POST",
+      const isUpdate = draft.allocationId !== null;
+      const url = isUpdate
+        ? `/api/schedule/allocations/${draft.allocationId}`
+        : "/api/schedule/allocations";
+      const method = isUpdate ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
         },
@@ -199,7 +261,7 @@ export default function PlanningBoardPage() {
 
       if (!res.ok) {
         const errorData = await res.json();
-        const errorMessage = errorData.error || "Failed to save allocation";
+        const errorMessage = errorData.error || `Failed to ${isUpdate ? "update" : "save"} allocation`;
         setErrorsByCellKey({
           ...errorsByCellKey,
           [draftKey]: errorMessage,
@@ -208,7 +270,11 @@ export default function PlanningBoardPage() {
       }
 
       const allocation = await res.json();
-      setAllocations([...allocations, allocation]);
+      if (isUpdate) {
+        setAllocations(allocations.map((a) => (a.id === draft.allocationId ? allocation : a)));
+      } else {
+        setAllocations([...allocations, allocation]);
+      }
       setDrafts(drafts.filter((d) => d.key !== draftKey));
       setErrorsByCellKey((prev) => {
         const next = { ...prev };
@@ -276,28 +342,23 @@ export default function PlanningBoardPage() {
     current = nextDateString(current);
   }
 
-  const eventSections = [
-    {
-      eventId: event.id,
-      eventName: event.name,
-      workCategories: workCategories,
-    },
-  ];
-
   return (
     <div>
       <h1>{event.name}</h1>
       <PlanningBoardGrid
         dates={dates}
-        eventSections={eventSections}
+        events={[event]}
+        workCategories={workCategories}
         allocations={allocations}
-        dailyDemand={dailyDemand}
+        evaluation={evaluation}
         drafts={drafts}
         errorsByCellKey={errorsByCellKey}
+        onStartCreate={startCreate}
         onStartEdit={startEdit}
         onChangeDraft={changeDraft}
         onCommit={commitDraft}
         onCancel={cancelDraft}
+        onDelete={deleteAllocation}
       />
     </div>
   );

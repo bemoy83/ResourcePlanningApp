@@ -100,6 +100,12 @@
   --calendar-grid-line: rgba(0, 0, 0, 0.04);
   --calendar-row-separator: rgba(0, 0, 0, 0.04);
 
+  /* Today Indicator */
+  --today-line: #3b82f6;
+  --today-line-width: 2px;
+  --today-header-bg: rgba(59, 130, 246, 0.12);
+  --today-header-text: #1d4ed8;
+
   /* Sticky Section Specific - Sidebar-style grounded appearance */
   --sticky-header-bg: #f3f4f6;
   --sticky-header-cell-bg: #f3f4f6;
@@ -182,19 +188,56 @@
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* === Z-Index Scale === */
-  --z-base: 1;
-  --z-sticky-column: 3;
-  --z-sticky-header: 8;
-  --z-sticky-cross-event: 9;
-  --z-sticky-calendar: 10;
-  --z-dropdown: 100;
-  --z-dropdown-panel: 1000;
-  --z-sticky: 200;
-  --z-fixed: 300;
-  --z-modal-backdrop: 400;
-  --z-modal: 500;
-  --z-popover: 600;
-  --z-tooltip: 700;
+  /*
+   * Z-INDEX HIERARCHY (lowest to highest):
+   * 
+   * CONTENT LAYERS (1-10):
+   *   Base content, visual indicators, and overlays within sections.
+   *   These are relative to their parent stacking contexts.
+   * 
+   * NAVIGATION LAYERS (11-20):
+   *   Sticky headers, navigation bars, and persistent UI elements.
+   * 
+   * FLOATING UI (100-200):
+   *   Dropdowns, floating panels, and temporary overlays.
+   * 
+   * FIXED POSITION (200-300):
+   *   Fixed position elements that stay in viewport.
+   * 
+   * MODAL LAYERS (400-700):
+   *   Backdrops, modals, popovers, and tooltips.
+   * 
+   * RULES:
+   * 1. ALWAYS use these CSS custom properties - NEVER hardcode z-index values
+   * 2. If you need a new z-index, add it here first with a comment explaining why
+   * 3. Consider stacking contexts: z-index only works within the same stacking context
+   * 4. Test with overlapping elements to verify layering
+   * 5. Document z-index choices in component comments when non-obvious
+   */
+
+  /* Content Layers (1-10) - Base content and visual indicators */
+  --z-base: 1;              /* Default content layer - use for base content elements */
+  --z-today-indicator: 2;   /* Visual indicators (e.g., today line) - above content, below sticky columns */
+  --z-sticky-column: 3;     /* Sticky left columns - above content and indicators, below headers */
+
+  /* Navigation Layers (11-20) - Sticky headers and navigation */
+  --z-sticky-header: 8;      /* Sticky section headers - above content and columns */
+  --z-sticky-cross-event: 9; /* Cross-event section wrapper - above headers */
+  --z-sticky-calendar: 10;   /* Sticky calendar wrapper - highest navigation layer */
+
+  /* Floating UI (100-200) - Dropdowns and floating panels */
+  --z-dropdown: 100;        /* Dropdown menus - above all content and navigation */
+  --z-dropdown-panel: 1000; /* Dropdown panels - above dropdowns */
+  --z-sticky: 200;          /* Generic sticky elements - above dropdowns */
+
+  /* Fixed Position (200-300) - Fixed viewport elements */
+  --z-fixed: 300;           /* Fixed position elements - above sticky elements */
+
+  /* Modal Layers (400-700) - Overlays and modals */
+  --z-modal-backdrop: 400;  /* Modal backdrop - above fixed elements */
+  --z-modal: 500;          /* Modal dialogs - above backdrop */
+  --z-popover: 600;        /* Popover elements - above modals */
+  --z-tooltip: 700;        /* Tooltips - highest layer, always on top */
 }
 
 /* ============================================
@@ -285,6 +328,12 @@
   --calendar-span-bg: #27272a;
   --calendar-grid-line: rgba(255, 255, 255, 0.04);
   --calendar-row-separator: rgba(255, 255, 255, 0.04);
+
+  /* Today Indicator */
+  --today-line: #60a5fa;
+  --today-line-width: 2px;
+  --today-header-bg: rgba(96, 165, 250, 0.15);
+  --today-header-text: #93c5fd;
 
   /* Sticky Section Specific - Sidebar-style grounded appearance (pure zinc) */
   --sticky-header-bg: #1c1c1f;

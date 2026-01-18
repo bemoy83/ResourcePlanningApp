@@ -2,6 +2,10 @@ import { memo, useMemo } from 'react';
 import { TimelineLayout } from './shared/types';
 import { DateCellsContainer } from './shared/DateCellsContainer';
 import { StickyLeftCell } from './shared/StickyLeftCell';
+import {
+  CALENDAR_MONTH_HEADER_HEIGHT,
+  CALENDAR_WEEK_HEADER_HEIGHT,
+} from '../layoutConstants';
 import { buildDateFlags } from '../../utils/date';
 
 interface CalendarHeaderProps {
@@ -9,8 +13,8 @@ interface CalendarHeaderProps {
 }
 
 const CELL_BORDER_WIDTH = 1;
-const WEEK_HEADER_HEIGHT = 24; // Height for week number label row
-const MONTH_HEADER_HEIGHT = 28; // Height for month label row
+const WEEK_HEADER_HEIGHT = CALENDAR_WEEK_HEADER_HEIGHT;
+const MONTH_HEADER_HEIGHT = CALENDAR_MONTH_HEADER_HEIGHT;
 
 /**
  * Gets ISO week number and year for a date
@@ -295,6 +299,8 @@ export const CalendarHeader = memo(function CalendarHeader({
           const day = dateObj.getDate();
           const dateFlags = dateMeta[index];
 
+          const isToday = dateFlags?.isToday ?? false;
+
           return (
             <div
               key={date}
@@ -307,7 +313,9 @@ export const CalendarHeader = memo(function CalendarHeader({
                 height: '100%',
                 flexDirection: 'column',
                 gap: '2px',
-                backgroundColor: dateFlags?.isHoliday
+                backgroundColor: isToday
+                  ? 'var(--today-header-bg)'
+                  : dateFlags?.isHoliday
                   ? 'var(--calendar-holiday-bg)'
                   : dateFlags?.isWeekend
                   ? 'var(--calendar-weekend-bg)'
@@ -318,7 +326,7 @@ export const CalendarHeader = memo(function CalendarHeader({
               <div style={{
                 fontSize: '10px',
                 fontWeight: 'var(--font-weight-medium)',
-                color: 'var(--text-tertiary)',
+                color: isToday ? 'var(--today-header-text)' : 'var(--text-tertiary)',
                 textTransform: 'uppercase' as const,
                 letterSpacing: '0.02em',
               }}>
@@ -327,7 +335,7 @@ export const CalendarHeader = memo(function CalendarHeader({
               <div style={{
                 fontSize: 'var(--font-size-md)',
                 fontWeight: 'var(--font-weight-semibold)',
-                color: 'var(--sticky-header-text)',
+                color: isToday ? 'var(--today-header-text)' : 'var(--sticky-header-text)',
               }}>
                 {day}
               </div>

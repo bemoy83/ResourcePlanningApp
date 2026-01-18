@@ -39,6 +39,19 @@ export const CROSS_EVENT_LEFT_COLUMNS: LeftColumn[] = [
 export const TIMELINE_DATE_COLUMN_WIDTH = 100;
 
 /**
+ * Calendar header row heights (in pixels).
+ */
+export const CALENDAR_MONTH_HEADER_HEIGHT = 28;
+export const CALENDAR_WEEK_HEADER_HEIGHT = 24;
+export const CALENDAR_DATE_ROW_HEIGHT = 46; // Matches --row-min-height CSS variable
+
+/**
+ * Total height of the calendar header section.
+ */
+export const CALENDAR_HEADER_HEIGHT =
+  CALENDAR_MONTH_HEADER_HEIGHT + CALENDAR_WEEK_HEADER_HEIGHT + CALENDAR_DATE_ROW_HEIGHT;
+
+/**
  * Horizontal offset where the timeline starts (in pixels).
  * This is the total width of all left columns.
  */

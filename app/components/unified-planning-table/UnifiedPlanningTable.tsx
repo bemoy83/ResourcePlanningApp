@@ -4,6 +4,7 @@ import { CalendarHeader } from './CalendarHeader';
 import { CalendarLocationRow } from './rows/CalendarLocationRow';
 import { CrossEventDemandRow } from './rows/CrossEventDemandRow';
 import { CrossEventCapacityRow } from './rows/CrossEventCapacityRow';
+import { TodayIndicator } from './TodayIndicator';
 import { WorkCategoryRow } from '../WorkCategoryRow';
 import { StickyLeftCell } from './shared/StickyLeftCell';
 import {
@@ -20,10 +21,11 @@ import {
   LEFT_COLUMNS,
   TIMELINE_DATE_COLUMN_WIDTH,
   TIMELINE_ORIGIN_PX,
+  CALENDAR_HEADER_HEIGHT,
   calculateLeftColumnOffsets,
   generateLeftColumnsTemplate,
 } from '../layoutConstants';
-import { buildDateFlags } from '../../utils/date';
+import { buildDateFlags, getTodayString } from '../../utils/date';
 
 interface EventLocation {
   id: string;
@@ -102,6 +104,12 @@ export function UnifiedPlanningTable({
   // Calculate scroll width
   const timelineWidth = dates.length * TIMELINE_DATE_COLUMN_WIDTH;
   const scrollWidth = TIMELINE_ORIGIN_PX + timelineWidth;
+
+  // Calculate today's index in the dates array
+  const todayIndex = useMemo(() => {
+    const today = getTodayString();
+    return dates.indexOf(today);
+  }, [dates]);
 
   // Map events to locations
   const eventLocationMap = useMemo(() => {
@@ -272,7 +280,7 @@ export function UnifiedPlanningTable({
         overflow: 'auto',
       }}
     >
-      <div style={{ minWidth: `${scrollWidth}px` }}>
+      <div style={{ minWidth: `${scrollWidth}px`, position: 'relative' }}>
         {/* Sticky Navigation Sections - Calendar + Cross-Event Context */}
         <div
           style={{
@@ -282,12 +290,14 @@ export function UnifiedPlanningTable({
             backgroundColor: 'var(--surface-default)',
           }}
         >
-          {/* Calendar Header - "Locations" label */}
-          <CalendarHeader timeline={timeline} />
+          {/* Calendar Header - "Locations" label - highest z-index to stay on top */}
+          <div style={{ position: 'relative', zIndex: 20 }}>
+            <CalendarHeader timeline={timeline} />
+          </div>
 
           {/* Calendar Section - One row per location */}
           {sortedLocations.length > 0 && (
-            <section className="calendar-section">
+            <section className="calendar-section" style={{ position: 'relative', zIndex: 1 }}>
               {sortedLocations.map((location) => {
                 const locationEvents = eventsForLocation(location);
                 if (locationEvents.length === 0) return null;
@@ -302,12 +312,19 @@ export function UnifiedPlanningTable({
                   />
                 );
               })}
+              {/* Today indicator line inside calendar section - above calendar content (z-index 1) but below sticky columns (z-index 3) */}
+              <TodayIndicator
+                todayIndex={todayIndex}
+                dateColumnWidth={TIMELINE_DATE_COLUMN_WIDTH}
+                timelineOriginPx={TIMELINE_ORIGIN_PX}
+                topOffset={0}
+              />
             </section>
           )}
 
           {/* Cross-Event Section - Summary rows */}
           {crossEventEvaluation.crossEventDailyDemand.length > 0 && (
-            <section className="cross-event-section" style={{ marginTop: 'var(--space-md)', marginBottom: 'var(--space-md)' }}>
+            <section className="cross-event-section" style={{ position: 'relative', zIndex: 1, marginTop: 'var(--space-md)', marginBottom: 'var(--space-md)' }}>
               <CrossEventDemandRow
                 dailyDemand={crossEventEvaluation.crossEventDailyDemand}
                 dailyCapacityComparison={crossEventEvaluation.crossEventCapacityComparison}
@@ -316,6 +333,13 @@ export function UnifiedPlanningTable({
               <CrossEventCapacityRow
                 dailyCapacityComparison={crossEventEvaluation.crossEventCapacityComparison}
                 timeline={timeline}
+              />
+              {/* Today indicator line inside cross-event section - above cross-event content but below sticky columns (z-index 3) */}
+              <TodayIndicator
+                todayIndex={todayIndex}
+                dateColumnWidth={TIMELINE_DATE_COLUMN_WIDTH}
+                timelineOriginPx={TIMELINE_ORIGIN_PX}
+                topOffset={0}
               />
             </section>
           )}
@@ -333,7 +357,6 @@ export function UnifiedPlanningTable({
               fontWeight: 'var(--font-weight-bold)',
               fontSize: 'var(--font-size-sm)',
               minWidth: `${scrollWidth}px`,
-              position: 'relative',
             }}
           >
             <StickyLeftCell
@@ -400,7 +423,14 @@ export function UnifiedPlanningTable({
         </div>
 
         {/* Planning Grid Section - Scrollable work categories */}
-        <section className="planning-grid-section" style={{ border: 'var(--border-width-thin) solid var(--border-strong)' }}>
+        <section className="planning-grid-section" style={{ position: 'relative', border: 'var(--border-width-thin) solid var(--border-strong)' }}>
+          {/* Today indicator line for planning grid section - below sticky columns (z-index 3) */}
+          <TodayIndicator
+            todayIndex={todayIndex}
+            dateColumnWidth={TIMELINE_DATE_COLUMN_WIDTH}
+            timelineOriginPx={TIMELINE_ORIGIN_PX}
+            topOffset={0}
+          />
           {workCategories.map((workCategory) => {
             const pressure = pressureMap.get(workCategory.id);
             const allocatedTotal = allocations
@@ -433,11 +463,12 @@ export function UnifiedPlanningTable({
                 onDelete={onDelete}
                 gridTemplateColumns={gridTemplateColumns}
                 cellStyle={cellStyle}
-                dateMeta={timeline.dateMeta}
+                dateMeta={timeline.dateMeta ?? []}
               />
             );
           })}
         </section>
+
       </div>
     </div>
   );

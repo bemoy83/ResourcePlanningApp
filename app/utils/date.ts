@@ -84,9 +84,15 @@ export interface DateFlags {
   isWeekend: boolean;
   isHoliday: boolean;
   isNonWorking: boolean;
+  isToday: boolean;
+}
+
+export function getTodayString(): string {
+  return formatDateLocal(new Date());
 }
 
 export function buildDateFlags(dates: string[], holidayDates?: Set<string>): DateFlags[] {
+  const today = getTodayString();
   return dates.map((date) => {
     const dayOfWeek = getDayOfWeek(date);
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
@@ -96,6 +102,7 @@ export function buildDateFlags(dates: string[], holidayDates?: Set<string>): Dat
       isWeekend,
       isHoliday,
       isNonWorking: isWeekend || isHoliday,
+      isToday: date === today,
     };
   });
 }
