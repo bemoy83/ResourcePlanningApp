@@ -26,6 +26,7 @@ import {
   generateLeftColumnsTemplate,
 } from '../layoutConstants';
 import { buildDateFlags, getTodayString } from '../../utils/date';
+import { getHolidayDatesForRange } from '../../utils/holidays';
 
 interface EventLocation {
   id: string;
@@ -90,15 +91,17 @@ export function UnifiedPlanningTable({
   const eventsRef = useRef(events);
   const datesRef = useRef(dates);
 
+  const holidayDates = useMemo(() => getHolidayDatesForRange(dates), [dates]);
+
   // Build timeline layout
   const timeline: TimelineLayout = useMemo(
     () => ({
       dates,
       dateColumnWidth: TIMELINE_DATE_COLUMN_WIDTH,
       timelineOriginPx: TIMELINE_ORIGIN_PX,
-      dateMeta: buildDateFlags(dates),
+      dateMeta: buildDateFlags(dates, holidayDates),
     }),
-    [dates]
+    [dates, holidayDates]
   );
 
   // Calculate scroll width

@@ -93,11 +93,11 @@
   --calendar-weekday-bg: #fafafa;
   --calendar-weekend-bg: #f5f5f5;
   --calendar-weekend-border: rgba(0, 0, 0, 0.04);
-  --calendar-holiday-border: #fca5a5;
+  --calendar-holiday-border: #fca5a522;
   --calendar-holiday-bg: #fef2f2;
   --calendar-header-bg: #f3f4f6;
   --calendar-span-bg: #e5e7eb;
-  --calendar-grid-line: rgba(0, 0, 0, 0.04);
+  --calendar-grid-line: rgba(0, 0, 0, 0.03);
   --calendar-row-separator: rgba(0, 0, 0, 0.04);
 
   /* Today Indicator */
@@ -321,12 +321,12 @@
   /* Calendar/Timeline Specific - Refined visual hierarchy */
   --calendar-weekday-bg: #18181b;
   --calendar-weekend-bg: #1c1c1f;
-  --calendar-weekend-border: rgba(255, 255, 255, 0.04);
-  --calendar-holiday-border: #7f1d1d;
-  --calendar-holiday-bg: #1c1515;
+  --calendar-weekend-border: rgba(255, 255, 255, 0.02);
+    --calendar-holiday-border: #7f1d1d10;
+    --calendar-holiday-bg: #281d1d;
   --calendar-header-bg: #18181b;
   --calendar-span-bg: #27272a;
-  --calendar-grid-line: rgba(255, 255, 255, 0.04);
+  --calendar-grid-line: rgba(255, 255, 255, 0.02);
   --calendar-row-separator: rgba(255, 255, 255, 0.04);
 
   /* Today Indicator */

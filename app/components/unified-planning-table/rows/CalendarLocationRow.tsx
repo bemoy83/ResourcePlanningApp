@@ -165,7 +165,13 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
     return rows;
   }, [events, location.id]);
 
+  // Calculate the maximum number of rows needed for overlapping events
+  // eventRow.row is 0-indexed, so we add 1 to get the total count
+  // Example: if highest row index is 3, we need 4 rows (0, 1, 2, 3)
   const maxRows = eventRows.length > 0 ? Math.max(...eventRows.map((r) => r.row)) + 1 : 0;
+  // Calculate total row height: maxRows * ROW_LAYER_HEIGHT
+  // Ensure minimum height of 1 row (24px) even if no events
+  // Example: if maxRows = 4, rowHeight = 4 * 24 = 96px
   const rowHeight = Math.max(maxRows, 1) * ROW_LAYER_HEIGHT;
 
   // Tooltip handlers
@@ -332,7 +338,8 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
             alignItems: 'center',
             justifyContent: 'flex-end',
             borderRight: '1px solid var(--sticky-column-border)',
-            borderBottom: '1px solid var(--calendar-row-separator)',
+            borderBottom: 'none',
+            borderTop: 'none',
             paddingRight: 'var(--space-md)',
             gridColumn: '1 / -1',
             width: `${timeline.timelineOriginPx}px`,
@@ -393,7 +400,11 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
 
               const leftOffset = spanStart * timeline.dateColumnWidth;
               const blockWidth = spanLength * timeline.dateColumnWidth;
+              // Position phase span vertically: each row is ROW_LAYER_HEIGHT (24px) tall
+              // Example: row 0 = top 0px, row 1 = top 24px, row 2 = top 48px, row 3 = top 72px
               const topOffset = eventRow.row * ROW_LAYER_HEIGHT;
+              // If only one row, span fills entire row height; otherwise each span is ROW_LAYER_HEIGHT
+              // Example: if maxRows = 4, each span height = 24px (not 96px)
               const spanHeight = maxRows === 1 ? rowHeight : ROW_LAYER_HEIGHT;
 
               return (
