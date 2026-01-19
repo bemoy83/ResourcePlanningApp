@@ -18,6 +18,8 @@ interface UnifiedDateRangeButtonProps {
   onYearChange: (year: number | null) => void;
   onMonthChange: (month: number | null) => void;
   activeDateRange: DateRange;
+  isRangeLocked: boolean;
+  onRangeLockChange: (locked: boolean) => void;
   // Month navigation props
   monthOffset?: number;
   onPreviousMonth?: () => void;
@@ -52,6 +54,8 @@ export function UnifiedDateRangeButton({
   onYearChange,
   onMonthChange,
   activeDateRange,
+  isRangeLocked,
+  onRangeLockChange,
   monthOffset = 0,
   onPreviousMonth,
   onNextMonth,
@@ -78,6 +82,8 @@ export function UnifiedDateRangeButton({
   const showMonthStepper =
     selectedPreset === "this-month" ||
     (selectedPreset === "year-month" && selectedYear !== null && selectedMonth !== null);
+  const hasActiveRange = Boolean(activeDateRange.startDate && activeDateRange.endDate);
+  const showLockToggle = hasActiveRange;
 
   const getCurrentMonthName = useCallback((): string => {
     const today = formatDateLocal(new Date());
@@ -104,6 +110,8 @@ export function UnifiedDateRangeButton({
     return `${monthLabels[selectedMonth - 1]} ${selectedYear}`;
   }, [selectedYear, selectedMonth]);
 
+  const lockToggleLabel = isRangeLocked ? "Unlock browsing" : "Lock to range";
+
   const handlePrev = useCallback(() => {
     if (selectedPreset === "year-month") {
       onYearMonthPrevious?.();
@@ -120,13 +128,13 @@ export function UnifiedDateRangeButton({
     }
   }, [selectedPreset, onYearMonthNext, onNextMonth]);
 
-  const isPrevDisabled = selectedPreset === "year-month"
+  const isPrevDisabled = !isRangeLocked || (selectedPreset === "year-month"
     ? !onYearMonthPrevious || yearMonthPrevDisabled
-    : !onPreviousMonth;
+    : !onPreviousMonth);
 
-  const isNextDisabled = selectedPreset === "year-month"
+  const isNextDisabled = !isRangeLocked || (selectedPreset === "year-month"
     ? !onYearMonthNext || yearMonthNextDisabled
-    : !onNextMonth;
+    : !onNextMonth);
 
   return (
     <>
@@ -200,6 +208,55 @@ export function UnifiedDateRangeButton({
               {selectedPreset === "year-month" ? getYearMonthLabel() : getCurrentMonthName()}
             </span>
           </>
+        )}
+        {showLockToggle && (
+          <Button
+            onClick={() => onRangeLockChange(!isRangeLocked)}
+            variant="segmented"
+            size="sm"
+            aria-pressed={!isRangeLocked}
+            aria-label={lockToggleLabel}
+            title={lockToggleLabel}
+            style={{
+              padding: "6px 10px",
+              minHeight: "28px",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {isRangeLocked ? (
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="3" y="11" width="18" height="10" rx="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            ) : (
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="3" y="11" width="18" height="10" rx="2" />
+                <path d="M7 11V7a5 5 0 0 1 8-4" />
+              </svg>
+            )}
+          </Button>
         )}
       </SegmentedControl>
 

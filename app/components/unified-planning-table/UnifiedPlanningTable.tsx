@@ -90,6 +90,7 @@ export function UnifiedPlanningTable({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const eventsRef = useRef(events);
   const datesRef = useRef(dates);
+  const prevDatesRef = useRef<string[]>(dates);
 
   const holidayDates = useMemo(() => getHolidayDatesForRange(dates), [dates]);
 
@@ -169,6 +170,23 @@ export function UnifiedPlanningTable({
 
   useEffect(() => {
     datesRef.current = dates;
+  }, [dates]);
+
+  useLayoutEffect(() => {
+    const container = scrollContainerRef.current;
+    const prevDates = prevDatesRef.current;
+    if (!container || prevDates.length === 0 || dates.length === 0) {
+      prevDatesRef.current = dates;
+      return;
+    }
+
+    const prevStart = prevDates[0];
+    const indexInNew = dates.indexOf(prevStart);
+    if (indexInNew > 0) {
+      container.scrollLeft += indexInNew * TIMELINE_DATE_COLUMN_WIDTH;
+    }
+
+    prevDatesRef.current = dates;
   }, [dates]);
 
   const resolveEventRange = (event: Event) => {

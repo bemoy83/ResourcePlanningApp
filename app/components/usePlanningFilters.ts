@@ -141,17 +141,17 @@ export function usePlanningFilters({
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [dateRangeSource, setDateRangeSource] = useState<DateRangeSource>("preset");
   const [monthOffset, setMonthOffset] = useState(0);
+  const [isRangeLocked, setIsRangeLocked] = useState(true);
   const lastPresetRef = useRef<DateRangePreset>("next-3-months");
 
   const handlePresetChange = useCallback((preset: DateRangePreset) => {
     setDateRangePreset(preset);
+    setIsRangeLocked(true);
     if (preset === "year-month") {
       setDateRangeSource("year-month");
       return;
     }
-    if (preset !== "year-month") {
-      lastPresetRef.current = preset;
-    }
+    lastPresetRef.current = preset;
     if (preset === "this-month") {
       const today = formatDateLocal(new Date());
       const { year, month } = parseDateParts(today);
@@ -172,11 +172,13 @@ export function usePlanningFilters({
 
   const handleCustomRangeChange = useCallback((range: DateRange) => {
     setCustomDateRange(range);
+    setIsRangeLocked(true);
     setDateRangeSource("custom");
   }, []);
 
   const handleYearChange = useCallback((year: number | null) => {
     setSelectedYear(year);
+    setIsRangeLocked(true);
     if (year === null) {
       setSelectedMonth(null);
       setDateRangeSource("preset");
@@ -190,6 +192,7 @@ export function usePlanningFilters({
 
   const handleMonthChange = useCallback((month: number | null) => {
     setSelectedMonth(month);
+    setIsRangeLocked(true);
     if (month === null) {
       setDateRangeSource("preset");
       setDateRangePreset(lastPresetRef.current);
@@ -386,9 +389,41 @@ export function usePlanningFilters({
     selectedYear,
   ]);
 
+  const hasActiveDateRange = Boolean(activeDateRange.startDate && activeDateRange.endDate);
+
+  const browseYear = useMemo(() => {
+    if (selectedYear !== null) {
+      return selectedYear;
+    }
+    const anchorDate = activeDateRange.startDate ?? activeDateRange.endDate;
+    if (anchorDate) {
+      return parseDateParts(anchorDate).year;
+    }
+    const { year: todayYear } = parseDateParts(formatDateLocal(new Date()));
+    if (availableYears.length > 0) {
+      if (availableYears.includes(todayYear)) {
+        return todayYear;
+      }
+      return availableYears[availableYears.length - 1];
+    }
+    return todayYear;
+  }, [activeDateRange.endDate, activeDateRange.startDate, availableYears, selectedYear]);
+
+  const viewDateRange = useMemo(() => {
+    if (isRangeLocked) {
+      return activeDateRange;
+    }
+    return {
+      startDate: formatDateParts(browseYear, 1, 1),
+      endDate: formatDateParts(browseYear, 12, 31),
+    };
+  }, [activeDateRange, browseYear, isRangeLocked]);
+
+  const isRangeFilteringActive = isRangeLocked && hasActiveDateRange;
+
   const applyDateRangeFilter = useCallback(
     (sourceEvents: PlanningEvent[]) => {
-      if (!activeDateRange.startDate || !activeDateRange.endDate) {
+      if (!isRangeFilteringActive) {
         return sourceEvents;
       }
       return sourceEvents.filter((event) => {
@@ -399,11 +434,11 @@ export function usePlanningFilters({
         );
       });
     },
-    [activeDateRange]
+    [activeDateRange.endDate, activeDateRange.startDate, isRangeFilteringActive]
   );
 
   const eventIdsInActiveDateRange = useMemo(() => {
-    if (!activeDateRange.startDate || !activeDateRange.endDate) {
+    if (!isRangeFilteringActive) {
       return null;
     }
     const ids = new Set<string>();
@@ -417,7 +452,7 @@ export function usePlanningFilters({
       }
     }
     return ids;
-  }, [activeDateRange.endDate, activeDateRange.startDate, events]);
+  }, [activeDateRange.endDate, activeDateRange.startDate, events, isRangeFilteringActive]);
 
   const filteredEvents = useMemo(() => {
     return applyDateRangeFilter(applySelectionFilters(events));
@@ -440,14 +475,14 @@ export function usePlanningFilters({
     const filteredWorkCategoryIds = new Set(filteredWorkCategories.map((wc) => wc.id));
     const filteredEvaluation: Evaluation = {
       dailyDemand: evaluation.dailyDemand.filter((dd) => {
-        if (activeDateRange.startDate && activeDateRange.endDate) {
-          return dd.date >= activeDateRange.startDate && dd.date <= activeDateRange.endDate;
+        if (viewDateRange.startDate && viewDateRange.endDate) {
+          return dd.date >= viewDateRange.startDate && dd.date <= viewDateRange.endDate;
         }
         return true;
       }),
       dailyCapacityComparison: evaluation.dailyCapacityComparison.filter((dcc) => {
-        if (activeDateRange.startDate && activeDateRange.endDate) {
-          return dcc.date >= activeDateRange.startDate && dcc.date <= activeDateRange.endDate;
+        if (viewDateRange.startDate && viewDateRange.endDate) {
+          return dcc.date >= viewDateRange.startDate && dcc.date <= viewDateRange.endDate;
         }
         return true;
       }),
@@ -480,8 +515,8 @@ export function usePlanningFilters({
       errorsByCellKey: filteredErrorsByCellKey,
     };
   }, [
-    activeDateRange.endDate,
-    activeDateRange.startDate,
+    viewDateRange.endDate,
+    viewDateRange.startDate,
     allocations,
     drafts,
     errorsByCellKey,
@@ -499,9 +534,9 @@ export function usePlanningFilters({
     let min: string | null = null;
     let max: string | null = null;
 
-    if (activeDateRange.startDate && activeDateRange.endDate) {
-      min = activeDateRange.startDate;
-      max = activeDateRange.endDate;
+    if (viewDateRange.startDate && viewDateRange.endDate) {
+      min = viewDateRange.startDate;
+      max = viewDateRange.endDate;
     } else {
       for (const event of filteredEvents) {
         const range = resolveVisibleDateRange(event);
@@ -535,7 +570,7 @@ export function usePlanningFilters({
     }
 
     return { dates: datesArray, minDate: min, maxDate: max };
-  }, [activeDateRange.endDate, activeDateRange.startDate, filteredEvents]);
+  }, [filteredEvents, viewDateRange.endDate, viewDateRange.startDate]);
 
   const hasSelectionFilters = selectedEventIds.size > 0 || selectedLocationIds.size > 0;
 
@@ -551,6 +586,8 @@ export function usePlanningFilters({
     monthOffset,
     availableYears,
     activeDateRange,
+    isRangeLocked,
+    setIsRangeLocked,
     filteredData,
     dates,
     minDate,

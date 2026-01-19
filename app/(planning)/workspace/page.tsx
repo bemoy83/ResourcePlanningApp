@@ -77,6 +77,8 @@ export default function WorkspacePage() {
     monthOffset,
     availableYears,
     activeDateRange,
+    isRangeLocked,
+    setIsRangeLocked,
     filteredData,
     dates,
     hasSelectionFilters,
@@ -127,6 +129,7 @@ export default function WorkspacePage() {
       activeDateRange.endDate ?? "",
     ].join("::");
   }, [activeDateRange.endDate, activeDateRange.startDate, selectedEventKey, selectedLocationKey]);
+  const hasActiveDateRange = Boolean(activeDateRange.startDate && activeDateRange.endDate);
 
   useEffect(() => {
     setCurrentEventIndex(-1);
@@ -183,13 +186,12 @@ export default function WorkspacePage() {
     if (
       selectedEventIds.size === 0 &&
       selectedLocationIds.size === 0 &&
-      !activeDateRange.startDate &&
-      !activeDateRange.endDate
+      !hasActiveDateRange
     ) {
       return;
     }
 
-    const hasDateRange = !!activeDateRange.startDate && !!activeDateRange.endDate;
+    const hasDateRange = isRangeLocked && hasActiveDateRange;
     const hasEventSelection = selectedEventIds.size > 0;
     const hasLocationSelection = selectedLocationIds.size > 0;
 
@@ -238,6 +240,8 @@ export default function WorkspacePage() {
     eventIdsInActiveDateRange,
     filteredData.events.length,
     filterAlertKey,
+    hasActiveDateRange,
+    isRangeLocked,
     selectedEventIds,
     selectedLocationIds,
     showToast,
@@ -714,6 +718,8 @@ export default function WorkspacePage() {
                 onYearChange={handleYearChange}
                 onMonthChange={handleMonthChange}
                 activeDateRange={activeDateRange}
+                isRangeLocked={isRangeLocked}
+                onRangeLockChange={setIsRangeLocked}
                 monthOffset={monthOffset}
                 onPreviousMonth={handlePreviousMonth}
                 onNextMonth={handleNextMonth}
