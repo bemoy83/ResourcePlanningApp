@@ -35,6 +35,25 @@ interface IntraDayTransition {
   laterSpanIndex: number; // Index of the phase that starts on this date
 }
 
+// Canonical phase order: ASSEMBLY -> MOVE_IN -> EVENT -> MOVE_OUT -> DISMANTLE
+const PHASE_ORDER: Record<string, number> = {
+  'ASSEMBLY': 0,
+  'MOVE_IN': 1,
+  'EVENT': 2,
+  'MOVE_OUT': 3,
+  'DISMANTLE': 4,
+};
+
+/**
+ * Get the canonical order index for a phase name.
+ * Returns a high number for unknown phases so they sort to the end.
+ */
+function getPhaseOrderIndex(phaseName: string | undefined): number {
+  if (!phaseName) return 999;
+  const normalized = phaseName.trim().toUpperCase();
+  return PHASE_ORDER[normalized] ?? 999;
+}
+
 interface EventRow {
   eventId: string;
   eventName: string;
@@ -300,7 +319,8 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
         });
 
         // Detect intra-day transitions: where one phase ends and another starts on the same calendar date
-        // Rule: earlier phase (by time) gets left half, later phase gets right half
+        // Rule: earlier phase gets left half, later phase gets right half
+        // Priority: 1) Time comparison, 2) Canonical phase order (ASSEMBLY -> MOVE_IN -> EVENT -> MOVE_OUT -> DISMANTLE)
         const intraDayTransitions: IntraDayTransition[] = [];
         for (let i = 0; i < spans.length - 1; i++) {
           const currentSpan = spans[i];
@@ -311,17 +331,34 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
 
           // Check if current phase ends on the same calendar date that the next phase starts
           if (currentEndDate === nextStartDate) {
-            // Verify the earlier phase actually ends before the later phase starts (by time)
             const currentEndTime = new Date(currentSpan.endDate).getTime();
             const nextStartTime = new Date(nextSpan.startDate).getTime();
 
-            if (currentEndTime <= nextStartTime) {
-              intraDayTransitions.push({
-                date: currentEndDate,
-                earlierSpanIndex: i,
-                laterSpanIndex: i + 1,
-              });
+            // Determine which phase is "earlier" for positioning
+            let earlierIndex = i;
+            let laterIndex = i + 1;
+
+            if (currentEndTime === nextStartTime) {
+              // Times are identical - use canonical phase order
+              const currentPhaseOrder = getPhaseOrderIndex(currentSpan.phaseName);
+              const nextPhaseOrder = getPhaseOrderIndex(nextSpan.phaseName);
+
+              if (currentPhaseOrder > nextPhaseOrder) {
+                // Current span's phase comes after next span's phase - swap
+                earlierIndex = i + 1;
+                laterIndex = i;
+              }
+            } else if (currentEndTime > nextStartTime) {
+              // Current span ends after next span starts - swap
+              earlierIndex = i + 1;
+              laterIndex = i;
             }
+
+            intraDayTransitions.push({
+              date: currentEndDate,
+              earlierSpanIndex: earlierIndex,
+              laterSpanIndex: laterIndex,
+            });
           }
         }
 
