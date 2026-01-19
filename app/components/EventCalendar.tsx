@@ -25,6 +25,16 @@ interface CalendarSpan {
   phaseName?: string; // Original phase name for tooltip
 }
 
+/**
+ * Represents a phase transition where two phases share the same calendar date.
+ * The earlier phase ends and the later phase starts on the same day.
+ */
+interface IntraDayTransition {
+  date: string; // The shared date (YYYY-MM-DD)
+  earlierSpanIndex: number; // Index of the phase that ends on this date
+  laterSpanIndex: number; // Index of the phase that starts on this date
+}
+
 interface EventRow {
   eventId: string;
   eventName: string;
@@ -33,6 +43,7 @@ interface EventRow {
   row: number;
   rangeStartMs: number;
   rangeEndMs: number;
+  intraDayTransitions: IntraDayTransition[]; // Dates where phases transition within the same day
 }
 
 const CELL_BORDER_WIDTH = 1; // Keep as number for calculations
@@ -288,6 +299,32 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
           return a.label.localeCompare(b.label);
         });
 
+        // Detect intra-day transitions: where one phase ends and another starts on the same calendar date
+        // Rule: earlier phase (by time) gets left half, later phase gets right half
+        const intraDayTransitions: IntraDayTransition[] = [];
+        for (let i = 0; i < spans.length - 1; i++) {
+          const currentSpan = spans[i];
+          const nextSpan = spans[i + 1];
+
+          const currentEndDate = currentSpan.endDate.split('T')[0];
+          const nextStartDate = nextSpan.startDate.split('T')[0];
+
+          // Check if current phase ends on the same calendar date that the next phase starts
+          if (currentEndDate === nextStartDate) {
+            // Verify the earlier phase actually ends before the later phase starts (by time)
+            const currentEndTime = new Date(currentSpan.endDate).getTime();
+            const nextStartTime = new Date(nextSpan.startDate).getTime();
+
+            if (currentEndTime <= nextStartTime) {
+              intraDayTransitions.push({
+                date: currentEndDate,
+                earlierSpanIndex: i,
+                laterSpanIndex: i + 1,
+              });
+            }
+          }
+        }
+
         let rangeStart = spans[0].startDate;
         let rangeEnd = spans[0].endDate;
         for (const span of spans) {
@@ -307,6 +344,7 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
           row: 0,
           rangeStartMs: new Date(rangeStart).getTime(),
           rangeEndMs: new Date(rangeEnd).getTime(),
+          intraDayTransitions,
         });
       }
 
@@ -531,9 +569,27 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
                     const spanEnd = Math.min(endIndex === -1 ? dates.length - 1 : endIndex, dates.length - 1);
                     const spanLength = spanEnd - spanStart + 1;
 
+                    // Check for intra-day transitions affecting this span
+                    // If this span is the "earlier" one in a transition, it loses the right half of its end date
+                    // If this span is the "later" one in a transition, it loses the left half of its start date
+                    let leftAdjustment = 0;
+                    let widthAdjustment = 0;
+
+                    for (const transition of eventRow.intraDayTransitions) {
+                      if (transition.earlierSpanIndex === spanIndex) {
+                        // This span ends on the transition date - lose right half of that day
+                        widthAdjustment -= DAY_COL_FULL_WIDTH / 2;
+                      }
+                      if (transition.laterSpanIndex === spanIndex) {
+                        // This span starts on the transition date - lose left half of that day
+                        leftAdjustment += DAY_COL_FULL_WIDTH / 2;
+                        widthAdjustment -= DAY_COL_FULL_WIDTH / 2;
+                      }
+                    }
+
                     // Horizontal positioning: same logic for all spans
-                    const leftOffset = spanStart * DAY_COL_FULL_WIDTH;
-                    const blockWidth = spanLength * DAY_COL_FULL_WIDTH;
+                    const leftOffset = spanStart * DAY_COL_FULL_WIDTH + leftAdjustment;
+                    const blockWidth = spanLength * DAY_COL_FULL_WIDTH + widthAdjustment;
 
                     // Vertical positioning: one row per event-location
                     const topOffset = eventRow.row * ROW_LAYER_HEIGHT;
