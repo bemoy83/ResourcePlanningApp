@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 export interface TooltipContent {
   eventName: string;
   phaseName: string;
+  locationName: string;
   startDate: string;
   endDate: string;
   dayCount: number;
@@ -77,12 +78,15 @@ export function Tooltip({ tooltip }: TooltipProps) {
         <strong>Phase:</strong> {tooltip.content.phaseName}
       </div>
       <div style={{ marginBottom: "2px" }}>
-        <strong>Dates:</strong> {formatDate(tooltip.content.startDate)} -{" "}
-        {formatDate(tooltip.content.endDate)}
+        <strong>Location:</strong> {tooltip.content.locationName}
       </div>
-      <div>
+      <div style={{ marginBottom: "2px" }}>
         <strong>Duration:</strong> {tooltip.content.dayCount}{" "}
         {tooltip.content.dayCount === 1 ? "day" : "days"}
+      </div>
+      <div style={{ marginBottom: "2px" }}>
+        <strong>Dates:</strong> {formatDate(tooltip.content.startDate)} -{" "}
+        {formatDate(tooltip.content.endDate)}
       </div>
     </div>
   );

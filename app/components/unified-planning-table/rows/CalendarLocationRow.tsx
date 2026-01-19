@@ -241,6 +241,7 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
         content: {
           eventName: eventRow.eventName,
           phaseName: phaseName,
+          locationName: location.name,
           startDate: span.startDate,
           endDate: span.endDate,
           dayCount,

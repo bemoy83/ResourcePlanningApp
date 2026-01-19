@@ -155,7 +155,8 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
   const handleSpanMouseEnter = (
     event: React.MouseEvent<HTMLDivElement>,
     eventRow: EventRow,
-    span: CalendarSpan
+    span: CalendarSpan,
+    locationName: string
   ) => {
     // Clear any pending hide timeout
     if (tooltipTimeoutRef.current) {
@@ -192,6 +193,7 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
         content: {
           eventName: eventRow.eventName,
           phaseName: phaseName,
+          locationName,
           startDate: span.startDate,
           endDate: span.endDate,
           dayCount,
@@ -564,7 +566,7 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
                           justifyContent: 'center',
                           cursor: tooltipsEnabled ? 'help' : 'default',
                         }}
-                        onMouseEnter={(e) => handleSpanMouseEnter(e, eventRow, span)}
+                  onMouseEnter={(e) => handleSpanMouseEnter(e, eventRow, span, location.name)}
                         onMouseMove={handleSpanMouseMove}
                         onMouseLeave={handleSpanMouseLeave}
                       >
