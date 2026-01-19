@@ -25,6 +25,16 @@ interface IntraDayTransition {
   laterSpanIndex: number; // Index of the phase that starts on this date
 }
 
+/**
+ * Tracks single-day phases that all occur on the same date.
+ * When 3+ phases share a single day, we collapse to show only the highest priority one.
+ */
+interface SingleDayCollapse {
+  date: string;
+  spanIndices: number[]; // All single-day spans on this date
+  visibleSpanIndex: number; // The one to show (EVENT takes precedence)
+}
+
 // Canonical phase order: ASSEMBLY -> MOVE_IN -> EVENT -> MOVE_OUT -> DISMANTLE
 const PHASE_ORDER: Record<string, number> = {
   'ASSEMBLY': 0,
@@ -32,6 +42,15 @@ const PHASE_ORDER: Record<string, number> = {
   'EVENT': 2,
   'MOVE_OUT': 3,
   'DISMANTLE': 4,
+};
+
+// Phase abbreviations for compact display when sharing a date
+const PHASE_ABBREVIATIONS: Record<string, string> = {
+  'ASSEMBLY': 'A',
+  'MOVE_IN': 'MI',
+  'EVENT': 'E',
+  'MOVE_OUT': 'MO',
+  'DISMANTLE': 'D',
 };
 
 /**
@@ -44,6 +63,28 @@ function getPhaseOrderIndex(phaseName: string | undefined): number {
   return PHASE_ORDER[normalized] ?? 999;
 }
 
+/**
+ * Get abbreviated label for compact display when sharing a date.
+ * Phase names get standard abbreviations, event names get truncated.
+ */
+function getAbbreviatedLabel(label: string, phaseName: string | undefined, isEventPhase: boolean): string {
+  if (!isEventPhase && phaseName) {
+    // It's a phase label - use standard abbreviation
+    const normalized = phaseName.trim().toUpperCase();
+    return PHASE_ABBREVIATIONS[normalized] ?? label.slice(0, 3);
+  }
+  // It's an event name - truncate to first 4 chars
+  return label.length > 4 ? label.slice(0, 4) : label;
+}
+
+/**
+ * Format phase name for display by replacing underscores with spaces.
+ * e.g., "MOVE_IN" -> "MOVE IN"
+ */
+function formatPhaseNameForDisplay(phaseName: string): string {
+  return phaseName.replace(/_/g, ' ');
+}
+
 interface EventRow {
   eventId: string;
   eventName: string;
@@ -53,6 +94,7 @@ interface EventRow {
   rangeStartMs: number;
   rangeEndMs: number;
   intraDayTransitions: IntraDayTransition[]; // Dates where phases transition within the same day
+  singleDayCollapses: SingleDayCollapse[]; // Dates where 3+ single-day phases collapse to one
 }
 
 interface CalendarLocationRowProps {
@@ -119,7 +161,7 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
       const spans: CalendarSpan[] = (event.phases || []).map((phase) => ({
         eventId: event.id,
         locationId: location.id,
-        label: isEventPhaseName(phase.name) ? event.name : phase.name,
+        label: isEventPhaseName(phase.name) ? event.name : formatPhaseNameForDisplay(phase.name),
         startDate: phase.startDate,
         endDate: phase.endDate,
         phaseName: phase.name,
@@ -181,6 +223,59 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
         }
       }
 
+      // Detect single-day collapses: when 3+ single-day phases share the same date
+      // In this case, show only the EVENT phase (or highest priority if no EVENT)
+      const singleDayCollapses: SingleDayCollapse[] = [];
+      const singleDaySpansByDate = new Map<string, number[]>();
+
+      // Group single-day spans by their date
+      spans.forEach((span, index) => {
+        const startDate = span.startDate.split('T')[0];
+        const endDate = span.endDate.split('T')[0];
+        if (startDate === endDate) {
+          // This is a single-day span
+          const existing = singleDaySpansByDate.get(startDate) || [];
+          existing.push(index);
+          singleDaySpansByDate.set(startDate, existing);
+        }
+      });
+
+      // For dates with 3+ single-day spans, create a collapse entry
+      for (const [date, spanIndices] of singleDaySpansByDate) {
+        if (spanIndices.length >= 3) {
+          // Find the EVENT phase, or the one with highest display priority
+          // Priority for display: EVENT > others (we want to show the main event)
+          let visibleSpanIndex = spanIndices[0];
+          let hasEventPhase = false;
+
+          for (const idx of spanIndices) {
+            const span = spans[idx];
+            if (isEventPhaseName(span.phaseName || '')) {
+              visibleSpanIndex = idx;
+              hasEventPhase = true;
+              break;
+            }
+          }
+
+          // If no EVENT phase, show the middle one in canonical order (likely EVENT-adjacent)
+          if (!hasEventPhase) {
+            // Sort by canonical phase order and pick the middle
+            const sorted = [...spanIndices].sort((a, b) => {
+              const orderA = getPhaseOrderIndex(spans[a].phaseName);
+              const orderB = getPhaseOrderIndex(spans[b].phaseName);
+              return orderA - orderB;
+            });
+            visibleSpanIndex = sorted[Math.floor(sorted.length / 2)];
+          }
+
+          singleDayCollapses.push({
+            date,
+            spanIndices,
+            visibleSpanIndex,
+          });
+        }
+      }
+
       let rangeStart = spans[0].startDate;
       let rangeEnd = spans[0].endDate;
       for (const span of spans) {
@@ -201,6 +296,7 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
         rangeStartMs: new Date(rangeStart).getTime(),
         rangeEndMs: new Date(rangeEnd).getTime(),
         intraDayTransitions,
+        singleDayCollapses,
       });
     }
 
@@ -305,7 +401,10 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
     }
 
     const dayCount = calculateDayCount(span.startDate, span.endDate);
-    const phaseName = span.label === eventRow.eventName ? (span.phaseName || 'EVENT') : span.label;
+    // For tooltip: use formatted phase name (span.label already formatted, but for EVENT phase use original phaseName formatted)
+    const phaseName = span.label === eventRow.eventName
+      ? formatPhaseNameForDisplay(span.phaseName || 'EVENT')
+      : span.label;
     const mouseX = event.clientX;
     const mouseY = event.clientY;
 
@@ -465,6 +564,19 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
               const normalizedStart = span.startDate.split('T')[0];
               const normalizedEnd = span.endDate.split('T')[0];
 
+              // Check if this span is part of a 3+ way collapse
+              // If so, only render if it's the visible one; skip the others
+              for (const collapse of eventRow.singleDayCollapses) {
+                if (collapse.spanIndices.includes(spanIndex)) {
+                  if (spanIndex !== collapse.visibleSpanIndex) {
+                    // This span is hidden in favor of the visible one
+                    return null;
+                  }
+                  // This is the visible span - it takes the full day (no transitions apply)
+                  break;
+                }
+              }
+
               const startIndex = timeline.dates.indexOf(normalizedStart);
               const endIndex = timeline.dates.indexOf(normalizedEnd);
 
@@ -474,21 +586,32 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
               const spanEnd = Math.min(endIndex === -1 ? timeline.dates.length - 1 : endIndex, timeline.dates.length - 1);
               const spanLength = spanEnd - spanStart + 1;
 
+              // Check if this span is the visible one in a collapse (takes full width, no transitions)
+              const isCollapsedVisible = eventRow.singleDayCollapses.some(
+                (collapse) => collapse.visibleSpanIndex === spanIndex
+              );
+
               // Check for intra-day transitions affecting this span
               // If this span is the "earlier" one in a transition, it loses the right half of its end date
               // If this span is the "later" one in a transition, it loses the left half of its start date
+              // Skip transition adjustments if this span is the visible one in a collapse
               let leftAdjustment = 0;
               let widthAdjustment = 0;
+              let isInTransition = false;
 
-              for (const transition of eventRow.intraDayTransitions) {
-                if (transition.earlierSpanIndex === spanIndex) {
-                  // This span ends on the transition date - lose right half of that day
-                  widthAdjustment -= timeline.dateColumnWidth / 2;
-                }
-                if (transition.laterSpanIndex === spanIndex) {
-                  // This span starts on the transition date - lose left half of that day
-                  leftAdjustment += timeline.dateColumnWidth / 2;
-                  widthAdjustment -= timeline.dateColumnWidth / 2;
+              if (!isCollapsedVisible) {
+                for (const transition of eventRow.intraDayTransitions) {
+                  if (transition.earlierSpanIndex === spanIndex) {
+                    // This span ends on the transition date - lose right half of that day
+                    widthAdjustment -= timeline.dateColumnWidth / 2;
+                    isInTransition = true;
+                  }
+                  if (transition.laterSpanIndex === spanIndex) {
+                    // This span starts on the transition date - lose left half of that day
+                    leftAdjustment += timeline.dateColumnWidth / 2;
+                    widthAdjustment -= timeline.dateColumnWidth / 2;
+                    isInTransition = true;
+                  }
                 }
               }
 
@@ -500,6 +623,15 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
               // If only one row, span fills entire row height; otherwise each span is ROW_LAYER_HEIGHT
               // Example: if maxRows = 4, each span height = 24px (not 96px)
               const spanHeight = maxRows === 1 ? rowHeight : ROW_LAYER_HEIGHT;
+
+              // Use abbreviated label only when span is a single-day phase in a 2-way transition
+              // Multi-day phases have enough width to show the full label even when sharing an edge
+              // Collapsed spans show full label since they take the whole day
+              const isEventPhase = isEventPhaseName(span.phaseName || '');
+              const isSingleDaySpan = spanLength === 1;
+              const displayLabel = isInTransition && isSingleDaySpan
+                ? getAbbreviatedLabel(span.label, span.phaseName, isEventPhase)
+                : span.label;
 
               return (
                 <div
@@ -521,7 +653,7 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
                     boxSizing: 'border-box',
-                    zIndex: 'var(--z-base)' as any,
+                    zIndex: 'var(--z-phase)' as any,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -531,7 +663,7 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
                   onMouseMove={handleSpanMouseMove}
                   onMouseLeave={handleSpanMouseLeave}
                 >
-                  {span.label}
+                  {displayLabel}
                 </div>
               );
             })

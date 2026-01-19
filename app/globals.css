@@ -38,11 +38,18 @@
   --phase-completed: #d1fae5;
 
   /* Event Phase Specific Colors - Vibrant, professional accents */
-  --phase-assembly: #6ea05f;
+  /*--phase-assembly: #6ea05f;
   --phase-move-in: #c9a654;
   --phase-event: #7b8cde;
   --phase-move-out: #e07b63;
   --phase-dismantle: #a878c2;
+    */
+      /* Event Phase Specific Colors - Vibrant, professional accents */
+      --phase-assembly: #5E86B3;
+      --phase-move-in: #4F9FA6;
+      --phase-event: #4F8F63;
+      --phase-move-out: #B08A3C;
+      --phase-dismantle: #A86455;
 
   /* Status Colors - Refined with better saturation */
   --status-success: #10b981;
@@ -217,8 +224,9 @@
 
   /* Content Layers (1-10) - Base content and visual indicators */
   --z-base: 1;              /* Default content layer - use for base content elements */
-  --z-today-indicator: 2;   /* Visual indicators (e.g., today line) - above content, below sticky columns */
-  --z-sticky-column: 3;     /* Sticky left columns - above content and indicators, below headers */
+  --z-today-indicator: 2;   /* Visual indicators (e.g., today line) - above content, below phase spans */
+  --z-phase: 3;             /* Event phase spans - above indicators, below sticky columns */
+  --z-sticky-column: 4;     /* Sticky left columns - above content and indicators, below headers */
 
   /* Navigation Layers (11-20) - Sticky headers and navigation */
   --z-sticky-header: 8;      /* Sticky section headers - above content and columns */
@@ -278,11 +286,18 @@
   --phase-completed: #1e2a1e;
 
   /* Event Phase Specific Colors - Vibrant, professional accents */
-  --phase-assembly: #6ea05f;
+  /* --phase-assembly: #6ea05f;
   --phase-move-in: #c9a654;
   --phase-event: #7b8cde;
   --phase-move-out: #e07b63;
   --phase-dismantle: #a878c2;
+*/
+  /* Event Phase Specific Colors - Vibrant, professional accents */
+  --phase-assembly: #5E7FA0;
+  --phase-move-in: #5E9DA1;
+  --phase-event: #5E9F72;
+  --phase-move-out: #B89B57;
+  --phase-dismantle: #B37A6D;
 
   /* Status Colors - Refined with better saturation */
   --status-success: #52c97c;
@@ -330,7 +345,7 @@
   --calendar-row-separator: rgba(255, 255, 255, 0.04);
 
   /* Today Indicator */
-  --today-line: #60a5fa;
+  --today-line: #2563EB;
   --today-line-width: 2px;
   --today-header-bg: rgba(96, 165, 250, 0.15);
   --today-header-text: #93c5fd;
