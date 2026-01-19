@@ -176,8 +176,12 @@ export function UnifiedDateRangePicker({
   const [endInput, setEndInput] = useState(customRange.endDate ?? "");
 
   // Calendar navigation state
-  const [leftCalendarYear, setLeftCalendarYear] = useState(currentYear);
-  const [leftCalendarMonth, setLeftCalendarMonth] = useState(currentMonth);
+  const [leftCalendar, setLeftCalendar] = useState<{ year: number; month: number }>({
+    year: currentYear,
+    month: currentMonth,
+  });
+  const leftCalendarYear = leftCalendar.year;
+  const leftCalendarMonth = leftCalendar.month;
 
   // Selection mode for custom range
   const [selectionMode, setSelectionMode] = useState<"start" | "end">("start");
@@ -210,14 +214,11 @@ export function UnifiedDateRangePicker({
       // Set calendar to show current range or current month
       if (customRange.startDate) {
         const { year, month } = parseDateParts(customRange.startDate);
-        setLeftCalendarYear(year);
-        setLeftCalendarMonth(month);
+        setLeftCalendar({ year, month });
       } else if (selectedYear && selectedMonth) {
-        setLeftCalendarYear(selectedYear);
-        setLeftCalendarMonth(selectedMonth);
+        setLeftCalendar({ year: selectedYear, month: selectedMonth });
       } else {
-        setLeftCalendarYear(currentYear);
-        setLeftCalendarMonth(currentMonth);
+        setLeftCalendar({ year: currentYear, month: currentMonth });
       }
     }
   }, [isOpen, selectedPreset, customRange, selectedYear, selectedMonth, currentYear, currentMonth, today]);
@@ -294,8 +295,7 @@ export function UnifiedDateRangePicker({
       if (isVisible) return;
       const { year, month } = parseDateParts(date);
       if (calendar === "left") {
-        setLeftCalendarYear(year);
-        setLeftCalendarMonth(month);
+        setLeftCalendar({ year, month });
         return;
       }
       let adjustedYear = year;
@@ -304,8 +304,7 @@ export function UnifiedDateRangePicker({
         adjustedMonth = 12;
         adjustedYear -= 1;
       }
-      setLeftCalendarYear(adjustedYear);
-      setLeftCalendarMonth(adjustedMonth);
+      setLeftCalendar({ year: adjustedYear, month: adjustedMonth });
     },
     [leftDays, rightDays]
   );
@@ -353,22 +352,26 @@ export function UnifiedDateRangePicker({
   }, [isOpen, pendingPreset]);
 
   const handlePrevMonth = useCallback(() => {
-    setLeftCalendarMonth((prev) => {
-      if (prev === 1) {
-        setLeftCalendarYear((y) => y - 1);
-        return 12;
+    setLeftCalendar((prev) => {
+      let year = prev.year;
+      let month = prev.month - 1;
+      if (month < 1) {
+        month = 12;
+        year -= 1;
       }
-      return prev - 1;
+      return { year, month };
     });
   }, []);
 
   const handleNextMonth = useCallback(() => {
-    setLeftCalendarMonth((prev) => {
-      if (prev === 12) {
-        setLeftCalendarYear((y) => y + 1);
-        return 1;
+    setLeftCalendar((prev) => {
+      let year = prev.year;
+      let month = prev.month + 1;
+      if (month > 12) {
+        month = 1;
+        year += 1;
       }
-      return prev + 1;
+      return { year, month };
     });
   }, []);
 
@@ -387,16 +390,15 @@ export function UnifiedDateRangePicker({
 
     if (range.startDate) {
       const { year, month } = parseDateParts(range.startDate);
-      setLeftCalendarYear(year);
-      setLeftCalendarMonth(month);
+      setLeftCalendar({ year, month });
     }
   }, [today]);
 
   const handleYearMonthClick = useCallback(() => {
     setShowYearMonthPicker(true);
-    const fallbackYear = availableYears.length > 0
-      ? availableYears[availableYears.length - 1]
-      : currentYear;
+    const fallbackYear = availableYears.includes(currentYear)
+      ? currentYear
+      : (availableYears[availableYears.length - 1] ?? currentYear);
     setYearPickerYear(pendingYear ?? fallbackYear);
   }, [availableYears, currentYear, pendingYear]);
 
@@ -414,8 +416,7 @@ export function UnifiedDateRangePicker({
     setFocusedDate(startDate);
     setActiveCalendar("left");
 
-    setLeftCalendarYear(yearPickerYear);
-    setLeftCalendarMonth(month);
+    setLeftCalendar({ year: yearPickerYear, month });
   }, [yearPickerYear]);
 
   const handleDayClick = useCallback((date: string) => {
@@ -571,8 +572,7 @@ export function UnifiedDateRangePicker({
       setFocusedDate(newStartDate);
       setActiveCalendar("left");
       const { year, month } = parseDateParts(newStartDate);
-      setLeftCalendarYear(year);
-      setLeftCalendarMonth(month);
+      setLeftCalendar({ year, month });
     }
   }, [pendingEndDate]);
 
