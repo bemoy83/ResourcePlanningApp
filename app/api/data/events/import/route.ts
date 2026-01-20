@@ -6,10 +6,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { EventImportRow } from "@/types/event-import";
-
-const prisma = new PrismaClient();
 
 /**
  * Request body contract
