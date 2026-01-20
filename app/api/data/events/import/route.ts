@@ -47,8 +47,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Execute import in atomic transaction
-    const result = await prisma.$transaction(async (tx) => {
+    // Use a non-transactional import to remain compatible with pooled connections.
+    const result = await (async () => {
+      const db = prisma;
       let eventsCreated = 0;
       let eventsReused = 0;
       let locationsCreated = 0;
@@ -73,13 +74,13 @@ export async function POST(request: NextRequest) {
         );
 
         // 1. Events: Create or reuse by name
-        let event = await tx.event.findFirst({
+        let event = await db.event.findFirst({
           where: { name: eventName },
         });
 
         if (event) {
           // Reuse existing event - update dates to match import
-          event = await tx.event.update({
+          event = await db.event.update({
             where: { id: event.id },
             data: {
               startDate: eventStartDate,
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
           eventsReused++;
         } else {
           // Create new event
-          event = await tx.event.create({
+          event = await db.event.create({
             data: {
               name: eventName,
               startDate: eventStartDate,
@@ -111,13 +112,13 @@ export async function POST(request: NextRequest) {
 
           if (!locationId) {
             // Check if location exists
-            let location = await tx.location.findUnique({
+            let location = await db.location.findUnique({
               where: { name: locationName },
             });
 
             if (!location) {
               // Create new location
-              location = await tx.location.create({
+              location = await db.location.create({
                 data: { name: locationName },
               });
               locationsCreated++;
@@ -128,7 +129,7 @@ export async function POST(request: NextRequest) {
           }
 
           // 3. EventLocation links: Ensure link exists
-          const existingLink = await tx.eventLocation.findUnique({
+          const existingLink = await db.eventLocation.findUnique({
             where: {
               eventId_locationId: {
                 eventId: event.id,
@@ -138,7 +139,7 @@ export async function POST(request: NextRequest) {
           });
 
           if (!existingLink) {
-            await tx.eventLocation.create({
+            await db.eventLocation.create({
               data: {
                 eventId: event.id,
                 locationId: locationId,
@@ -154,7 +155,7 @@ export async function POST(request: NextRequest) {
           const phaseEndDate = new Date(row.endDate);
 
           // Check for exact match: same eventId, name, startDate, endDate
-          const existingPhase = await tx.eventPhase.findFirst({
+          const existingPhase = await db.eventPhase.findFirst({
             where: {
               eventId: event.id,
               name: row.phase,
@@ -164,7 +165,7 @@ export async function POST(request: NextRequest) {
           });
 
           if (!existingPhase) {
-            await tx.eventPhase.create({
+            await db.eventPhase.create({
               data: {
                 eventId: event.id,
                 name: row.phase,
@@ -184,7 +185,7 @@ export async function POST(request: NextRequest) {
         eventLocationsCreated,
         phasesCreated,
       };
-    });
+    })();
 
     return NextResponse.json(result, { status: 200 });
   } catch (error) {
