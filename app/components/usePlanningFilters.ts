@@ -441,13 +441,15 @@ export function usePlanningFilters({
     if (!isRangeFilteringActive) {
       return null;
     }
+    const startDate = activeDateRange.startDate;
+    const endDate = activeDateRange.endDate;
+    if (!startDate || !endDate) {
+      return null;
+    }
     const ids = new Set<string>();
     for (const event of events) {
       const range = resolveVisibleDateRange(event);
-      if (
-        range.endDate >= activeDateRange.startDate &&
-        range.startDate <= activeDateRange.endDate
-      ) {
+      if (range.endDate >= startDate && range.startDate <= endDate) {
         ids.add(event.id);
       }
     }
