@@ -1,7 +1,7 @@
 declare module "express" {
   export interface Request {
     params: Record<string, string>;
-    body: unknown;
+    body: Record<string, unknown>;
   }
 
   export interface Response {
