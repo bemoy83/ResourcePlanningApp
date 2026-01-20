@@ -1,19 +1,26 @@
 import { Event, EventId, EventPhase } from "../domain/event";
 import { prisma } from "@/lib/prisma";
 
+const toDateString = (value: Date | string): string => {
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+  return value.split("T")[0];
+};
+
 function mapPhaseRecord(record: {
   id: string;
   eventId: string;
   name: string;
-  startDate: string;
-  endDate: string;
+  startDate: Date;
+  endDate: Date;
 }): EventPhase {
   return {
     id: record.id,
     eventId: record.eventId,
     name: record.name as EventPhase["name"],
-    startDate: record.startDate,
-    endDate: record.endDate,
+    startDate: toDateString(record.startDate),
+    endDate: toDateString(record.endDate),
   };
 }
 
@@ -21,8 +28,8 @@ function mapEventRecord(
   record: {
     id: string;
     name: string;
-    startDate: string;
-    endDate: string;
+    startDate: Date;
+    endDate: Date;
     status: string;
   },
   phases: EventPhase[]
@@ -30,8 +37,8 @@ function mapEventRecord(
   return {
     id: record.id,
     name: record.name,
-    startDate: record.startDate,
-    endDate: record.endDate,
+    startDate: toDateString(record.startDate),
+    endDate: toDateString(record.endDate),
     status: record.status as Event["status"],
     // Event.startDate/endDate represents the "Event" phase; stored phases are additional metadata.
     phases,

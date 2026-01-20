@@ -1,6 +1,13 @@
 import { EventPhase, EventPhaseId } from "../domain/event";
 import { prisma } from "@/lib/prisma";
 
+const toDateString = (value: Date | string): string => {
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+  return value.split("T")[0];
+};
+
 // Event phases are metadata only; persistence should remain free of scheduling logic.
 export async function saveEventPhase(phase: EventPhase): Promise<void> {
   await prisma.eventPhase.upsert({
@@ -34,8 +41,8 @@ export async function loadEventPhaseById(phaseId: EventPhaseId): Promise<EventPh
     id: record.id,
     eventId: record.eventId,
     name: record.name as EventPhase["name"],
-    startDate: record.startDate,
-    endDate: record.endDate,
+    startDate: toDateString(record.startDate),
+    endDate: toDateString(record.endDate),
   };
 }
 
@@ -48,8 +55,8 @@ export async function listEventPhasesByEvent(eventId: string): Promise<EventPhas
     id: record.id,
     eventId: record.eventId,
     name: record.name as EventPhase["name"],
-    startDate: record.startDate,
-    endDate: record.endDate,
+    startDate: toDateString(record.startDate),
+    endDate: toDateString(record.endDate),
   }));
 }
 
