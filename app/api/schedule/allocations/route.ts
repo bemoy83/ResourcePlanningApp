@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { addAllocation, listAllocations } from '../../../../modules/schedule/services/scheduleService';
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {

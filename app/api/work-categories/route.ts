@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createWorkCategory, listWorkCategories } from "../../../modules/work/services/workService";
+export const dynamic = "force-dynamic";
 
 export async function GET() {
     try {

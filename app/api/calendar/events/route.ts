@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '../../../../lib/prisma';
 import { UnifiedEvent } from '../../../../types/calendar';
+export const dynamic = "force-dynamic";
 
 /**
  * GET /api/calendar/events

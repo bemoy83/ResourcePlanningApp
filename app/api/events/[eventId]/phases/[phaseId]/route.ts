@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { updateEventPhase, removeEventPhase } from "../../../../../../modules/events/services/eventPhaseService";
 import { EventPhaseName } from "../../../../../../modules/events/domain/event";
+export const dynamic = "force-dynamic";
 
 export async function PATCH(
     request: NextRequest,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getEvent } from "../../../../modules/events/services/eventService";
+export const dynamic = "force-dynamic";
 
 export async function GET(
     request: NextRequest,

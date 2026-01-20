@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { parseCSV } from '../../../../lib/csv-parser';
 import { interpretImportRows } from '../../../../lib/import-interpreter';
 import { ImportPreviewResponse } from '../../../../types/event-import';
+export const dynamic = "force-dynamic";
 
 /**
  * POST /api/import/preview

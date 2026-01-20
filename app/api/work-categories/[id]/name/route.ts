@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { renameWorkCategory } from "../../../../../modules/work/services/workService";
 import { WorkCategoryId } from "../../../../../modules/work/domain/workCategory";
+export const dynamic = "force-dynamic";
 
 export async function PATCH(
     request: NextRequest,

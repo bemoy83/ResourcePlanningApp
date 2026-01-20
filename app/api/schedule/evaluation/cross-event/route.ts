@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { evaluateCrossEventSchedule } from '../../../../../modules/schedule/services/scheduleService';
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {

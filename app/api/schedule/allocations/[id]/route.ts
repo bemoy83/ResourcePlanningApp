@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { removeAllocation, updateAllocation } from '../../../../../modules/schedule/services/scheduleService';
+export const dynamic = "force-dynamic";
 
 export async function PATCH(
   request: NextRequest,
