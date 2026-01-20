@@ -7,7 +7,11 @@ import {
 import { loadEventById, listEvents } from "../persistence/eventRepository";
 
 export async function handleCreateEvent(req: Request, res: Response): Promise<void> {
-  const { name, startDate, endDate } = req.body;
+  const { name, startDate, endDate } = req.body as {
+    name: string;
+    startDate: string;
+    endDate: string;
+  };
 
   const eventId = await createEvent({
     name,

@@ -8,7 +8,11 @@ import { loadWorkCategoryById, listWorkCategoriesByEvent } from '../persistence/
 import { WorkCategoryId } from '../domain/workCategory';
 
 export async function handleCreateWorkCategory(req: Request, res: Response): Promise<void> {
-  const { eventId, name, estimatedEffortHours } = req.body;
+  const { eventId, name, estimatedEffortHours } = req.body as {
+    eventId: string;
+    name: string;
+    estimatedEffortHours: number;
+  };
 
   const workCategoryId = await createWorkCategory({
     eventId,
@@ -23,7 +27,7 @@ export async function handleCreateWorkCategory(req: Request, res: Response): Pro
 
 export async function handleUpdateEstimate(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
-  const { estimatedEffortHours } = req.body;
+  const { estimatedEffortHours } = req.body as { estimatedEffortHours: number };
 
   await updateEstimatedEffort(id as WorkCategoryId, estimatedEffortHours);
 
@@ -34,7 +38,7 @@ export async function handleUpdateEstimate(req: Request, res: Response): Promise
 
 export async function handleRenameWorkCategory(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
-  const { name } = req.body;
+  const { name } = req.body as { name: string };
 
   await renameWorkCategory(id as WorkCategoryId, name);
 
