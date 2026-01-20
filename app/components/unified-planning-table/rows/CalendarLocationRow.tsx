@@ -102,6 +102,7 @@ interface CalendarLocationRowProps {
   events: Event[]; // Events that have this location
   timeline: TimelineLayout;
   tooltipsEnabled?: boolean;
+  rowIndex?: number;
 }
 
 const CELL_BORDER_WIDTH = 1;
@@ -117,6 +118,7 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
   events,
   timeline,
   tooltipsEnabled = true,
+  rowIndex = 0,
 }: CalendarLocationRowProps) {
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -344,6 +346,11 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
   // Ensure minimum height of 1 row (24px) even if no events
   // Example: if maxRows = 4, rowHeight = 4 * 24 = 96px
   const rowHeight = Math.max(maxRows, 1) * ROW_LAYER_HEIGHT;
+  const isAlternateRow = rowIndex % 2 === 1;
+  const rowOverlay = isAlternateRow
+    ? 'linear-gradient(var(--calendar-row-alt-overlay), var(--calendar-row-alt-overlay))'
+    : 'none';
+  const horizontalBorderColor = 'var(--calendar-grid-line-soft)';
 
   // Tooltip handlers
   const calculateDayCount = (startDate: string, endDate: string): number => {
@@ -491,7 +498,7 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
         style={{
           display: 'grid',
           gridTemplateColumns: LEFT_COLUMNS.map(col => `${col.width}px`).join(' '),
-          borderBottom: `1px solid var(--calendar-row-separator)`,
+          borderBottom: 'none',
           position: 'relative',
           height: `${rowHeight}px`,
           boxSizing: 'border-box',
@@ -504,6 +511,7 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
           style={{
             ...cellStyle,
             backgroundColor: 'var(--sticky-column-bg)',
+            backgroundImage: rowOverlay,
             textAlign: 'right',
             fontWeight: 'var(--font-weight-medium)',
             fontSize: '11px',
@@ -513,8 +521,8 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
             alignItems: 'center',
             justifyContent: 'flex-end',
             borderRight: '1px solid var(--sticky-column-border)',
-            borderBottom: 'none',
-            borderTop: 'none',
+            borderBottom: '1px solid var(--calendar-grid-line-soft)',
+            borderTop: '1px solid var(--calendar-grid-line-soft)',
             paddingRight: 'var(--space-md)',
             gridColumn: '1 / -1',
             width: `${timeline.timelineOriginPx}px`,
@@ -535,8 +543,11 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
             const backgroundColor = dateFlags?.isHoliday
               ? holidayBackground
               : dateFlags?.isWeekend
-              ? weekendBackground
-              : 'var(--calendar-weekday-bg)';
+                ? weekendBackground
+                : 'var(--calendar-weekday-bg)';
+            const overlay = isAlternateRow && !dateFlags?.isHoliday && !dateFlags?.isWeekend
+              ? rowOverlay
+              : 'none';
             const borderColor = dateFlags?.isHoliday
               ? 'var(--calendar-holiday-border)'
               : 'var(--calendar-grid-line)';
@@ -552,7 +563,12 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
                   width: `${timeline.dateColumnWidth}px`,
                   height: '100%',
                   backgroundColor,
-                  border: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
+                  backgroundImage: overlay,
+                  border: 'none',
+                  borderLeft: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
+                  borderRight: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
+                  borderTop: `${CELL_BORDER_WIDTH}px solid ${horizontalBorderColor}`,
+                  borderBottom: `${CELL_BORDER_WIDTH}px solid ${horizontalBorderColor}`,
                 }}
               />
             );

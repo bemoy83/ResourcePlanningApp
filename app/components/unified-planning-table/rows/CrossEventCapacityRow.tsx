@@ -40,6 +40,7 @@ export const CrossEventCapacityRow = memo(function CrossEventCapacityRow({
 
   const weekendBackground = 'var(--calendar-weekend-bg)';
   const holidayBackground = 'var(--calendar-holiday-bg)';
+  const horizontalBorderColor = 'var(--calendar-grid-line-soft)';
 
   const cellStyle: React.CSSProperties = {
     border: `${CELL_BORDER_WIDTH}px solid var(--border-primary)`,
@@ -73,6 +74,7 @@ export const CrossEventCapacityRow = memo(function CrossEventCapacityRow({
           ...cellStyle,
           backgroundColor: 'var(--sticky-corner-bg)',
           border: `${CELL_BORDER_WIDTH}px solid var(--sticky-corner-border)`,
+          borderTop: 'none',
           color: 'var(--sticky-corner-text)',
           fontWeight: 'var(--font-weight-bold)',
           textAlign: 'right',
@@ -108,6 +110,13 @@ export const CrossEventCapacityRow = memo(function CrossEventCapacityRow({
             : dateFlags?.isWeekend
             ? 'var(--calendar-weekend-border)'
             : 'var(--calendar-grid-line)';
+          const dateCellBorders = {
+            border: 'none',
+            borderLeft: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
+            borderRight: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
+            borderTop: `${CELL_BORDER_WIDTH}px solid ${horizontalBorderColor}`,
+            borderBottom: `${CELL_BORDER_WIDTH}px solid ${horizontalBorderColor}`,
+          };
 
           if (!crossComparison || crossComparison.capacityHours === 0) {
             return (
@@ -115,13 +124,13 @@ export const CrossEventCapacityRow = memo(function CrossEventCapacityRow({
                 key={date}
                 style={{
                   ...cellStyle,
+                  ...dateCellBorders,
                   position: 'absolute',
                   left: `${index * timeline.dateColumnWidth}px`,
                   top: 0,
                   width: `${timeline.dateColumnWidth}px`,
                   height: '100%',
                   backgroundColor: baseBackground,
-                  border: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
                 }}
               >
               </div>
@@ -132,20 +141,17 @@ export const CrossEventCapacityRow = memo(function CrossEventCapacityRow({
             ? {
                 ...cellStyle,
                 backgroundColor: 'var(--capacity-over)',
-                color: 'var(--capacity-over-text)',
-                border: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
+              color: 'var(--capacity-over-text)',
               }
             : crossComparison.isUnderAllocated
             ? {
                 ...cellStyle,
                 backgroundColor: 'var(--capacity-under)',
                 color: 'var(--capacity-under-text)',
-                border: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
               }
             : {
                 ...cellStyle,
                 backgroundColor: baseBackground,
-                border: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
               };
 
           return (
@@ -153,6 +159,7 @@ export const CrossEventCapacityRow = memo(function CrossEventCapacityRow({
               key={date}
               style={{
                 ...statusStyle,
+                ...dateCellBorders,
                 position: 'absolute',
                 left: `${index * timeline.dateColumnWidth}px`,
                 top: 0,

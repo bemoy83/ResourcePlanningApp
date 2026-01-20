@@ -105,7 +105,9 @@
   --calendar-header-bg: #f3f4f6;
   --calendar-span-bg: #e5e7eb;
   --calendar-grid-line: rgba(0, 0, 0, 0.03);
+  --calendar-grid-line-soft: rgba(0, 0, 0, 0.015);
   --calendar-row-separator: rgba(0, 0, 0, 0.04);
+  --calendar-row-alt-overlay: rgba(0, 0, 0, 0.0);
 
   /* Today Indicator */
   --today-line: #3b82f6;
@@ -342,7 +344,9 @@
   --calendar-header-bg: #18181b;
   --calendar-span-bg: #27272a;
   --calendar-grid-line: rgba(255, 255, 255, 0.02);
+  --calendar-grid-line-soft: rgba(255, 255, 255, 0.015);
   --calendar-row-separator: rgba(255, 255, 255, 0.04);
+  --calendar-row-alt-overlay: rgba(255, 255, 255, 0.0);
 
   /* Today Indicator */
   --today-line: #2563EB;

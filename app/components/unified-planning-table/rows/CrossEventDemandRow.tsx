@@ -50,6 +50,7 @@ export const CrossEventDemandRow = memo(function CrossEventDemandRow({
 
   const weekendBackground = 'var(--calendar-weekend-bg)';
   const holidayBackground = 'var(--calendar-holiday-bg)';
+  const horizontalBorderColor = 'var(--calendar-grid-line-soft)';
 
   const cellStyle: React.CSSProperties = {
     border: `${CELL_BORDER_WIDTH}px solid var(--border-primary)`,
@@ -82,6 +83,7 @@ export const CrossEventDemandRow = memo(function CrossEventDemandRow({
           ...cellStyle,
           backgroundColor: 'var(--sticky-corner-bg)',
           border: `${CELL_BORDER_WIDTH}px solid var(--sticky-corner-border)`,
+          borderBottom: 'none',
           color: 'var(--sticky-corner-text)',
           fontWeight: 'var(--font-weight-bold)',
           textAlign: 'right',
@@ -120,12 +122,20 @@ export const CrossEventDemandRow = memo(function CrossEventDemandRow({
             : dateFlags?.isWeekend
             ? 'var(--calendar-weekend-border)'
             : 'var(--calendar-grid-line)';
+          const dateCellBorders = {
+            border: 'none',
+            borderLeft: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
+            borderRight: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
+            borderTop: `${CELL_BORDER_WIDTH}px solid ${horizontalBorderColor}`,
+            borderBottom: `${CELL_BORDER_WIDTH}px solid ${horizontalBorderColor}`,
+          };
 
           return (
             <div
               key={date}
               style={{
                 ...cellStyle,
+                ...dateCellBorders,
                 position: 'absolute',
                 left: `${index * timeline.dateColumnWidth}px`,
                 top: 0,
@@ -134,7 +144,6 @@ export const CrossEventDemandRow = memo(function CrossEventDemandRow({
                 fontWeight: 'var(--font-weight-bold)',
                 color: hasIssue ? 'var(--capacity-over-text)' : 'inherit',
                 backgroundColor: hasIssue ? 'var(--capacity-over)' : baseBackground,
-                border: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
               }}
             >
               {crossDemand && crossDemand.totalEffortHours > 0 ? `${crossDemand.totalEffortHours}h` : ''}

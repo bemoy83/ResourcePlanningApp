@@ -140,6 +140,12 @@ export function UnifiedPlanningTable({
       return locIds.includes(location.id);
     });
   };
+  const calendarRows = sortedLocations
+    .map((location) => ({
+      location,
+      events: eventsForLocation(location),
+    }))
+    .filter(({ events: locationEvents }) => locationEvents.length > 0);
 
   // Event map for work category rows
   const eventMap = useMemo(() => {
@@ -317,22 +323,18 @@ export function UnifiedPlanningTable({
           </div>
 
           {/* Calendar Section - One row per location */}
-          {sortedLocations.length > 0 && (
+          {calendarRows.length > 0 && (
             <section className="calendar-section" style={{ position: 'relative', zIndex: 1 }}>
-              {sortedLocations.map((location) => {
-                const locationEvents = eventsForLocation(location);
-                if (locationEvents.length === 0) return null;
-
-                return (
-                  <CalendarLocationRow
-                    key={location.id}
-                    location={location}
-                    events={locationEvents}
-                    timeline={timeline}
-                    tooltipsEnabled={tooltipsEnabled}
-                  />
-                );
-              })}
+              {calendarRows.map(({ location, events: locationEvents }, index) => (
+                <CalendarLocationRow
+                  key={location.id}
+                  location={location}
+                  events={locationEvents}
+                  timeline={timeline}
+                  tooltipsEnabled={tooltipsEnabled}
+                  rowIndex={index}
+                />
+              ))}
               {/* Today indicator line inside calendar section - above calendar content (z-index 1) but below sticky columns (z-index 3) */}
               <TodayIndicator
                 todayIndex={todayIndex}
@@ -391,8 +393,8 @@ export function UnifiedPlanningTable({
                 color: 'var(--sticky-corner-text)',
                 borderTop: 'none',
                 borderBottom: 'none',
-                borderLeft: '1px solid var(--sticky-corner-border)',
-                borderRight: '1px solid var(--sticky-corner-border)',
+                borderLeft: 'none',
+                borderRight: 'none',
                 height: '100%',
                 alignSelf: 'stretch',
                 boxSizing: 'border-box',
@@ -409,8 +411,8 @@ export function UnifiedPlanningTable({
                 color: 'var(--sticky-corner-text)',
                 borderTop: 'none',
                 borderBottom: 'none',
-                borderLeft: '1px solid var(--sticky-corner-border)',
-                borderRight: '1px solid var(--sticky-corner-border)',
+                borderLeft: 'none',
+                borderRight: 'none',
                 height: '100%',
                 alignSelf: 'stretch',
                 boxSizing: 'border-box',
@@ -427,8 +429,8 @@ export function UnifiedPlanningTable({
                 color: 'var(--sticky-corner-text)',
                 borderTop: 'none',
                 borderBottom: 'none',
-                borderLeft: '1px solid var(--sticky-corner-border)',
-                borderRight: '1px solid var(--sticky-corner-border)',
+                borderLeft: 'none',
+                borderRight: 'none',
                 height: '100%',
                 alignSelf: 'stretch',
                 boxSizing: 'border-box',
@@ -445,8 +447,8 @@ export function UnifiedPlanningTable({
                 color: 'var(--sticky-corner-text)',
                 borderTop: 'none',
                 borderBottom: 'none',
-                borderLeft: '1px solid var(--sticky-corner-border)',
-                borderRight: '1px solid var(--sticky-corner-border)',
+                borderLeft: 'none',
+                borderRight: 'none',
                 height: '100%',
                 alignSelf: 'stretch',
                 boxSizing: 'border-box',
@@ -463,8 +465,8 @@ export function UnifiedPlanningTable({
                 color: 'var(--sticky-corner-text)',
                 borderTop: 'none',
                 borderBottom: 'none',
-                borderLeft: '1px solid var(--sticky-corner-border)',
-                borderRight: '1px solid var(--sticky-corner-border)',
+                borderLeft: 'none',
+                borderRight: 'none',
                 height: '100%',
                 alignSelf: 'stretch',
                 boxSizing: 'border-box',

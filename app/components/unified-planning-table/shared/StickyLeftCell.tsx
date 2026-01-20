@@ -25,7 +25,7 @@ export function StickyLeftCell({
         left: `${leftOffset}px`,
         zIndex: 'var(--z-sticky-column)' as any,
         backgroundColor: 'var(--sticky-column-bg)',
-        border: '1px solid var(--sticky-column-border)',
+        border: 'none',
         color: 'var(--sticky-column-text)',
         ...style,
       }}

@@ -89,6 +89,7 @@ export function WorkCategoryRow({
   const timelineWidth = dates.length * dateColumnWidth;
   const weekendBackground = "var(--calendar-weekend-bg)";
   const holidayBackground = "var(--calendar-holiday-bg)";
+  const horizontalBorderColor = "var(--calendar-grid-line-soft)";
 
   const CELL_BORDER_WIDTH = 1;
 
@@ -211,7 +212,11 @@ export function WorkCategoryRow({
                 width: `${dateColumnWidth}px`,
                 height: '100%',
                 backgroundColor,
-                border: `1px solid ${borderColor}`,
+                border: 'none',
+                borderLeft: `1px solid ${borderColor}`,
+                borderRight: `1px solid ${borderColor}`,
+                borderTop: `1px solid ${horizontalBorderColor}`,
+                borderBottom: `1px solid ${horizontalBorderColor}`,
                 overflow: 'visible',
               }}
             >

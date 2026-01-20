@@ -72,7 +72,7 @@ export const PlanningTableHeader = memo(function PlanningTableHeader({
         style={{
           ...cellStyle,
           backgroundColor: 'var(--sticky-corner-bg)',
-          border: `${CELL_BORDER_WIDTH}px solid var(--sticky-corner-border)`,
+          border: `none`,
           color: 'var(--sticky-corner-text)',
         }}
       >
@@ -84,7 +84,7 @@ export const PlanningTableHeader = memo(function PlanningTableHeader({
         style={{
           ...cellStyle,
           backgroundColor: 'var(--sticky-corner-bg)',
-          border: `${CELL_BORDER_WIDTH}px solid var(--sticky-corner-border)`,
+          border: `none`,
           color: 'var(--sticky-corner-text)',
         }}
       >
@@ -96,7 +96,7 @@ export const PlanningTableHeader = memo(function PlanningTableHeader({
         style={{
           ...cellStyle,
           backgroundColor: 'var(--sticky-corner-bg)',
-          border: `${CELL_BORDER_WIDTH}px solid var(--sticky-corner-border)`,
+          border: `none`,
           color: 'var(--sticky-corner-text)',
         }}
       >
@@ -111,7 +111,7 @@ export const PlanningTableHeader = memo(function PlanningTableHeader({
         style={{
           ...cellStyle,
           backgroundColor: 'var(--sticky-corner-bg)',
-          border: `${CELL_BORDER_WIDTH}px solid var(--sticky-corner-border)`,
+          border: `none`,
           color: 'var(--sticky-corner-text)',
         }}
       >
@@ -126,7 +126,7 @@ export const PlanningTableHeader = memo(function PlanningTableHeader({
         style={{
           ...cellStyle,
           backgroundColor: 'var(--sticky-corner-bg)',
-          border: `${CELL_BORDER_WIDTH}px solid var(--sticky-corner-border)`,
+          border: `none`,
           color: 'var(--sticky-corner-text)',
         }}
       >
