@@ -187,23 +187,25 @@ export function LocationFilter({
   const handleAddTag = () => {
     const trimmedName = newTagName.trim();
     if (!trimmedName) {
-      setTagError("Tag name cannot be empty.");
+      setTagError("Group name cannot be empty.");
       return;
     }
     if (trimmedName.length > TAG_NAME_MAX_LENGTH) {
-      setTagError(`Tag name must be ${TAG_NAME_MAX_LENGTH} characters or fewer.`);
+      setTagError(`Group name must be ${TAG_NAME_MAX_LENGTH} characters or fewer.`);
       return;
     }
     const existingTag = tagStore.tags.find(
       (tag) => tag.toLowerCase() === trimmedName.toLowerCase()
     );
     if (existingTag) {
-      setTagError("Tag name already exists.");
+      setTagError("Group name already exists.");
       return;
     }
+    // Create new group with currently selected locations
+    const initialLocationIds = Array.from(selectedLocationIds);
     setTagStore((prev) => ({
       tags: [...prev.tags, trimmedName],
-      byTag: { ...prev.byTag, [trimmedName]: [] },
+      byTag: { ...prev.byTag, [trimmedName]: initialLocationIds },
     }));
     setNewTagName("");
     setTagError(null);
@@ -218,30 +220,13 @@ export function LocationFilter({
     });
   };
 
-  const handleAssignSelectedToTag = (tagName: string) => {
+  const handleUpdateTagLocations = (tagName: string) => {
+    // Update group to match current selection
     if (selectedLocationIds.size === 0) return;
-    setTagStore((prev) => {
-      const existing = new Set(prev.byTag[tagName] || []);
-      for (const id of selectedLocationIds) {
-        existing.add(id);
-      }
-      return {
-        ...prev,
-        byTag: { ...prev.byTag, [tagName]: Array.from(existing) },
-      };
-    });
-  };
-
-  const handleRemoveSelectedFromTag = (tagName: string) => {
-    if (selectedLocationIds.size === 0) return;
-    setTagStore((prev) => {
-      const current = prev.byTag[tagName] || [];
-      const nextIds = current.filter((id) => !selectedLocationIds.has(id));
-      return {
-        ...prev,
-        byTag: { ...prev.byTag, [tagName]: nextIds },
-      };
-    });
+    setTagStore((prev) => ({
+      ...prev,
+      byTag: { ...prev.byTag, [tagName]: Array.from(selectedLocationIds) },
+    }));
   };
 
   // Keyboard navigation handler
@@ -315,154 +300,130 @@ export function LocationFilter({
             maxHeight: "420px",
             overflow: "hidden",
             zIndex: "var(--z-dropdown-panel)" as any,
+            display: "flex",
+            flexDirection: "column",
           }}
         >
-          <div
-            role="listbox"
-            aria-multiselectable="true"
-            onKeyDown={handleKeyDown}
-            style={{
-              maxHeight: "400px",
-              overflowY: "auto",
-            }}
-          >
+          {/* Main content area - side by side when expanded */}
+          <div style={{ display: "flex", flex: 1, minHeight: 0, maxHeight: "360px" }}>
+            {/* Left panel - Locations */}
             <div
+              role="listbox"
+              aria-multiselectable="true"
+              onKeyDown={handleKeyDown}
               style={{
-                position: "sticky",
-                top: 0,
-                zIndex: 1,
-                backgroundColor: "var(--surface-default)",
-              }}
-            >
-            {/* Search Input */}
-            <div
-              style={{
-                  padding: "var(--space-sm)",
-                backgroundColor: "var(--surface-default)",
-              }}
-            >
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search locations..."
-                style={{
-                  width: "100%",
-                  padding: "8px 12px",
-                  fontSize: "var(--font-size-sm)",
-                  border: "var(--border-width-thin) solid var(--border-primary)",
-                  borderRadius: "var(--radius-full)",
-                  boxSizing: "border-box",
-                  outline: "none",
-                  backgroundColor: "var(--bg-secondary)",
-                  color: "var(--text-primary)",
-                  transition: "border-color var(--transition-fast)",
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = "var(--interactive-focus)";
-                  e.currentTarget.style.boxShadow = "0 0 0 3px var(--interactive-focus-bg)";
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = "var(--border-primary)";
-                  e.currentTarget.style.boxShadow = "none";
-                }}
-              />
-              {searchQuery && (
-                <div
-                  style={{
-                    fontSize: "var(--font-size-xs)",
-                    color: "var(--text-tertiary)",
-                      marginTop: "var(--space-xs)",
-                    paddingLeft: "var(--space-xs)",
-                  }}
-                >
-                  Showing {filteredLocations.length} of {locations.length} locations
-                </div>
-              )}
-            </div>
-
-            {/* Select All Option */}
-            <div
-              style={{
+                flex: tagsExpanded ? "0 0 280px" : "1 1 auto",
                 display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                  padding: "10px var(--space-sm)",
-                  borderBottom: "var(--border-width-thin) solid var(--border-primary)",
-                backgroundColor: "var(--surface-default)",
-                color: "var(--text-primary)",
-                gap: "var(--space-sm)",
+                flexDirection: "column",
+                minHeight: 0,
+                overflowY: "auto",
+                borderRight: tagsExpanded ? "var(--border-width-thin) solid var(--border-primary)" : "none",
               }}
             >
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  cursor: "pointer",
-                  fontSize: "var(--font-size-sm)",
-                  fontWeight: "var(--font-weight-semibold)",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={allSelected}
-                  tabIndex={-1}
-                  ref={(input) => {
-                    if (input) {
-                      input.indeterminate = someSelected;
-                    }
-                  }}
-                  onChange={toggleAll}
-                  style={{
-                    marginRight: "var(--space-sm)",
-                    cursor: "pointer",
-                    width: "16px",
-                    height: "16px",
-                  }}
-                  aria-label="Select all locations"
-                />
-                <span>All Locations</span>
-              </label>
-              <button
-                type="button"
-                onClick={() => setTagsExpanded((prev) => !prev)}
-                tabIndex={-1}
-                style={{
-                  border: "var(--border-width-thin) solid var(--border-primary)",
-                  background: "var(--surface-default)",
-                  padding: "4px 10px",
-                  borderRadius: "var(--radius-full)",
-                  cursor: "pointer",
-                  fontSize: "var(--font-size-xs)",
-                  color: "var(--text-secondary)",
-                  transition: "background-color var(--transition-fast)",
-                }}
-                aria-label={tagsExpanded ? "Collapse tags" : "Expand tags"}
-              >
-                Tags {tagsExpanded ? "▾" : "▸"}
-              </button>
-            </div>
-          </div>
+              {/* Sticky header */}
+              <div style={{ position: "sticky", top: 0, zIndex: 1, backgroundColor: "var(--surface-default)" }}>
+                {/* Search Input */}
+                <div style={{ padding: "var(--space-sm)", backgroundColor: "var(--surface-default)" }}>
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search locations..."
+                    style={{
+                      width: "100%",
+                      padding: "8px 12px",
+                      fontSize: "var(--font-size-sm)",
+                      border: "var(--border-width-thin) solid var(--border-primary)",
+                      borderRadius: "var(--radius-full)",
+                      boxSizing: "border-box",
+                      outline: "none",
+                      backgroundColor: "var(--bg-secondary)",
+                      color: "var(--text-primary)",
+                      transition: "border-color var(--transition-fast)",
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = "var(--interactive-focus)";
+                      e.currentTarget.style.boxShadow = "0 0 0 3px var(--interactive-focus-bg)";
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = "var(--border-primary)";
+                      e.currentTarget.style.boxShadow = "none";
+                    }}
+                  />
+                  {searchQuery && (
+                    <div style={{ fontSize: "var(--font-size-xs)", color: "var(--text-tertiary)", marginTop: "var(--space-xs)", paddingLeft: "var(--space-xs)" }}>
+                      Showing {filteredLocations.length} of {locations.length} locations
+                    </div>
+                  )}
+                </div>
 
-          <div style={{ display: "flex", width: "100%", flexWrap: "wrap" }}>
-            {/* Location column */}
-            <div
-              style={{
-                flex: tagsExpanded ? "1 1 260px" : "1 1 100%",
-                minWidth: "240px",
-              }}
-            >
-              {/* Individual Location Checkboxes */}
-              {filteredLocations.length === 0 ? (
+                {/* Select All Option */}
                 <div
                   style={{
-                      padding: "var(--space-lg) var(--space-sm)",
-                    textAlign: "center",
-                    fontSize: "var(--font-size-sm)",
-                    color: "var(--text-tertiary)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "10px var(--space-sm)",
+                    borderBottom: "var(--border-width-thin) solid var(--border-primary)",
+                    backgroundColor: "var(--surface-default)",
+                    color: "var(--text-primary)",
+                    gap: "var(--space-sm)",
                   }}
                 >
+                  <label style={{ display: "flex", alignItems: "center", cursor: "pointer", fontSize: "var(--font-size-sm)", fontWeight: "var(--font-weight-semibold)" }}>
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      tabIndex={-1}
+                      ref={(input) => { if (input) input.indeterminate = someSelected; }}
+                      onChange={toggleAll}
+                      style={{ marginRight: "var(--space-sm)", cursor: "pointer", width: "16px", height: "16px" }}
+                      aria-label="Select all locations"
+                    />
+                    <span>All Locations</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setTagsExpanded((prev) => !prev)}
+                    tabIndex={-1}
+                    style={{
+                      border: "var(--border-width-thin) solid var(--border-primary)",
+                      background: tagsExpanded ? "var(--btn-selected-bg)" : "var(--surface-default)",
+                      padding: "4px 10px",
+                      borderRadius: "var(--radius-full)",
+                      cursor: "pointer",
+                      fontSize: "var(--font-size-xs)",
+                      color: tagsExpanded ? "var(--btn-selected-text)" : "var(--text-secondary)",
+                      transition: "all var(--transition-fast)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "var(--space-xs)",
+                    }}
+                    aria-label={tagsExpanded ? "Collapse groups" : "Expand groups"}
+                  >
+                    {tagGroups.length > 0 && (
+                      <span style={{
+                        backgroundColor: tagsExpanded ? "rgba(255,255,255,0.2)" : "var(--text-tertiary)",
+                        color: tagsExpanded ? "var(--btn-selected-text)" : "var(--text-inverse)",
+                        borderRadius: "var(--radius-full)",
+                        padding: "0 6px",
+                        fontSize: "10px",
+                        fontWeight: "var(--font-weight-semibold)",
+                        minWidth: "18px",
+                        textAlign: "center",
+                      }}>
+                        {tagGroups.length}
+                      </span>
+                    )}
+                    Groups {tagsExpanded ? "◂" : "▸"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Location list */}
+              {filteredLocations.length === 0 ? (
+                <div style={{ padding: "var(--space-lg) var(--space-sm)", textAlign: "center", fontSize: "var(--font-size-sm)", color: "var(--text-tertiary)" }}>
                   No locations match &quot;{searchQuery}&quot;
                 </div>
               ) : (
@@ -472,318 +433,241 @@ export function LocationFilter({
                   return (
                     <label
                       key={location.id}
-                      ref={(el) => {
-                        if (el) {
-                          listItemRefs.current.set(index, el);
-                        } else {
-                          listItemRefs.current.delete(index);
-                        }
-                      }}
+                      ref={(el) => { if (el) listItemRefs.current.set(index, el); else listItemRefs.current.delete(index); }}
                       style={{
                         display: "flex",
                         alignItems: "center",
                         padding: "8px var(--space-sm)",
                         cursor: "pointer",
                         fontSize: "var(--font-size-sm)",
-                        backgroundColor: isFocused ? "var(--surface-hover)" : isChecked ? "var(--surface-hover)" : "var(--surface-default)",
+                        backgroundColor: isFocused || isChecked ? "var(--surface-hover)" : "var(--surface-default)",
                         color: "var(--text-primary)",
                         transition: "background-color var(--transition-fast)",
                         borderLeft: isChecked ? "2px solid var(--btn-selected-bg)" : "2px solid transparent",
                       }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = "var(--surface-hover)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = isChecked ? "var(--surface-hover)" : "var(--surface-default)";
-                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--surface-hover)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = isChecked ? "var(--surface-hover)" : "var(--surface-default)"; }}
                     >
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    tabIndex={-1}
-                    onChange={() => toggleLocation(location.id)}
-                    style={{
-                      marginRight: "var(--space-sm)",
-                      cursor: "pointer",
-                      width: "16px",
-                      height: "16px",
-                    }}
-                    aria-label={`Select ${location.name}`}
-                  />
-                  <span style={{ flex: "1 1 auto", minWidth: 0 }}>{location.name}</span>
-                  {tagsByLocationId.has(location.id) && (
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: "var(--space-xxs)",
-                        marginLeft: "var(--space-sm)",
-                        justifyContent: "flex-end",
-                        flex: "0 0 auto",
-                      }}
-                    >
-                      {(() => {
-                        const tags = tagsByLocationId.get(location.id)!;
-                        const visibleTags = tags.slice(0, 3);
-                        const overflowCount = tags.length - visibleTags.length;
-                        return (
-                          <>
-                            {visibleTags.map((tag) => (
-                              <span
-                                key={tag}
-                                style={{
-                                  fontSize: "10px",
-                                  padding: "2px 6px",
-                                  borderRadius: "var(--radius-full)",
-                                  border: "var(--border-width-thin) solid var(--border-primary)",
-                                  backgroundColor: "var(--surface-default)",
-                                  color: "var(--text-tertiary)",
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                            {overflowCount > 0 && (
-                              <span
-                                style={{
-                                  fontSize: "10px",
-                                  padding: "2px 6px",
-                                  borderRadius: "var(--radius-full)",
-                                  border: "var(--border-width-thin) dashed var(--border-primary)",
-                                  backgroundColor: "var(--bg-secondary)",
-                                  color: "var(--text-tertiary)",
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                +{overflowCount}
-                              </span>
-                            )}
-                          </>
-                        );
-                      })()}
-                    </div>
-                  )}
-                </label>
-              );
-            })
-          )}
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        tabIndex={-1}
+                        onChange={() => toggleLocation(location.id)}
+                        style={{ marginRight: "var(--space-sm)", cursor: "pointer", width: "16px", height: "16px" }}
+                        aria-label={`Select ${location.name}`}
+                      />
+                      <span style={{ flex: "1 1 auto", minWidth: 0 }}>{location.name}</span>
+                      {!tagsExpanded && tagsByLocationId.has(location.id) && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-xxs)", marginLeft: "var(--space-sm)", justifyContent: "flex-end", flex: "0 0 auto" }}>
+                          {(() => {
+                            const tags = tagsByLocationId.get(location.id)!;
+                            const visibleTags = tags.slice(0, 2);
+                            const overflowCount = tags.length - visibleTags.length;
+                            return (
+                              <>
+                                {visibleTags.map((tag) => (
+                                  <span key={tag} style={{ fontSize: "10px", padding: "2px 6px", borderRadius: "var(--radius-full)", border: "var(--border-width-thin) solid var(--border-primary)", backgroundColor: "var(--surface-default)", color: "var(--text-tertiary)", whiteSpace: "nowrap" }}>
+                                    {tag}
+                                  </span>
+                                ))}
+                                {overflowCount > 0 && (
+                                  <span style={{ fontSize: "10px", padding: "2px 6px", borderRadius: "var(--radius-full)", border: "var(--border-width-thin) dashed var(--border-primary)", backgroundColor: "var(--bg-secondary)", color: "var(--text-tertiary)", whiteSpace: "nowrap" }}>
+                                    +{overflowCount}
+                                  </span>
+                                )}
+                              </>
+                            );
+                          })()}
+                        </div>
+                      )}
+                    </label>
+                  );
+                })
+              )}
             </div>
 
-            {/* Tags column */}
-            {tagsExpanded ? (
-              <div
-                style={{
-                  flex: "1 1 220px",
-                  minWidth: "200px",
-                  padding: "var(--space-sm)",
-                    borderLeft: "var(--border-width-thin) solid var(--border-primary)",
-                  backgroundColor: "var(--bg-secondary)",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "var(--space-sm)",
-                }}
-              >
-                <div style={{ fontSize: "var(--font-size-xs)", color: "var(--text-tertiary)" }}>
-                  Use selected locations to add or remove tags.
-                </div>
-                <div style={{ display: "flex", gap: "var(--space-xs)" }}>
-                  <input
-                    type="text"
-                    value={newTagName}
-                    tabIndex={-1}
-                    placeholder="New tag"
-                    onChange={(e) => {
-                      setNewTagName(e.target.value);
-                      if (tagError) {
-                        setTagError(null);
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleAddTag();
-                      }
-                    }}
-                    style={{
-                      flex: 1,
-                      padding: "6px var(--space-sm)",
-                      fontSize: "var(--font-size-xs-sm)",
-                      border: "var(--border-width-thin) solid var(--border-primary)",
-                      borderRadius: "var(--radius-full)",
-                      boxSizing: "border-box",
+            {/* Right panel - Groups (always visible when expanded) */}
+            {tagsExpanded && (
+              <div style={{ flex: "1 1 240px", display: "flex", flexDirection: "column", backgroundColor: "var(--bg-secondary)", minHeight: 0 }}>
+                {/* Groups header */}
+                <div style={{ padding: "var(--space-sm)", borderBottom: "var(--border-width-thin) solid var(--border-primary)", backgroundColor: "var(--bg-secondary)" }}>
+                  <div style={{ fontSize: "var(--font-size-xs)", fontWeight: "var(--font-weight-semibold)", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "var(--space-sm)" }}>
+                    Location Groups
+                  </div>
+                  <div style={{ display: "flex", gap: "var(--space-xs)" }}>
+                    <input
+                      type="text"
+                      value={newTagName}
+                      tabIndex={-1}
+                      placeholder="New group..."
+                      onChange={(e) => { setNewTagName(e.target.value); if (tagError) setTagError(null); }}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); handleAddTag(); } }}
+                      style={{
+                        flex: 1,
+                        padding: "6px 10px",
+                        fontSize: "var(--font-size-xs)",
+                        border: "var(--border-width-thin) solid var(--border-primary)",
+                        borderRadius: "var(--radius-full)",
                         outline: "none",
                         backgroundColor: "var(--surface-default)",
                         color: "var(--text-primary)",
                         transition: "border-color var(--transition-fast)",
                       }}
-                      onFocus={(e) => {
-                        e.currentTarget.style.borderColor = "var(--interactive-focus)";
-                        e.currentTarget.style.boxShadow = "0 0 0 3px var(--interactive-focus-bg)";
+                      onFocus={(e) => { e.currentTarget.style.borderColor = "var(--interactive-focus)"; e.currentTarget.style.boxShadow = "0 0 0 2px var(--interactive-focus-bg)"; }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border-primary)"; e.currentTarget.style.boxShadow = "none"; }}
+                    />
+                    <button
+                      onClick={handleAddTag}
+                      tabIndex={-1}
+                      disabled={newTagName.trim().length === 0}
+                      style={{
+                        padding: "6px 12px",
+                        backgroundColor: newTagName.trim().length === 0 ? "var(--surface-default)" : "var(--btn-selected-bg)",
+                        border: "none",
+                        borderRadius: "var(--radius-full)",
+                        cursor: newTagName.trim().length === 0 ? "not-allowed" : "pointer",
+                        fontSize: "var(--font-size-xs)",
+                        fontWeight: "var(--font-weight-medium)",
+                        color: newTagName.trim().length === 0 ? "var(--text-tertiary)" : "var(--btn-selected-text)",
+                        opacity: newTagName.trim().length === 0 ? 0.6 : 1,
+                        transition: "all var(--transition-fast)",
                       }}
-                      onBlur={(e) => {
-                        e.currentTarget.style.borderColor = "var(--border-primary)";
-                        e.currentTarget.style.boxShadow = "none";
-                      }}
-                  />
-                  <button
-                    onClick={handleAddTag}
-                    tabIndex={-1}
-                    disabled={newTagName.trim().length === 0}
-                    style={{
-                      padding: "6px var(--space-sm)",
-                      backgroundColor: "var(--surface-default)",
-                      border: "var(--border-width-thin) solid var(--border-primary)",
-                      borderRadius: "var(--radius-full)",
-                      cursor: newTagName.trim().length === 0 ? "not-allowed" : "pointer",
-                      fontSize: "var(--font-size-xs-sm)",
-                      color: "var(--text-primary)",
-                      opacity: newTagName.trim().length === 0 ? 0.5 : 1,
-                      transition: "background-color var(--transition-fast)",
-                    }}
-                  >
-                    Add
-                  </button>
-                </div>
-                {tagError && (
-                  <div style={{ fontSize: "var(--font-size-xs)", color: "var(--status-error)" }}>
-                    {tagError}
+                    >
+                      +
+                    </button>
                   </div>
-                )}
-                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-xs)" }}>
-                  {tagGroups.length === 0 ? (
-                    <div style={{ fontSize: "var(--font-size-xs)", color: "var(--text-tertiary)" }}>
-                      No tags yet.
+                  {tagError && (
+                    <div style={{ marginTop: "var(--space-xs)", fontSize: "var(--font-size-xs)", color: "var(--status-error)" }}>
+                      {tagError}
                     </div>
-                  ) : (
-                    tagGroups.map((tag) => {
-                      const tagCount = tag.locationIds.length;
-                      const isTagSelected =
-                        tagCount > 0 &&
-                        selectedLocationIds.size === tagCount &&
-                        tag.locationIds.every((id) => selectedLocationIds.has(id));
-                      return (
-                        <div
-                          key={tag.name}
-                          style={{
-                            border: "var(--border-width-thin) solid var(--border-primary)",
-                            borderRadius: "var(--radius-lg)",
-                            padding: "var(--space-xs)",
-                            backgroundColor: "var(--surface-default)",
-                            borderLeft: isTagSelected ? "2px solid var(--btn-selected-bg)" : "2px solid transparent",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "var(--space-xxs)",
-                          }}
-                        >
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "var(--space-xs)" }}>
-                            <span style={{ fontSize: "var(--font-size-xs-sm)", fontWeight: "var(--font-weight-semibold)", color: "var(--text-primary)", wordBreak: "break-word" }}>
-                              {tag.name}
-                            </span>
-                            <button
-                              onClick={() => handleRemoveTag(tag.name)}
-                              tabIndex={-1}
-                              style={{
-                                padding: "2px var(--space-xs)",
-                                backgroundColor: "transparent",
-                                border: "var(--border-width-thin) solid var(--border-primary)",
-                                borderRadius: "var(--radius-full)",
-                                cursor: "pointer",
-                                fontSize: "10px",
-                                color: "var(--text-tertiary)",
-                                transition: "background-color var(--transition-fast)",
-                              }}
-                            >
-                              X
-                            </button>
-                          </div>
-                          <div style={{ fontSize: "10px", color: "var(--text-tertiary)" }}>
-                            {tagCount} location{tagCount === 1 ? "" : "s"}
-                          </div>
-                          <div style={{ display: "flex", gap: "var(--space-xxs)" }}>
-                            <button
-                              onClick={() => handleAssignSelectedToTag(tag.name)}
-                              tabIndex={-1}
-                              disabled={selectedLocationCount === 0}
-                              style={{
-                                flex: 1,
-                                padding: "4px var(--space-xs)",
-                                backgroundColor: "var(--surface-default)",
-                                border: "var(--border-width-thin) solid var(--border-primary)",
-                                borderRadius: "var(--radius-full)",
-                                cursor: selectedLocationCount === 0 ? "not-allowed" : "pointer",
-                                fontSize: "10px",
-                                color: "var(--text-primary)",
-                                opacity: selectedLocationCount === 0 ? 0.5 : 1,
-                                transition: "background-color var(--transition-fast)",
-                              }}
-                            >
-                              Add Selected
-                            </button>
-                            <button
-                              onClick={() => handleRemoveSelectedFromTag(tag.name)}
-                              tabIndex={-1}
-                              disabled={selectedLocationCount === 0}
-                              style={{
-                                flex: 1,
-                                padding: "4px var(--space-xs)",
-                                backgroundColor: "var(--surface-default)",
-                                border: "var(--border-width-thin) solid var(--border-primary)",
-                                borderRadius: "var(--radius-full)",
-                                cursor: selectedLocationCount === 0 ? "not-allowed" : "pointer",
-                                fontSize: "10px",
-                                color: "var(--text-primary)",
-                                opacity: selectedLocationCount === 0 ? 0.5 : 1,
-                                transition: "background-color var(--transition-fast)",
-                              }}
-                            >
-                              Remove Selected
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })
                   )}
                 </div>
+
+                {/* Groups list */}
+                <div style={{ flex: 1, overflowY: "auto", padding: "var(--space-sm)" }}>
+                  {tagGroups.length === 0 ? (
+                    <div style={{ fontSize: "var(--font-size-xs)", color: "var(--text-tertiary)", textAlign: "center", padding: "var(--space-lg) var(--space-sm)" }}>
+                      {selectedLocationCount > 0
+                        ? `Type a name and click + to save ${selectedLocationCount} selected location${selectedLocationCount === 1 ? "" : "s"} as a group`
+                        : "Select locations, then create a group to save them"
+                      }
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-xs)" }}>
+                      {tagGroups.map((tag) => {
+                        const tagCount = tag.locationIds.length;
+                        const isGroupSelected = tagCount > 0 && tag.locationIds.every((id) => selectedLocationIds.has(id));
+                        const isExactMatch = isGroupSelected && selectedLocationIds.size === tagCount;
+                        const canUpdate = selectedLocationCount > 0 && !isExactMatch;
+
+                        return (
+                          <div
+                            key={tag.name}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              padding: "8px 10px",
+                              backgroundColor: isExactMatch ? "var(--btn-selected-bg)" : "var(--surface-default)",
+                              border: `var(--border-width-thin) solid ${isExactMatch ? "var(--btn-selected-bg)" : "var(--border-primary)"}`,
+                              borderRadius: "var(--radius-md)",
+                              cursor: tagCount > 0 ? "pointer" : "default",
+                              transition: "all var(--transition-fast)",
+                            }}
+                            onClick={() => { if (tagCount > 0) onSelectionChange(new Set(tag.locationIds)); }}
+                            onMouseEnter={(e) => { if (!isExactMatch && tagCount > 0) e.currentTarget.style.backgroundColor = "var(--surface-hover)"; }}
+                            onMouseLeave={(e) => { if (!isExactMatch) e.currentTarget.style.backgroundColor = "var(--surface-default)"; }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-sm)", minWidth: 0, flex: 1 }}>
+                              <span style={{ fontSize: "var(--font-size-sm)", fontWeight: "var(--font-weight-medium)", color: isExactMatch ? "var(--btn-selected-text)" : "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {tag.name}
+                              </span>
+                              <span style={{ fontSize: "var(--font-size-xs)", color: isExactMatch ? "var(--btn-selected-text)" : "var(--text-tertiary)", opacity: 0.8 }}>
+                                {tagCount}
+                              </span>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                              {canUpdate && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleUpdateTagLocations(tag.name); }}
+                                  tabIndex={-1}
+                                  title={`Update to current selection (${selectedLocationCount})`}
+                                  style={{
+                                    padding: "3px 8px",
+                                    backgroundColor: "var(--status-info)",
+                                    border: "none",
+                                    borderRadius: "var(--radius-full)",
+                                    cursor: "pointer",
+                                    fontSize: "10px",
+                                    color: "white",
+                                    transition: "opacity var(--transition-fast)",
+                                  }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.85"; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
+                                >
+                                  Save
+                                </button>
+                              )}
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleRemoveTag(tag.name); }}
+                                tabIndex={-1}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  width: "20px",
+                                  height: "20px",
+                                  padding: 0,
+                                  backgroundColor: "transparent",
+                                  border: "none",
+                                  borderRadius: "var(--radius-full)",
+                                  cursor: "pointer",
+                                  fontSize: "14px",
+                                  color: isExactMatch ? "var(--btn-selected-text)" : "var(--text-tertiary)",
+                                  opacity: 0.6,
+                                  transition: "opacity var(--transition-fast)",
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.opacity = "1"; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.opacity = "0.6"; }}
+                                aria-label={`Delete ${tag.name} group`}
+                              >
+                                ×
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Selection hint at bottom */}
+                {selectedLocationCount > 0 && tagGroups.length > 0 && (
+                  <div style={{ padding: "var(--space-xs) var(--space-sm)", borderTop: "var(--border-width-thin) solid var(--border-primary)", fontSize: "var(--font-size-xs)", color: "var(--text-tertiary)", backgroundColor: "var(--bg-tertiary)" }}>
+                    {selectedLocationCount} selected
+                  </div>
+                )}
               </div>
-            ) : null}
+            )}
           </div>
 
           {/* Action Buttons */}
           <div
             style={{
-              position: "sticky",
-              bottom: 0,
               display: "flex",
               justifyContent: "space-between",
-                padding: "var(--space-sm)",
-                borderTop: "var(--border-width-thin) solid var(--border-primary)",
+              padding: "var(--space-sm)",
+              borderTop: "var(--border-width-thin) solid var(--border-primary)",
               backgroundColor: "var(--surface-default)",
               gap: "var(--space-sm)",
             }}
           >
-              <Button
-              onClick={() => {
-                onSelectionChange(new Set());
-              }}
-              tabIndex={-1}
-                variant="ghost"
-                size="sm"
-                style={{ flex: 1 }}
-            >
+            <Button onClick={() => onSelectionChange(new Set())} tabIndex={-1} variant="ghost" size="sm" style={{ flex: 1 }}>
               Clear
-              </Button>
-              <Button
-              onClick={() => setIsOpen(false)}
-              tabIndex={-1}
-                variant="chip-selected"
-                size="sm"
-                style={{ flex: 1 }}
-            >
-                Done
-              </Button>
-            </div>
+            </Button>
+            <Button onClick={() => setIsOpen(false)} tabIndex={-1} variant="chip-selected" size="sm" style={{ flex: 1 }}>
+              Done
+            </Button>
           </div>
         </div>
       )}
