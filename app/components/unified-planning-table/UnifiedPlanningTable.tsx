@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { PlanningTableHeader } from './PlanningTableHeader';
 import { CalendarHeader } from './CalendarHeader';
 import { CalendarLocationRow } from './rows/CalendarLocationRow';
@@ -92,6 +92,14 @@ export function UnifiedPlanningTable({
   const datesRef = useRef(dates);
   const prevDatesRef = useRef<string[]>(dates);
 
+  // Track which event is being hovered for cross-location highlighting
+  const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
+
+  // Callback for CalendarLocationRow to report hovered event
+  const handleEventHover = useCallback((eventId: string | null) => {
+    setHoveredEventId(eventId);
+  }, []);
+
   const holidayDates = useMemo(() => getHolidayDatesForRange(dates), [dates]);
 
   // Build timeline layout
@@ -126,6 +134,13 @@ export function UnifiedPlanningTable({
     }
     return map;
   }, [eventLocations]);
+
+  // Compute which location IDs should be highlighted based on hovered event
+  const highlightedLocationIds = useMemo(() => {
+    if (!hoveredEventId) return new Set<string>();
+    const locationIds = eventLocationMap.get(hoveredEventId) || [];
+    return new Set(locationIds);
+  }, [hoveredEventId, eventLocationMap]);
 
   // Group events by location for calendar rows
   const locationMap = new Map(locations.map((loc) => [loc.id, loc]));
@@ -333,6 +348,8 @@ export function UnifiedPlanningTable({
                   timeline={timeline}
                   tooltipsEnabled={tooltipsEnabled}
                   rowIndex={index}
+                  isHighlighted={highlightedLocationIds.has(location.id)}
+                  onEventHover={handleEventHover}
                 />
               ))}
               {/* Today indicator line inside calendar section - above calendar content (z-index 1) but below sticky columns (z-index 3) */}

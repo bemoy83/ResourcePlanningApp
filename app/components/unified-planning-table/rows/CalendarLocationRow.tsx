@@ -5,6 +5,7 @@ import { StickyLeftCell } from '../shared/StickyLeftCell';
 import { LEFT_COLUMNS, calculateLeftColumnOffsets } from '../../layoutConstants';
 import { buildDateFlags } from '../../../utils/date';
 import { Tooltip, TooltipState } from '../../tooltip';
+import { LocationBadge } from '../../shared/LocationBadge';
 
 interface CalendarSpan {
   eventId: string;
@@ -103,6 +104,8 @@ interface CalendarLocationRowProps {
   timeline: TimelineLayout;
   tooltipsEnabled?: boolean;
   rowIndex?: number;
+  isHighlighted?: boolean; // Whether this location should be highlighted (e.g., when hovering a related event)
+  onEventHover?: (eventId: string | null) => void; // Callback when hovering over an event span
 }
 
 const CELL_BORDER_WIDTH = 1;
@@ -119,10 +122,13 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
   timeline,
   tooltipsEnabled = true,
   rowIndex = 0,
+  isHighlighted = false,
+  onEventHover,
 }: CalendarLocationRowProps) {
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const tooltipShowTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const highlightTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const leftColumnOffsets = calculateLeftColumnOffsets(LEFT_COLUMNS);
   const timelineWidth = timeline.dates.length * timeline.dateColumnWidth;
@@ -399,6 +405,16 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
       tooltipTimeoutRef.current = null;
     }
 
+    // Notify parent of hovered event for cross-location highlighting (with delay)
+    if (highlightTimeoutRef.current) {
+      clearTimeout(highlightTimeoutRef.current);
+    }
+    if (tooltipsEnabled && onEventHover) {
+      highlightTimeoutRef.current = setTimeout(() => {
+        onEventHover(eventRow.eventId);
+      }, TOOLTIP_DELAY_MS);
+    }
+
     if (!tooltipsEnabled) {
       return;
     }
@@ -453,6 +469,15 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
       tooltipShowTimeoutRef.current = null;
     }
     setTooltip(null);
+
+    // Clear hovered event for cross-location highlighting
+    if (highlightTimeoutRef.current) {
+      clearTimeout(highlightTimeoutRef.current);
+      highlightTimeoutRef.current = null;
+    }
+    if (onEventHover) {
+      onEventHover(null);
+    }
   };
 
   useEffect(() => {
@@ -463,6 +488,9 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
       if (tooltipShowTimeoutRef.current) {
         clearTimeout(tooltipShowTimeoutRef.current);
       }
+      if (highlightTimeoutRef.current) {
+        clearTimeout(highlightTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -472,6 +500,10 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
       if (tooltipShowTimeoutRef.current) {
         clearTimeout(tooltipShowTimeoutRef.current);
         tooltipShowTimeoutRef.current = null;
+      }
+      if (highlightTimeoutRef.current) {
+        clearTimeout(highlightTimeoutRef.current);
+        highlightTimeoutRef.current = null;
       }
     }
   }, [tooltipsEnabled]);
@@ -528,7 +560,9 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
             width: `${timeline.timelineOriginPx}px`,
           }}
         >
-          {location.name}
+          <LocationBadge isHighlighted={isHighlighted}>
+            {location.name}
+          </LocationBadge>
         </StickyLeftCell>
 
         {/* Date cells container */}

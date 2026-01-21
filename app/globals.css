@@ -127,6 +127,10 @@
   --sticky-corner-bg: #f3f4f6;
   --sticky-corner-text: #374151;
   --sticky-corner-border: rgba(0, 0, 0, 0.06);
+
+  /* Location Badge - Highlight state for hover interactions */
+  --location-badge-highlight-bg: #6366f1;
+  --location-badge-highlight-text: #ffffff;
   /* === Spacing === */
   --space-xs: 4px;
   --space-sm: 8px;
@@ -366,6 +370,10 @@
   --sticky-corner-bg: #1c1c1f;
   --sticky-corner-text: #a1a1aa;
   --sticky-corner-border: rgba(255, 255, 255, 0.06);
+
+  /* Location Badge - Highlight state for hover interactions */
+  --location-badge-highlight-bg: #818cf8;
+  --location-badge-highlight-text: #09090b;
 
   /* Shadows - Deeper, more refined */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
