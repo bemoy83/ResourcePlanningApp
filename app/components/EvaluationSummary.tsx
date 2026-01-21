@@ -56,35 +56,35 @@ export function EvaluationSummary({
     : 0;
 
   const metricStyle = {
-    padding: '12px',
-    backgroundColor: '#fff',
-    border: '2px solid #999',
+    padding: 'var(--space-md)',
+    backgroundColor: 'var(--surface-default)',
+    border: 'var(--border-width-thick) solid var(--border-strong)',
   };
 
   const metricLabelStyle = {
-    fontSize: '11px',
-    color: '#333',
-    marginBottom: '4px',
+    fontSize: 'var(--font-size-xs)',
+    color: 'var(--text-secondary)',
+    marginBottom: 'var(--space-xs)',
   };
 
   const metricValueStyle = {
-    fontSize: '18px',
-    fontWeight: 'bold',
-    color: '#000',
+    fontSize: 'var(--font-size-xl)',
+    fontWeight: 'var(--font-weight-bold)',
+    color: 'var(--text-primary)',
   };
 
   return (
     <div style={{
-      padding: '16px',
-      backgroundColor: '#f5f5f5',
-      border: '2px solid #666',
-      marginBottom: '16px',
+      padding: 'var(--space-lg)',
+      backgroundColor: 'var(--bg-secondary)',
+      border: 'var(--border-width-thick) solid var(--border-strong)',
+      marginBottom: 'var(--space-lg)',
     }}>
-      <h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 'bold', color: '#000', borderBottom: '1px solid #999', paddingBottom: '8px' }}>
+      <h3 style={{ margin: '0 0 var(--space-md) 0', fontSize: 'var(--font-size-md)', fontWeight: 'var(--font-weight-bold)', color: 'var(--text-primary)', borderBottom: 'var(--border-width-thin) solid var(--border-strong)', paddingBottom: 'var(--space-sm)' }}>
         Planning Summary
       </h3>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 'var(--space-md)' }}>
         {/* Total Effort */}
         <div style={metricStyle}>
           <div style={metricLabelStyle}>Total Estimated</div>
@@ -100,7 +100,7 @@ export function EvaluationSummary({
           <div style={metricLabelStyle}>Remaining</div>
           <div style={{
             ...metricValueStyle,
-            color: totalRemaining < 0 ? 'red' : totalRemaining > 0 ? 'orange' : 'green',
+            color: totalRemaining < 0 ? 'var(--status-error)' : totalRemaining > 0 ? 'var(--status-warning)' : 'var(--status-success)',
           }}>
             {totalRemaining}h
             {totalRemaining < 0 && ' (over)'}
@@ -113,16 +113,16 @@ export function EvaluationSummary({
             {completionPercentage}%
           </div>
           <div style={{
-            marginTop: '4px',
-            height: '8px',
-            backgroundColor: '#e0e0e0',
-            borderRadius: '4px',
+            marginTop: 'var(--space-xs)',
+            height: 'var(--space-sm)',
+            backgroundColor: 'var(--surface-progress-track)',
+            borderRadius: 'var(--radius-xs)',
             overflow: 'hidden',
           }}>
             <div style={{
               width: `${Math.min(completionPercentage, 100)}%`,
               height: '100%',
-              backgroundColor: completionPercentage >= 100 ? '#4caf50' : '#2196f3',
+              backgroundColor: completionPercentage >= 100 ? 'var(--status-success)' : 'var(--status-info)',
             }} />
           </div>
         </div>
@@ -132,7 +132,7 @@ export function EvaluationSummary({
           <div style={metricLabelStyle}>Work Categories</div>
           <div style={metricValueStyle}>{workCategories.length}</div>
           {categoriesUnderPressure > 0 && (
-            <div style={{ fontSize: '11px', color: '#f57c00', marginTop: '4px' }}>
+            <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--status-warning)', marginTop: 'var(--space-xs)' }}>
               {categoriesUnderPressure} under pressure
             </div>
           )}
@@ -150,7 +150,7 @@ export function EvaluationSummary({
               <div style={metricLabelStyle}>Over-Allocated Days</div>
               <div style={{
                 ...metricValueStyle,
-                color: overAllocatedDays > 0 ? 'red' : 'green',
+                color: overAllocatedDays > 0 ? 'var(--status-error)' : 'var(--status-success)',
               }}>
                 {overAllocatedDays}
               </div>
@@ -160,7 +160,7 @@ export function EvaluationSummary({
               <div style={metricLabelStyle}>Under-Allocated Days</div>
               <div style={{
                 ...metricValueStyle,
-                color: underAllocatedDays > 0 ? 'green' : '#666',
+                color: underAllocatedDays > 0 ? 'var(--status-success)' : 'var(--text-secondary)',
               }}>
                 {underAllocatedDays}
               </div>

@@ -22,11 +22,11 @@ export function SegmentedControl({ children, className, style, ...props }: Segme
         display: "flex",
         alignItems: "center",
         gap: "var(--space-xs)",
-        padding: "4px",
+        padding: "var(--space-xs)",
         backgroundColor: "var(--bg-tertiary)",
         borderRadius: "var(--radius-full)",
         transition: "background-color var(--transition-normal)",
-        minHeight: "36px", // Ensure consistent height across all SegmentedControls
+        minHeight: "36px", // Ensure consistent height across all SegmentedControls (no matching token)
         ...style,
       }}
       {...props}

@@ -770,7 +770,7 @@ export function LocationFilter({
                 onSelectionChange(new Set());
               }}
               tabIndex={-1}
-                variant="chip"
+                variant="ghost"
                 size="sm"
                 style={{ flex: 1 }}
             >

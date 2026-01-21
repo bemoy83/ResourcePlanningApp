@@ -756,7 +756,7 @@ export function UnifiedDateRangePicker({
                 fontSize: "var(--font-size-sm)",
                 textAlign: "left",
                 cursor: "pointer",
-                borderRight: pendingPreset === preset.id ? "2px solid var(--chip-selected-bg)" : "2px solid transparent",
+                borderRight: pendingPreset === preset.id ? "2px solid var(--btn-selected-bg)" : "2px solid transparent",
                 transition: "all var(--transition-fast)",
               }}
             >
@@ -785,7 +785,7 @@ export function UnifiedDateRangePicker({
               fontSize: "var(--font-size-sm)",
               textAlign: "left",
               cursor: "pointer",
-              borderRight: pendingPreset === "year-month" ? "2px solid var(--chip-selected-bg)" : "2px solid transparent",
+              borderRight: pendingPreset === "year-month" ? "2px solid var(--btn-selected-bg)" : "2px solid transparent",
               transition: "all var(--transition-fast)",
             }}
           >
@@ -817,11 +817,11 @@ export function UnifiedDateRangePicker({
                   disabled={availableYears.indexOf(yearPickerYear) <= 0}
                   aria-label="Previous year"
                   style={{
-                    padding: "6px 12px",
-                    border: "var(--border-width-thin) solid var(--border-primary)",
+                    padding: "var(--space-sm) var(--space-md)",
+                    border: "var(--border-width-thin) solid var(--btn-border)",
                     borderRadius: "var(--radius-full)",
-                    backgroundColor: "var(--surface-default)",
-                    color: "var(--text-primary)",
+                    backgroundColor: "var(--btn-bg)",
+                    color: "var(--btn-text)",
                     cursor: availableYears.indexOf(yearPickerYear) <= 0 ? "not-allowed" : "pointer",
                     opacity: availableYears.indexOf(yearPickerYear) <= 0 ? 0.5 : 1,
                     fontSize: "var(--font-size-md)",
@@ -846,11 +846,11 @@ export function UnifiedDateRangePicker({
                   disabled={availableYears.indexOf(yearPickerYear) >= availableYears.length - 1}
                   aria-label="Next year"
                   style={{
-                    padding: "6px 12px",
-                    border: "var(--border-width-thin) solid var(--border-primary)",
+                    padding: "var(--space-sm) var(--space-md)",
+                    border: "var(--border-width-thin) solid var(--btn-border)",
                     borderRadius: "var(--radius-full)",
-                    backgroundColor: "var(--surface-default)",
-                    color: "var(--text-primary)",
+                    backgroundColor: "var(--btn-bg)",
+                    color: "var(--btn-text)",
                     cursor: availableYears.indexOf(yearPickerYear) >= availableYears.length - 1 ? "not-allowed" : "pointer",
                     opacity: availableYears.indexOf(yearPickerYear) >= availableYears.length - 1 ? 0.5 : 1,
                     fontSize: "var(--font-size-md)",
@@ -875,11 +875,11 @@ export function UnifiedDateRangePicker({
                       key={label}
                       onClick={() => handleMonthSelect(monthValue)}
                       style={{
-                        padding: "10px",
-                        border: "var(--border-width-thin) solid var(--border-primary)",
+                        padding: "var(--space-10)",
+                        border: isSelected ? "var(--border-width-thin) solid var(--btn-selected-border)" : "var(--border-width-thin) solid var(--btn-border)",
                         borderRadius: "var(--radius-full)",
-                        backgroundColor: isSelected ? "var(--chip-selected-bg)" : "var(--surface-default)",
-                        color: isSelected ? "var(--chip-selected-text)" : "var(--text-primary)",
+                        backgroundColor: isSelected ? "var(--btn-selected-bg)" : "var(--btn-bg)",
+                        color: isSelected ? "var(--btn-selected-text)" : "var(--btn-text)",
                         fontWeight: isSelected ? "var(--font-weight-semibold)" : "var(--font-weight-medium)",
                         fontSize: "var(--font-size-sm)",
                         cursor: "pointer",
@@ -897,9 +897,9 @@ export function UnifiedDateRangePicker({
                 style={{
                   marginTop: "var(--space-lg)",
                   padding: "var(--space-sm) var(--space-lg)",
-                  border: "var(--border-width-thin) solid var(--border-primary)",
+                  border: "var(--border-width-thin) solid var(--btn-border)",
                   borderRadius: "var(--radius-full)",
-                  backgroundColor: "var(--surface-default)",
+                  backgroundColor: "var(--btn-bg)",
                   color: "var(--text-secondary)",
                   fontSize: "var(--font-size-sm)",
                   cursor: "pointer",
@@ -925,11 +925,11 @@ export function UnifiedDateRangePicker({
                   onClick={handlePrevMonth}
                   aria-label="Previous month"
                   style={{
-                    padding: "6px 12px",
-                    border: "var(--border-width-thin) solid var(--border-primary)",
+                    padding: "var(--space-sm) var(--space-md)",
+                    border: "var(--border-width-thin) solid var(--btn-border)",
                     borderRadius: "var(--radius-full)",
-                    backgroundColor: "var(--surface-default)",
-                    color: "var(--text-primary)",
+                    backgroundColor: "var(--btn-bg)",
+                    color: "var(--btn-text)",
                     cursor: "pointer",
                     fontSize: "var(--font-size-md)",
                   }}
@@ -964,11 +964,11 @@ export function UnifiedDateRangePicker({
                   onClick={handleNextMonth}
                   aria-label="Next month"
                   style={{
-                    padding: "6px 12px",
-                    border: "var(--border-width-thin) solid var(--border-primary)",
+                    padding: "var(--space-sm) var(--space-md)",
+                    border: "var(--border-width-thin) solid var(--btn-border)",
                     borderRadius: "var(--radius-full)",
-                    backgroundColor: "var(--surface-default)",
-                    color: "var(--text-primary)",
+                    backgroundColor: "var(--btn-bg)",
+                    color: "var(--btn-text)",
                     cursor: "pointer",
                     fontSize: "var(--font-size-md)",
                   }}
@@ -997,7 +997,7 @@ export function UnifiedDateRangePicker({
                           fontSize: "var(--font-size-xs)",
                           fontWeight: "var(--font-weight-medium)",
                           color: "var(--text-tertiary)",
-                          padding: "4px 0",
+                          padding: "var(--space-xs) 0",
                         }}
                       >
                         {label}
@@ -1045,7 +1045,7 @@ export function UnifiedDateRangePicker({
                           fontSize: "var(--font-size-xs)",
                           fontWeight: "var(--font-weight-medium)",
                           color: "var(--text-tertiary)",
-                          padding: "4px 0",
+                          padding: "var(--space-xs) 0",
                         }}
                       >
                         {label}
@@ -1114,11 +1114,11 @@ export function UnifiedDateRangePicker({
                     }
                   }}
                   style={{
-                    padding: "6px 10px",
-                    border: "var(--border-width-thin) solid var(--border-primary)",
+                    padding: "var(--space-sm) var(--space-10)",
+                    border: "var(--border-width-thin) solid var(--btn-border)",
                     borderRadius: "var(--radius-full)",
-                    backgroundColor: "var(--surface-default)",
-                    color: "var(--text-primary)",
+                    backgroundColor: "var(--btn-bg)",
+                    color: "var(--btn-text)",
                     fontSize: "var(--font-size-sm)",
                     width: "130px",
                     textAlign: "center",
@@ -1141,11 +1141,11 @@ export function UnifiedDateRangePicker({
                     }
                   }}
                   style={{
-                    padding: "6px 10px",
-                    border: "var(--border-width-thin) solid var(--border-primary)",
+                    padding: "var(--space-sm) var(--space-10)",
+                    border: "var(--border-width-thin) solid var(--btn-border)",
                     borderRadius: "var(--radius-full)",
-                    backgroundColor: "var(--surface-default)",
-                    color: "var(--text-primary)",
+                    backgroundColor: "var(--btn-bg)",
+                    color: "var(--btn-text)",
                     fontSize: "var(--font-size-sm)",
                     width: "130px",
                     textAlign: "center",
@@ -1162,15 +1162,12 @@ export function UnifiedDateRangePicker({
             {/* Action Buttons */}
             <button
               onClick={onClose}
+              className="btn-ghost"
               style={{
-                padding: "10px 20px",
-                border: "var(--border-width-thin) solid var(--border-primary)",
+                padding: "var(--button-padding-y-md) var(--button-padding-x-md)",
                 borderRadius: "var(--radius-full)",
-                backgroundColor: "var(--surface-default)",
-                color: "var(--text-primary)",
                 fontSize: "var(--font-size-sm)",
                 fontWeight: "var(--font-weight-medium)",
-                cursor: "pointer",
               }}
             >
               Cancel
@@ -1179,11 +1176,11 @@ export function UnifiedDateRangePicker({
               onClick={handleApply}
               disabled={!canApply}
               style={{
-                padding: "10px 20px",
-                border: "none",
+                padding: "var(--button-padding-y-md) var(--button-padding-x-md)",
+                border: canApply ? "var(--border-width-thin) solid var(--btn-selected-border)" : "none",
                 borderRadius: "var(--radius-full)",
-                backgroundColor: canApply ? "var(--chip-selected-bg)" : "var(--border-strong)",
-                color: canApply ? "var(--chip-selected-text)" : "var(--text-tertiary)",
+                backgroundColor: canApply ? "var(--btn-selected-bg)" : "var(--border-strong)",
+                color: canApply ? "var(--btn-selected-text)" : "var(--text-tertiary)",
                 fontSize: "var(--font-size-sm)",
                 fontWeight: "var(--font-weight-semibold)",
                 cursor: canApply ? "pointer" : "not-allowed",
@@ -1229,8 +1226,8 @@ function CalendarDayButton({
   let borderRadius = "50%";
 
   if (isSelected || isRangeStart || isRangeEnd) {
-    backgroundColor = "var(--chip-selected-bg)";
-    color = "var(--chip-selected-text)";
+    backgroundColor = "var(--btn-selected-bg)";
+    color = "var(--btn-selected-text)";
     fontWeight = "var(--font-weight-semibold)";
   } else if (isInRange) {
     backgroundColor = "var(--surface-hover)";
@@ -1260,7 +1257,7 @@ function CalendarDayButton({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        border: isToday ? "2px solid var(--chip-selected-bg)" : "none",
+        border: isToday ? "var(--border-width-thick) solid var(--btn-selected-bg)" : "none",
         borderRadius,
         backgroundColor,
         color,

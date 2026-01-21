@@ -73,17 +73,26 @@
   --interactive-selected: #f5f5f5;
   --interactive-selected-hover: #efefef;
 
-  /* Chip Selected State - Inverted neutral (grounded, doesn't compete with data) */
-  --chip-selected-bg: #d4d4d8;
-  --chip-selected-text: #18181b;
-  --chip-selected-border: #d4d4d8;
-  --chip-selected-hover-bg: #a1a1aa;
+  /* Unified Button/Chip Variables */
+    /* Default state (unselected) */
+    --btn-bg: var(--surface-default);
+    --btn-bg-hover: var(--surface-hover);
+    --btn-text: var(--text-primary);
+    --btn-border: var(--border-primary);
+    --btn-border-hover: var(--border-strong);
 
-  /* Button Colors - Vibrant indigo accent (Dribbble style) */
-  --button-primary-bg: #6366f1;
-  --button-primary-hover: #4f46e5;
-  --button-primary-border: #6366f1;
-  --button-primary-shadow: rgba(99, 102, 241, 0.35);
+  /* Selected state (brand color) */
+    --btn-selected-bg: #6366f1;
+    --btn-selected-bg-hover: #4f46e5;
+    --btn-selected-text: #ffffff;
+    --btn-selected-border: #6366f1;
+    --btn-selected-shadow: rgba(99, 102, 241, 0.35);
+
+  /* Ghost button state (transparent, text-only) */
+    --btn-ghost-bg: transparent;
+    --btn-ghost-bg-hover: rgba(0, 0, 0, 0.05);
+    --btn-ghost-text: var(--text-secondary);
+    --btn-ghost-text-hover: var(--text-primary);
 
   /* Button Sizes - More generous padding for pills */
   --button-padding-y-sm: 7px;
@@ -110,10 +119,10 @@
   --calendar-row-alt-overlay: rgba(0, 0, 0, 0.0);
 
   /* Today Indicator */
-  --today-line: #3b82f6;
+  --today-line: var(--btn-selected-bg);
   --today-line-width: 2px;
-  --today-header-bg: rgba(59, 130, 246, 0.12);
-  --today-header-text: #1d4ed8;
+  --today-header-bg: rgb(99, 102, 241, 0.15);
+    --today-header-text: var(--btn-selected-bg);
 
   /* Sticky Section Specific - Sidebar-style grounded appearance */
   --sticky-header-bg: #f3f4f6;
@@ -163,7 +172,7 @@
   --shadow-dropdown: 0 4px 6px rgba(0, 0, 0, 0.04), 0 10px 24px rgba(0, 0, 0, 0.12);
   --shadow-pill: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.04);
   --shadow-pill-hover: 0 2px 4px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-primary-glow: 0 4px 14px var(--button-primary-shadow);
+  --shadow-primary-glow: 0 4px 14px var(--btn-selected-shadow);
 
   /* === Typography === */
   --font-size-xs: 11px;
@@ -279,9 +288,9 @@
   --border-emphasis: #52525b;
 
   /* Surface Colors - Elevated surfaces with depth */
-  --surface-default: #18181b;
-  --surface-hover: #27272a;
-  --surface-active: #3f3f46;
+  --surface-default: #27272a;
+  --surface-hover: #3f3f46;
+  --surface-active: #52525b;
   --surface-disabled: #27272a;
   --surface-progress-track: #27272a;
 
@@ -327,17 +336,26 @@
   --interactive-selected: #27272a;
   --interactive-selected-hover: #3f3f46;
 
-  /* Chip Selected State - Subtle elevation within dark palette */
-  --chip-selected-bg: #3f3f46;
-  --chip-selected-text: #fafafa;
-  --chip-selected-border: #3f3f46;
-  --chip-selected-hover-bg: #52525b;
+  /* Unified Button/Chip Variables */
+    /* Default state (unselected) */
+    --btn-bg: var(--surface-default);
+    --btn-bg-hover: var(--surface-hover);
+    --btn-text: var(--text-primary);
+    --btn-border: var(--border-primary);
+    --btn-border-hover: var(--border-strong);
 
-  /* Button Colors - Vibrant indigo accent */
-  --button-primary-bg: #818cf8;
-  --button-primary-hover: #6366f1;
-  --button-primary-border: #818cf8;
-  --button-primary-shadow: rgba(129, 140, 248, 0.3);
+  /* Selected state (brand color) */
+    --btn-selected-bg: #818cf8;
+    --btn-selected-bg-hover: #6366f1;
+    --btn-selected-text: #09090b;
+    --btn-selected-border: #818cf8;
+    --btn-selected-shadow: rgba(129, 140, 248, 0.3);
+
+  /* Ghost button state (transparent, text-only) */
+    --btn-ghost-bg: transparent;
+    --btn-ghost-bg-hover: rgba(255, 255, 255, 0.08);
+    --btn-ghost-text: var(--text-secondary);
+    --btn-ghost-text-hover: var(--text-primary);
 
   /* Calendar/Timeline Specific - Refined visual hierarchy */
   --calendar-weekday-bg: #18181b;
@@ -353,10 +371,10 @@
   --calendar-row-alt-overlay: rgba(255, 255, 255, 0.0);
 
   /* Today Indicator */
-  --today-line: #2563EB;
-  --today-line-width: 2px;
-  --today-header-bg: rgba(96, 165, 250, 0.15);
-  --today-header-text: #93c5fd;
+  --today-line: var(--btn-selected-bg);
+    --today-line-width: 2px;
+    --today-header-bg: rgb(129, 140, 248, 0.25);
+      --today-header-text: var(--btn-selected-bg);
 
   /* Sticky Section Specific - Sidebar-style grounded appearance (pure zinc) */
   --sticky-header-bg: #1c1c1f;
@@ -383,7 +401,7 @@
   --shadow-dropdown: 0 4px 6px rgba(0, 0, 0, 0.25), 0 12px 32px rgba(0, 0, 0, 0.35);
   --shadow-pill: 0 1px 2px rgba(0, 0, 0, 0.2), 0 2px 6px rgba(0, 0, 0, 0.15);
   --shadow-pill-hover: 0 2px 4px rgba(0, 0, 0, 0.25), 0 6px 16px rgba(0, 0, 0, 0.2);
-  --shadow-primary-glow: 0 4px 20px var(--button-primary-shadow);
+  --shadow-primary-glow: 0 4px 20px var(--btn-selected-shadow);
 }
 
 /* ============================================
@@ -438,6 +456,25 @@ body {
 .shadow-sm { box-shadow: var(--shadow-sm); }
 .shadow-md { box-shadow: var(--shadow-md); }
 .shadow-lg { box-shadow: var(--shadow-lg); }
+
+/* Button utilities */
+.btn-ghost {
+  background-color: var(--btn-ghost-bg);
+  color: var(--btn-ghost-text);
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.btn-ghost:hover {
+  background-color: var(--btn-ghost-bg-hover);
+  color: var(--btn-ghost-text-hover);
+}
+
+.btn-ghost:focus-visible {
+  outline: 2px solid var(--interactive-focus);
+  outline-offset: 2px;
+}
 
 /* ============================================
    Component-Specific Patterns

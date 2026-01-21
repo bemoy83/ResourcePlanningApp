@@ -103,9 +103,9 @@ export function AllocationCell({
             width: '100%',
             padding: 'var(--space-xs) var(--space-sm)',
             fontSize: 'var(--font-size-sm)',
-            backgroundColor: 'var(--button-primary-bg)',
-            color: 'var(--text-inverse)',
-            border: 'var(--border-width-thin) solid var(--button-primary-border)',
+            backgroundColor: 'var(--btn-selected-bg)',
+            color: 'var(--btn-selected-text)',
+            border: 'var(--border-width-thin) solid var(--btn-selected-border)',
             borderRadius: 'var(--radius-sm)',
             cursor: 'pointer',
             fontWeight: 'var(--font-weight-bold)',
@@ -113,15 +113,11 @@ export function AllocationCell({
           }}>
             Save
           </button>
-          <button onClick={() => onCancel(draft.key)} style={{
+          <button onClick={() => onCancel(draft.key)} className="btn-ghost" style={{
             width: '100%',
             padding: 'var(--space-xs) var(--space-sm)',
             fontSize: 'var(--font-size-sm)',
-            backgroundColor: 'var(--surface-default)',
-            color: 'var(--text-primary)',
-            border: 'var(--border-width-thin) solid var(--border-primary)',
             borderRadius: 'var(--radius-sm)',
-            cursor: 'pointer',
             boxSizing: 'border-box',
           }}>
             Cancel

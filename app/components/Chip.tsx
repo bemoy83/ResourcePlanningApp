@@ -37,14 +37,14 @@ export function Chip({
       style={{
         // Slightly smaller padding for chips vs buttons
         // This padding will override Button's size-based padding since style prop is merged last
-        padding: "6px 14px",
+        padding: "var(--space-sm) var(--button-padding-x-sm)",
         fontSize: "var(--button-font-size-sm)", // Explicitly set fontSize to match size="sm"
-        minHeight: "28px", // Ensure consistent height with other buttons
+        minHeight: "28px", // Ensure consistent height with other buttons (no matching token)
         // For segmented variant, adjust selected state styling
         ...(variant === "segmented" && selected
           ? {
-              backgroundColor: "var(--chip-selected-bg)",
-              color: "var(--chip-selected-text)",
+              backgroundColor: "var(--btn-selected-bg)",
+              color: "var(--btn-selected-text)",
             }
           : {}),
         ...style, // Allow external style overrides

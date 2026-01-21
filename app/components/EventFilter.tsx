@@ -352,7 +352,7 @@ export function EventFilter({
                 onSelectionChange(new Set());
               }}
               tabIndex={-1}
-                variant="chip"
+                variant="ghost"
                 size="sm"
                 style={{ flex: 1 }}
             >

@@ -49,17 +49,17 @@ export default function HomePage() {
         <p style={{ margin: "0 0 28px", color: "var(--text-secondary)" }}>
           Import events, allocate work, and compare demand against capacity in one workspace.
         </p>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-md)" }}>
           <Link
             href="/workspace"
             style={{
-              padding: "10px 22px",
-              borderRadius: "999px",
-              backgroundColor: "var(--button-primary-bg)",
-              color: "var(--text-inverse)",
-              border: "1px solid var(--button-primary-border)",
+              padding: "var(--button-padding-y-md) var(--button-padding-x-md)",
+              borderRadius: "var(--radius-full)",
+              backgroundColor: "var(--btn-selected-bg)",
+              color: "var(--btn-selected-text)",
+              border: "var(--border-width-thin) solid var(--btn-selected-border)",
               textDecoration: "none",
-              fontWeight: 600,
+              fontWeight: "var(--font-weight-semibold)",
               boxShadow: "var(--shadow-primary-glow)",
             }}
           >
@@ -68,13 +68,13 @@ export default function HomePage() {
           <Link
             href="/data/events/import"
             style={{
-              padding: "10px 22px",
-              borderRadius: "999px",
-              backgroundColor: "var(--surface-default)",
-              color: "var(--text-primary)",
-              border: "1px solid var(--border-primary)",
+              padding: "var(--button-padding-y-md) var(--button-padding-x-md)",
+              borderRadius: "var(--radius-full)",
+              backgroundColor: "var(--btn-bg)",
+              color: "var(--btn-text)",
+              border: "var(--border-width-thin) solid var(--btn-border)",
               textDecoration: "none",
-              fontWeight: 500,
+              fontWeight: "var(--font-weight-medium)",
             }}
           >
             Import event data

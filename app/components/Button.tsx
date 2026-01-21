@@ -3,7 +3,7 @@
 import { ReactNode, CSSProperties, ButtonHTMLAttributes, useState } from "react";
 
 type ButtonSize = "sm" | "md" | "lg";
-type ButtonVariant = "default" | "primary" | "selected" | "chip-selected" | "chip" | "segmented";
+type ButtonVariant = "default" | "primary" | "selected" | "chip-selected" | "chip" | "segmented" | "ghost";
 
 interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "style"> {
   children: ReactNode;
@@ -30,62 +30,70 @@ const sizeStyles: Record<ButtonSize, CSSProperties> = {
 
 const variantStyles: Record<ButtonVariant, CSSProperties> = {
   default: {
-    backgroundColor: "var(--surface-default)",
-    color: "var(--text-primary)",
-    border: "var(--border-width-thin) solid var(--border-primary)",
+    backgroundColor: "var(--btn-bg)",
+    color: "var(--btn-text)",
+    border: "var(--border-width-thin) solid var(--btn-border)",
   },
   primary: {
-    backgroundColor: "var(--button-primary-bg)",
-    color: "var(--text-inverse)",
-    border: "var(--border-width-thin) solid var(--button-primary-border)",
+    backgroundColor: "var(--btn-selected-bg)",
+    color: "var(--btn-selected-text)",
+    border: "var(--border-width-thin) solid var(--btn-selected-border)",
     fontWeight: "var(--font-weight-semibold)",
   },
   selected: {
-    backgroundColor: "var(--button-primary-bg)",
-    color: "var(--text-inverse)",
-    border: "var(--border-width-thin) solid var(--button-primary-border)",
+    backgroundColor: "var(--btn-selected-bg)",
+    color: "var(--btn-selected-text)",
+    border: "var(--border-width-thin) solid var(--btn-selected-border)",
     fontWeight: "var(--font-weight-semibold)",
   },
   "chip-selected": {
-    backgroundColor: "var(--chip-selected-bg)",
-    color: "var(--chip-selected-text)",
-    border: "var(--border-width-thin) solid var(--chip-selected-border)",
+    backgroundColor: "var(--btn-selected-bg)",
+    color: "var(--btn-selected-text)",
+    border: "var(--border-width-thin) solid var(--btn-selected-border)",
     fontWeight: "var(--font-weight-semibold)",
   },
   chip: {
-    backgroundColor: "var(--surface-default)",
-    color: "var(--sticky-corner-text)",
-    border: "var(--border-width-thin) solid var(--border-primary)",
+    backgroundColor: "var(--btn-bg)",
+    color: "var(--btn-text)",
+    border: "var(--border-width-thin) solid var(--btn-border)",
   },
   segmented: {
-    backgroundColor: "var(--surface-default)",
-    color: "var(--text-primary)",
+    backgroundColor: "var(--btn-bg)",
+    color: "var(--btn-text)",
     border: "none",
     boxShadow: "var(--shadow-pill)",
+  },
+  ghost: {
+    backgroundColor: "var(--btn-ghost-bg)",
+    color: "var(--btn-ghost-text)",
+    border: "none",
   },
 };
 
 const hoverStyles: Record<ButtonVariant, CSSProperties> = {
   default: {
-    backgroundColor: "var(--surface-hover)",
-    borderColor: "var(--border-strong)",
+    backgroundColor: "var(--btn-bg-hover)",
+    borderColor: "var(--btn-border-hover)",
   },
   primary: {
-    backgroundColor: "var(--button-primary-hover)",
+    backgroundColor: "var(--btn-selected-bg-hover)",
   },
   selected: {
-    backgroundColor: "var(--button-primary-hover)",
+    backgroundColor: "var(--btn-selected-bg-hover)",
   },
   "chip-selected": {
-    backgroundColor: "var(--chip-selected-hover-bg)",
+    backgroundColor: "var(--btn-selected-bg-hover)",
   },
   chip: {
-    backgroundColor: "var(--surface-hover)",
-    // Don't change borderColor on hover for chips - maintain subtle appearance
+    backgroundColor: "var(--btn-bg-hover)",
   },
   segmented: {
-    backgroundColor: "var(--surface-hover)",
+    backgroundColor: "var(--btn-bg-hover)",
     boxShadow: "var(--shadow-pill-hover)",
+  },
+  ghost: {
+    backgroundColor: "var(--btn-ghost-bg-hover)",
+    color: "var(--btn-ghost-text-hover)",
   },
 };
 
