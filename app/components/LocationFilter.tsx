@@ -576,11 +576,11 @@ export function LocationFilter({
                               backgroundColor: isExactMatch ? "var(--btn-selected-bg)" : "var(--surface-default)",
                               border: `var(--border-width-thin) solid ${isExactMatch ? "var(--btn-selected-bg)" : "var(--border-primary)"}`,
                               borderRadius: "var(--radius-md)",
-                              cursor: tagCount > 0 ? "pointer" : "default",
+                              cursor: "pointer",
                               transition: "all var(--transition-fast)",
                             }}
-                            onClick={() => { if (tagCount > 0) { setActiveGroupName(tag.name); onSelectionChange(new Set(tag.locationIds)); } }}
-                            onMouseEnter={(e) => { if (!isExactMatch && tagCount > 0) e.currentTarget.style.backgroundColor = "var(--surface-hover)"; }}
+                            onClick={() => { setActiveGroupName(tag.name); if (tagCount > 0) onSelectionChange(new Set(tag.locationIds)); }}
+                            onMouseEnter={(e) => { if (!isExactMatch) e.currentTarget.style.backgroundColor = "var(--surface-hover)"; }}
                             onMouseLeave={(e) => { if (!isExactMatch) e.currentTarget.style.backgroundColor = "var(--surface-default)"; }}
                           >
                             <div style={{ display: "flex", alignItems: "center", gap: "var(--space-sm)", minWidth: 0, flex: 1 }}>
