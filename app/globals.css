@@ -552,7 +552,7 @@ body {
 /* Checkbox styling - ensure unchecked state matches theme */
 input[type="checkbox"] {
   background-color: var(--surface-default);
-  border: var(--border-width-thin) solid var(--border-primary);
+  border: var(--border-width-thin) solid var(--border-strong);
   border-radius: var(--radius-xs);
   appearance: none;
   -webkit-appearance: none;
@@ -570,14 +570,14 @@ input[type="checkbox"]:checked::after {
   top: 2px;
   width: 4px;
   height: 8px;
-  border: solid var(--text-primary);
+  border: solid var(--text-inverse);
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
 }
 
 input[type="checkbox"]:checked {
-  background-color: var(--text-secondary);
-  border-color: var(--text-secondary);
+  background-color: var(--btn-selected-bg);
+  border-color: var(--btn-selected-bg);
 }
 
 /* Indeterminate state (dash) */
@@ -588,20 +588,20 @@ input[type="checkbox"]:indeterminate::after {
   top: 7px;
   width: 8px;
   height: 2px;
-  background-color: var(--text-primary);
+  background-color: var(--text-inverse);
 }
 
 input[type="checkbox"]:indeterminate {
-  background-color: var(--text-secondary);
-  border-color: var(--text-secondary);
+  background-color: var(--btn-selected-bg);
+  border-color: var(--btn-selected-bg);
 }
 
 input[type="checkbox"]:hover {
-  border-color: var(--border-strong);
+  border-color: var(--btn-selected-bg);
 }
 
 input[type="checkbox"]:focus {
-  border-color: var(--interactive-focus);
-  box-shadow: 0 0 0 3px var(--interactive-focus-bg);
+  border-color: var(--btn-selected-bg);
+  box-shadow: 0 0 0 3px var(--btn-selected-shadow);
   outline: none;
 }

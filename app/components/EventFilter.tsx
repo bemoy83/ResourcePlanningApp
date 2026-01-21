@@ -262,7 +262,6 @@ export function EventFilter({
                   cursor: "pointer",
                   width: "16px",
                   height: "16px",
-                  accentColor: "var(--text-secondary)",
                 }}
                 aria-label="Select all events"
               />
@@ -305,7 +304,7 @@ export function EventFilter({
                     backgroundColor: isFocused ? "var(--surface-hover)" : isChecked ? "var(--surface-hover)" : "var(--surface-default)",
                     color: "var(--text-primary)",
                     transition: "background-color var(--transition-fast)",
-                    borderLeft: isChecked ? "2px solid var(--text-secondary)" : "2px solid transparent",
+                    borderLeft: isChecked ? "2px solid var(--btn-selected-bg)" : "2px solid transparent",
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = "var(--surface-hover)";
@@ -324,7 +323,6 @@ export function EventFilter({
                       cursor: "pointer",
                       width: "16px",
                       height: "16px",
-                      accentColor: "var(--text-secondary)",
                     }}
                     aria-label={`Select ${event.name}`}
                   />

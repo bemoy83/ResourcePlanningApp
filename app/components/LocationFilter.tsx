@@ -419,7 +419,6 @@ export function LocationFilter({
                     cursor: "pointer",
                     width: "16px",
                     height: "16px",
-                    accentColor: "var(--text-secondary)",
                   }}
                   aria-label="Select all locations"
                 />
@@ -489,7 +488,7 @@ export function LocationFilter({
                         backgroundColor: isFocused ? "var(--surface-hover)" : isChecked ? "var(--surface-hover)" : "var(--surface-default)",
                         color: "var(--text-primary)",
                         transition: "background-color var(--transition-fast)",
-                        borderLeft: isChecked ? "2px solid var(--text-secondary)" : "2px solid transparent",
+                        borderLeft: isChecked ? "2px solid var(--btn-selected-bg)" : "2px solid transparent",
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.backgroundColor = "var(--surface-hover)";
@@ -508,7 +507,6 @@ export function LocationFilter({
                       cursor: "pointer",
                       width: "16px",
                       height: "16px",
-                      accentColor: "var(--text-secondary)",
                     }}
                     aria-label={`Select ${location.name}`}
                   />
@@ -673,7 +671,7 @@ export function LocationFilter({
                             borderRadius: "var(--radius-lg)",
                             padding: "var(--space-xs)",
                             backgroundColor: "var(--surface-default)",
-                            borderLeft: isTagSelected ? "2px solid var(--text-secondary)" : "2px solid transparent",
+                            borderLeft: isTagSelected ? "2px solid var(--btn-selected-bg)" : "2px solid transparent",
                             display: "flex",
                             flexDirection: "column",
                             gap: "var(--space-xxs)",

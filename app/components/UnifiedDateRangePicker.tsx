@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { Button } from "./Button";
 import { DateRange, DateRangePreset } from "./dateRange";
 import {
   addDays,
@@ -1160,35 +1161,21 @@ export function UnifiedDateRangePicker({
             )}
 
             {/* Action Buttons */}
-            <button
+            <Button
               onClick={onClose}
-              className="btn-ghost"
-              style={{
-                padding: "var(--button-padding-y-md) var(--button-padding-x-md)",
-                borderRadius: "var(--radius-full)",
-                fontSize: "var(--font-size-sm)",
-                fontWeight: "var(--font-weight-medium)",
-              }}
+              variant="ghost"
+              size="sm"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleApply}
               disabled={!canApply}
-              style={{
-                padding: "var(--button-padding-y-md) var(--button-padding-x-md)",
-                border: canApply ? "var(--border-width-thin) solid var(--btn-selected-border)" : "none",
-                borderRadius: "var(--radius-full)",
-                backgroundColor: canApply ? "var(--btn-selected-bg)" : "var(--border-strong)",
-                color: canApply ? "var(--btn-selected-text)" : "var(--text-tertiary)",
-                fontSize: "var(--font-size-sm)",
-                fontWeight: "var(--font-weight-semibold)",
-                cursor: canApply ? "pointer" : "not-allowed",
-                opacity: canApply ? 1 : 0.6,
-              }}
+              variant="primary"
+              size="sm"
             >
               Set Date
-            </button>
+            </Button>
           </div>
         </div>
       </div>
