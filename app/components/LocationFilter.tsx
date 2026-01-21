@@ -38,6 +38,7 @@ export function LocationFilter({
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [focusedIndex, setFocusedIndex] = useState(-1); // -1 = no focused option, 0+ = list items
+  const [activeGroupName, setActiveGroupName] = useState<string | null>(null); // Track which group was last clicked
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const listItemRefs = useRef<Map<number, HTMLLabelElement>>(new Map());
@@ -140,6 +141,7 @@ export function LocationFilter({
       setFocusedIndex(-1);
       setNewTagName("");
       setTagError(null);
+      setActiveGroupName(null);
     }
   }, [isOpen]);
 
@@ -457,7 +459,7 @@ export function LocationFilter({
                         aria-label={`Select ${location.name}`}
                       />
                       <span style={{ flex: "1 1 auto", minWidth: 0 }}>{location.name}</span>
-                      {!tagsExpanded && tagsByLocationId.has(location.id) && (
+                      {tagsByLocationId.has(location.id) && (
                         <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-xxs)", marginLeft: "var(--space-sm)", justifyContent: "flex-end", flex: "0 0 auto" }}>
                           {(() => {
                             const tags = tagsByLocationId.get(location.id)!;
@@ -558,7 +560,10 @@ export function LocationFilter({
                         const tagCount = tag.locationIds.length;
                         const isGroupSelected = tagCount > 0 && tag.locationIds.every((id) => selectedLocationIds.has(id));
                         const isExactMatch = isGroupSelected && selectedLocationIds.size === tagCount;
-                        const canUpdate = selectedLocationCount > 0 && !isExactMatch;
+                        // Only show Save on the active group (last clicked) when selection has changed
+                        const isActiveGroup = activeGroupName === tag.name;
+                        const selectionDiffers = !isExactMatch && selectedLocationCount > 0;
+                        const canUpdate = isActiveGroup && selectionDiffers;
 
                         return (
                           <div
@@ -574,7 +579,7 @@ export function LocationFilter({
                               cursor: tagCount > 0 ? "pointer" : "default",
                               transition: "all var(--transition-fast)",
                             }}
-                            onClick={() => { if (tagCount > 0) onSelectionChange(new Set(tag.locationIds)); }}
+                            onClick={() => { if (tagCount > 0) { setActiveGroupName(tag.name); onSelectionChange(new Set(tag.locationIds)); } }}
                             onMouseEnter={(e) => { if (!isExactMatch && tagCount > 0) e.currentTarget.style.backgroundColor = "var(--surface-hover)"; }}
                             onMouseLeave={(e) => { if (!isExactMatch) e.currentTarget.style.backgroundColor = "var(--surface-default)"; }}
                           >
