@@ -5,6 +5,7 @@ interface WorkCategory {
   id: string;
   name: string;
   estimatedEffortHours: number;
+  phase?: string;
 }
 
 interface Allocation {
@@ -32,6 +33,8 @@ interface WorkCategoryPressure {
 
 interface WorkCategoryRowProps {
   eventName: string;
+  eventStartDate?: string;
+  eventEndDate?: string;
   workCategory: WorkCategory;
   allocatedTotal: number;
   remaining: number;
@@ -56,6 +59,8 @@ interface WorkCategoryRowProps {
 
 export function WorkCategoryRow({
   eventName,
+  eventStartDate,
+  eventEndDate,
   workCategory,
   allocatedTotal,
   remaining,
@@ -85,6 +90,8 @@ export function WorkCategoryRow({
   const progressPercentage = workCategory.estimatedEffortHours > 0
     ? Math.round((allocatedTotal / workCategory.estimatedEffortHours) * 100)
     : 0;
+  const phaseLabel = workCategory.phase?.trim();
+  const displayPhaseLabel = phaseLabel ? phaseLabel.replace(/_/g, ' ') : '';
 
   const timelineWidth = dates.length * dateColumnWidth;
   const weekendBackground = "var(--calendar-weekend-bg)";
@@ -112,6 +119,11 @@ export function WorkCategoryRow({
       {/* Work category name */}
       <div style={{ ...rowStyle, ...stickyColumnStyle(leftColumnOffsets[1]) }}>
         <div>{workCategory.name}</div>
+        {displayPhaseLabel && (
+          <div style={{ fontSize: 'calc(var(--font-size-xs) - 1px)', color: 'var(--text-tertiary)', marginTop: 'var(--space-xxs)' }}>
+            {displayPhaseLabel}
+          </div>
+        )}
         {pressure?.isUnderPressure && (
           <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--status-warning)', marginTop: 'var(--space-xxs)' }}>
             ⚠ Pressure: {pressure.remainingDays} days left
@@ -190,6 +202,9 @@ export function WorkCategoryRow({
           );
           const error = errorsByCellKey[cellKey];
           const dateFlags = dateMeta[index];
+          const isOutsideEventRange = eventStartDate && eventEndDate
+            ? date < eventStartDate || date > eventEndDate
+            : false;
           const backgroundColor = dateFlags?.isHoliday
             ? holidayBackground
             : dateFlags?.isWeekend
@@ -226,6 +241,7 @@ export function WorkCategoryRow({
                 allocation={allocation}
                 draft={draft}
                 error={error}
+                isOutsideEventRange={isOutsideEventRange}
                 onStartCreate={onStartCreate}
                 onStartEdit={onStartEdit}
                 onChangeDraft={onChangeDraft}

@@ -66,6 +66,20 @@ export default function HomePage() {
             Open workspace
           </Link>
           <Link
+            href="/planning/work"
+            style={{
+              padding: "var(--button-padding-y-md) var(--button-padding-x-md)",
+              borderRadius: "var(--radius-full)",
+              backgroundColor: "var(--btn-bg)",
+              color: "var(--btn-text)",
+              border: "var(--border-width-thin) solid var(--btn-border)",
+              textDecoration: "none",
+              fontWeight: "var(--font-weight-medium)",
+            }}
+          >
+            Add work categories
+          </Link>
+          <Link
             href="/data/events/import"
             style={{
               padding: "var(--button-padding-y-md) var(--button-padding-x-md)",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useId, useState, useRef, useEffect } from "react";
 import { Chip } from "./Chip";
 import { Button } from "./Button";
 
@@ -13,12 +13,16 @@ interface EventFilterProps {
   events: Event[];
   selectedEventIds: Set<string>;
   onSelectionChange: (selectedIds: Set<string>) => void;
+  selectionMode?: "multi" | "single";
+  label?: string;
 }
 
 export function EventFilter({
   events,
   selectedEventIds,
   onSelectionChange,
+  selectionMode = "multi",
+  label = "Event",
 }: EventFilterProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -26,6 +30,8 @@ export function EventFilter({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const listItemRefs = useRef<Map<number, HTMLLabelElement>>(new Map());
+  const groupName = useId();
+  const isSingleSelect = selectionMode === "single";
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -74,11 +80,14 @@ export function EventFilter({
     event.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const allSelected = selectedEventIds.size === events.length;
+  const allSelected = !isSingleSelect && selectedEventIds.size === events.length && events.length > 0;
   const noneSelected = selectedEventIds.size === 0;
-  const someSelected = !allSelected && !noneSelected;
+  const someSelected = !isSingleSelect && !allSelected && !noneSelected;
 
   const toggleAll = () => {
+    if (isSingleSelect) {
+      return;
+    }
     if (selectedEventIds.size === 0) {
       // Check all - select everything (from full list, not filtered)
       onSelectionChange(new Set(events.map((evt) => evt.id)));
@@ -89,6 +98,13 @@ export function EventFilter({
   };
 
   const toggleEvent = (eventId: string) => {
+    if (isSingleSelect) {
+      const shouldClear = selectedEventIds.has(eventId);
+      onSelectionChange(shouldClear ? new Set() : new Set([eventId]));
+      setIsOpen(false);
+      return;
+    }
+
     const newSelection = new Set(selectedEventIds);
     if (newSelection.has(eventId)) {
       newSelection.delete(eventId);
@@ -112,7 +128,7 @@ export function EventFilter({
       setFocusedIndex((prev) => Math.max(prev - 1, -1));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      if (focusedIndex < 0 && searchQuery.trim() === "") {
+      if (!isSingleSelect && focusedIndex < 0 && searchQuery.trim() === "") {
         toggleAll();
         return;
       }
@@ -129,14 +145,25 @@ export function EventFilter({
     }
   };
 
+  const selectedEvent =
+    selectedEventIds.size > 0
+      ? events.find((event) => selectedEventIds.has(event.id)) ?? null
+      : null;
+
   const displayText = () => {
+    if (isSingleSelect) {
+      if (!selectedEvent) {
+        return `${label} (None)`;
+      }
+      return `${label}: ${selectedEvent.name}`;
+    }
     if (noneSelected) {
-      return `Event (0 of ${events.length})`;
+      return `${label} (0 of ${events.length})`;
     }
     if (allSelected) {
-      return `Event (All ${events.length})`;
+      return `${label} (All ${events.length})`;
     }
-    return `Event (${selectedEventIds.size} of ${events.length})`;
+    return `${label} (${selectedEventIds.size} of ${events.length})`;
   };
 
   return (
@@ -144,7 +171,7 @@ export function EventFilter({
       {/* Filter Button */}
       <Chip
         onClick={() => setIsOpen(!isOpen)}
-        selected={someSelected || allSelected}
+        selected={isSingleSelect ? selectedEventIds.size > 0 : someSelected || allSelected}
         variant="segmented"
       >
         <span>{displayText()}</span>
@@ -170,7 +197,7 @@ export function EventFilter({
         >
           <div
             role="listbox"
-            aria-multiselectable="true"
+            aria-multiselectable={!isSingleSelect}
             onKeyDown={handleKeyDown}
             style={{
               maxHeight: "400px",
@@ -234,39 +261,41 @@ export function EventFilter({
             </div>
 
             {/* Select All Option */}
-            <label
-              style={{
-                display: "flex",
-                alignItems: "center",
-                  padding: "10px var(--space-sm)",
-                cursor: "pointer",
-                fontSize: "var(--font-size-sm)",
-                fontWeight: "var(--font-weight-semibold)",
-                  borderBottom: "var(--border-width-thin) solid var(--border-primary)",
-                backgroundColor: "var(--surface-default)",
-                color: "var(--text-primary)",
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={allSelected}
-                tabIndex={-1}
-                ref={(input) => {
-                  if (input) {
-                    input.indeterminate = someSelected;
-                  }
-                }}
-                onChange={toggleAll}
+            {!isSingleSelect && (
+              <label
                 style={{
-                  marginRight: "var(--space-sm)",
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "10px var(--space-sm)",
                   cursor: "pointer",
-                  width: "16px",
-                  height: "16px",
+                  fontSize: "var(--font-size-sm)",
+                  fontWeight: "var(--font-weight-semibold)",
+                  borderBottom: "var(--border-width-thin) solid var(--border-primary)",
+                  backgroundColor: "var(--surface-default)",
+                  color: "var(--text-primary)",
                 }}
-                aria-label="Select all events"
-              />
-              <span>All Events</span>
-            </label>
+              >
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  tabIndex={-1}
+                  ref={(input) => {
+                    if (input) {
+                      input.indeterminate = someSelected;
+                    }
+                  }}
+                  onChange={toggleAll}
+                  style={{
+                    marginRight: "var(--space-sm)",
+                    cursor: "pointer",
+                    width: "16px",
+                    height: "16px",
+                  }}
+                  aria-label="Select all events"
+                />
+                <span>All Events</span>
+              </label>
+            )}
           </div>
 
           {/* Individual Event Checkboxes */}
@@ -314,7 +343,8 @@ export function EventFilter({
                   }}
                 >
                   <input
-                    type="checkbox"
+                    type={isSingleSelect ? "radio" : "checkbox"}
+                    name={isSingleSelect ? groupName : undefined}
                     checked={isChecked}
                     tabIndex={-1}
                     onChange={() => toggleEvent(event.id)}

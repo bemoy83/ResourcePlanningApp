@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
             eventId: body.eventId,
             name: body.name,
             estimatedEffortHours: body.estimatedEffortHours,
+            phase: typeof body.phase === "string" ? body.phase : undefined,
         });
         return NextResponse.json({ id: workCategoryId }, { status: 201 });
     } catch (error) {

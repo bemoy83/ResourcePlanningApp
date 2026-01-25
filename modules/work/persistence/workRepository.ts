@@ -9,11 +9,13 @@ export async function saveWorkCategory(workCategory: WorkCategory): Promise<void
       eventId: workCategory.eventId,
       name: workCategory.name,
       estimatedEffortHours: workCategory.estimatedEffortHours,
+      phase: workCategory.phase ?? null,
     },
     update: {
       eventId: workCategory.eventId,
       name: workCategory.name,
       estimatedEffortHours: workCategory.estimatedEffortHours,
+      phase: workCategory.phase ?? null,
     },
   });
 }
@@ -32,6 +34,7 @@ export async function loadWorkCategoryById(id: WorkCategoryId): Promise<WorkCate
     eventId: record.eventId,
     name: record.name,
     estimatedEffortHours: record.estimatedEffortHours,
+    phase: record.phase ?? undefined,
   };
 }
 
@@ -45,6 +48,7 @@ export async function listWorkCategoriesByEvent(eventId: string): Promise<WorkCa
     eventId: record.eventId,
     name: record.name,
     estimatedEffortHours: record.estimatedEffortHours,
+    phase: record.phase ?? undefined,
   }));
 }
 
@@ -56,5 +60,6 @@ export async function listAllWorkCategories(): Promise<WorkCategory[]> {
     eventId: record.eventId,
     name: record.name,
     estimatedEffortHours: record.estimatedEffortHours,
+    phase: record.phase ?? undefined,
   }));
 }

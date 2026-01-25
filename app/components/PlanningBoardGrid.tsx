@@ -12,6 +12,8 @@ import { buildDateFlags, DateFlags } from '../utils/date';
 interface Event {
   id: string;
   name: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 interface Location {
@@ -30,6 +32,7 @@ interface WorkCategory {
   eventId: string;
   name: string;
   estimatedEffortHours: number;
+  phase?: string;
 }
 
 interface Allocation {
@@ -391,6 +394,8 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
                 <WorkCategoryRow
                   key={workCategory.id}
                   eventName={eventName}
+                  eventStartDate={event?.startDate}
+                  eventEndDate={event?.endDate}
                   workCategory={workCategory}
                   allocatedTotal={allocatedTotal}
                   remaining={remaining}

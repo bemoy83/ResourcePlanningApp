@@ -7,6 +7,7 @@ interface CreateWorkCategoryCommand {
   eventId: string;
   name: string;
   estimatedEffortHours: number;
+  phase?: string;
 }
 
 export async function createWorkCategory(command: CreateWorkCategoryCommand): Promise<WorkCategoryId> {
@@ -17,6 +18,7 @@ export async function createWorkCategory(command: CreateWorkCategoryCommand): Pr
     eventId: command.eventId,
     name: command.name,
     estimatedEffortHours: command.estimatedEffortHours,
+    phase: command.phase,
   };
 
   await saveWorkCategory(workCategory);

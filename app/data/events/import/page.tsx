@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { parseEventImport, ParsedImportResult } from "@/lib/import/parseEventImport";
+import { useMemo, useState } from "react";
 import { EventXlsxParseError, parseEventXlsx } from "@/lib/import/parseEventXlsx";
 import { EventImportRow } from "@/types/event-import";
+
+interface ParsedImportResult {
+  rows: EventImportRow[];
+  errors: { rowIndex: number; message: string }[];
+}
 
 interface ImportResult {
   eventsCreated: number;
@@ -14,12 +18,32 @@ interface ImportResult {
 }
 
 export default function ImportPreviewPage() {
-  const [inputText, setInputText] = useState("");
-  const [format, setFormat] = useState<"csv" | "json">("csv");
   const [parsedResult, setParsedResult] = useState<ParsedImportResult | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
+
+  const handleExportSummary = () => {
+    if (!interpretation) {
+      return;
+    }
+
+    const payload = {
+      events: interpretation.events,
+      locations: interpretation.locations,
+      eventPhases: interpretation.eventPhases,
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "event-import-summary.json";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   const handleXlsxUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -44,7 +68,6 @@ export default function ImportPreviewPage() {
       const buffer = await file.arrayBuffer();
       const rows = parseEventXlsx(buffer);
       setParsedResult({ rows, errors: [] });
-      setInputText("");
     } catch (error) {
       if (error instanceof EventXlsxParseError) {
         setParsedResult({
@@ -65,20 +88,6 @@ export default function ImportPreviewPage() {
     } finally {
       event.target.value = "";
     }
-  };
-
-  const handlePreview = () => {
-    if (!inputText.trim()) {
-      setParsedResult({ rows: [], errors: [{ rowIndex: 0, message: "Input is empty" }] });
-      return;
-    }
-
-    const result = parseEventImport(inputText, format);
-    setParsedResult(result);
-
-    // Reset import state when re-previewing
-    setImportResult(null);
-    setImportError(null);
   };
 
   const handleImport = async () => {
@@ -117,6 +126,30 @@ export default function ImportPreviewPage() {
 
   // Derive interpretation summaries from parsed rows
   const interpretation = parsedResult ? deriveInterpretation(parsedResult.rows) : null;
+  const summaryData = useMemo(() => {
+    if (!interpretation || !parsedResult) {
+      return null;
+    }
+
+    const events = [...interpretation.events].sort((a, b) => a.localeCompare(b));
+    const locations = [...interpretation.locations].sort((a, b) => a.localeCompare(b));
+    const eventPhases = interpretation.eventPhases
+      .map((eventPhase) => ({
+        eventName: eventPhase.eventName,
+        phases: [...eventPhase.phases].sort((a, b) => a.localeCompare(b)),
+      }))
+      .sort((a, b) => a.eventName.localeCompare(b.eventName));
+    const phaseCount = eventPhases.reduce((sum, entry) => sum + entry.phases.length, 0);
+    const locationEvents = buildLocationEventSummary(parsedResult.rows);
+
+    return {
+      events,
+      locations,
+      eventPhases,
+      phaseCount,
+      locationEvents,
+    };
+  }, [interpretation, parsedResult]);
 
   // Can import if: has rows, no errors, not currently importing
   const canImport = parsedResult && parsedResult.rows.length > 0 && parsedResult.errors.length === 0 && !isImporting;
@@ -133,7 +166,7 @@ export default function ImportPreviewPage() {
         Event Calendar Import — Preview
       </h1>
       <div style={{ marginBottom: "24px", fontSize: "14px", color: "#555" }}>
-        Upload XLSX or paste CSV/JSON data to preview how it will be interpreted
+        Upload XLSX data to preview how it will be interpreted
       </div>
 
       {/* 2. Input Section */}
@@ -172,67 +205,6 @@ export default function ImportPreviewPage() {
             Uses the upstream export format
           </span>
         </div>
-
-        {/* Format Selector */}
-        <div style={{ marginBottom: "12px" }}>
-          <label style={{ marginRight: "20px", fontSize: "14px", color: "#000" }}>
-            <input
-              type="radio"
-              value="csv"
-              checked={format === "csv"}
-              onChange={(e) => setFormat(e.target.value as "csv")}
-              style={{ marginRight: "6px" }}
-            />
-            CSV
-          </label>
-          <label style={{ fontSize: "14px", color: "#000" }}>
-            <input
-              type="radio"
-              value="json"
-              checked={format === "json"}
-              onChange={(e) => setFormat(e.target.value as "json")}
-              style={{ marginRight: "6px" }}
-            />
-            JSON
-          </label>
-        </div>
-
-        {/* Textarea */}
-        <textarea
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          placeholder={format === "csv"
-            ? "eventName,locationName,phase,startDate,endDate\nSpring Fair,Hall A,ASSEMBLY,2026-03-01,2026-03-05"
-            : '[\n  {\n    "eventName": "Spring Fair",\n    "locationName": "Hall A",\n    "phase": "ASSEMBLY",\n    "startDate": "2026-03-01",\n    "endDate": "2026-03-05"\n  }\n]'
-          }
-          style={{
-            width: "100%",
-            minHeight: "200px",
-            padding: "12px",
-            fontSize: "13px",
-            fontFamily: "monospace",
-            border: "2px solid #999",
-            backgroundColor: "#fff",
-            resize: "vertical",
-          }}
-        />
-
-        {/* Preview Button */}
-        <button
-          onClick={handlePreview}
-          style={{
-            marginTop: "12px",
-            padding: "10px 20px",
-            backgroundColor: "#4a90e2",
-            border: "2px solid #333",
-            color: "#fff",
-            fontSize: "14px",
-            fontWeight: "bold",
-            cursor: "pointer",
-          }}
-        >
-          Preview Import
-        </button>
       </section>
 
       {/* Results Section - Only shown after preview */}
@@ -275,120 +247,7 @@ export default function ImportPreviewPage() {
             </section>
           )}
 
-          {/* 4. Parsed Rows Preview */}
-          {parsedResult.rows.length > 0 && (
-            <section style={{ marginBottom: "32px" }}>
-              <h2 style={{
-                fontSize: "18px",
-                marginBottom: "12px",
-                color: "#000",
-                borderBottom: "1px solid #666",
-                paddingBottom: "6px"
-              }}>
-                Parsed Rows ({parsedResult.rows.length})
-              </h2>
-              <div style={{ overflowX: "auto" }}>
-                <table style={{
-                  width: "100%",
-                  borderCollapse: "collapse",
-                  border: "2px solid #666",
-                  backgroundColor: "#fff",
-                  fontSize: "13px",
-                }}>
-                  <thead>
-                    <tr style={{ backgroundColor: "#e0e0e0", fontWeight: "bold" }}>
-                      <th style={tableCellStyle}>Event</th>
-                      <th style={tableCellStyle}>Location</th>
-                      <th style={tableCellStyle}>Phase</th>
-                      <th style={tableCellStyle}>Start Date</th>
-                      <th style={tableCellStyle}>End Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {parsedResult.rows.map((row, idx) => (
-                      <tr key={idx} style={{ borderBottom: "1px solid #ccc" }}>
-                        <td style={tableCellStyle}>{row.eventName}</td>
-                        <td style={tableCellStyle}>{row.locationName}</td>
-                        <td style={tableCellStyle}>{row.phase}</td>
-                        <td style={tableCellStyle}>{row.startDate}</td>
-                        <td style={tableCellStyle}>{row.endDate}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          )}
-
-          {/* 5. Interpretation Summary */}
-          {parsedResult.rows.length > 0 && interpretation && (
-            <section style={{ marginBottom: "32px" }}>
-              <h2 style={{
-                fontSize: "18px",
-                marginBottom: "12px",
-                color: "#000",
-                borderBottom: "1px solid #666",
-                paddingBottom: "6px"
-              }}>
-                Interpretation Summary
-              </h2>
-              <div style={{
-                backgroundColor: "#f5f5f5",
-                border: "2px solid #999",
-                padding: "16px",
-                fontSize: "14px",
-              }}>
-                <div style={{ marginBottom: "4px", fontSize: "12px", fontStyle: "italic", color: "#666" }}>
-                  ⚠️ These are visual summaries only — not validation.
-                </div>
-
-                {/* Events Detected */}
-                <div style={{ marginBottom: "20px" }}>
-                  <h3 style={{ fontSize: "15px", marginBottom: "8px", fontWeight: "bold", color: "#000" }}>
-                    Events Detected ({interpretation.events.length})
-                  </h3>
-                  <ul style={{ margin: 0, paddingLeft: "20px" }}>
-                    {interpretation.events.map((event, idx) => (
-                      <li key={idx} style={{ marginBottom: "4px", color: "#000" }}>{event}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Locations Detected */}
-                <div style={{ marginBottom: "20px" }}>
-                  <h3 style={{ fontSize: "15px", marginBottom: "8px", fontWeight: "bold", color: "#000" }}>
-                    Locations Detected ({interpretation.locations.length})
-                  </h3>
-                  <ul style={{ margin: 0, paddingLeft: "20px" }}>
-                    {interpretation.locations.map((location, idx) => (
-                      <li key={idx} style={{ marginBottom: "4px", color: "#000" }}>{location}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Phases Detected (per event) */}
-                <div>
-                  <h3 style={{ fontSize: "15px", marginBottom: "8px", fontWeight: "bold", color: "#000" }}>
-                    Phases Detected (per event)
-                  </h3>
-                  {interpretation.eventPhases.map((eventPhase, idx) => (
-                    <div key={idx} style={{ marginBottom: "12px" }}>
-                      <div style={{ fontWeight: "bold", marginBottom: "4px", color: "#000" }}>
-                        {eventPhase.eventName}
-                      </div>
-                      <ul style={{ margin: 0, paddingLeft: "30px" }}>
-                        {eventPhase.phases.map((phase, phaseIdx) => (
-                          <li key={phaseIdx} style={{ marginBottom: "2px", color: "#000" }}>{phase}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-          )}
-
-          {/* 6. Import Action Section */}
+          {/* 4. Import Action Section */}
           {parsedResult.rows.length > 0 && (
             <section style={{ marginBottom: "32px" }}>
               <h2 style={{
@@ -426,6 +285,118 @@ export default function ImportPreviewPage() {
                   </div>
                 )}
               </div>
+            </section>
+          )}
+
+          {/* 5. Interpretation Summary */}
+          {parsedResult.rows.length > 0 && interpretation && summaryData && (
+            <section style={{ marginBottom: "32px" }}>
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "12px",
+                marginBottom: "12px",
+                borderBottom: "1px solid #666",
+                paddingBottom: "6px",
+              }}>
+                <h2 style={{ fontSize: "18px", margin: 0, color: "#000" }}>
+                  Interpretation Summary
+                </h2>
+                <button
+                  onClick={handleExportSummary}
+                  style={{
+                    padding: "6px 12px",
+                    backgroundColor: "#f5f5f5",
+                    border: "1px solid #666",
+                    color: "#000",
+                    fontSize: "12px",
+                    cursor: "pointer",
+                  }}
+                >
+                  Export Summary
+                </button>
+              </div>
+              <details>
+                <summary style={{ cursor: "pointer", fontSize: "13px", marginBottom: "8px" }}>
+                  Show interpretation summary
+                </summary>
+                <div style={{
+                  backgroundColor: "#f5f5f5",
+                  border: "2px solid #999",
+                  padding: "16px",
+                  fontSize: "14px",
+                }}>
+                  <div style={summaryStatsRowStyle}>
+                    <div style={summaryStatStyle}>
+                      <div style={summaryStatLabelStyle}>Events</div>
+                      <div style={summaryStatValueStyle}>{summaryData.events.length}</div>
+                    </div>
+                    <div style={summaryStatStyle}>
+                      <div style={summaryStatLabelStyle}>Locations</div>
+                      <div style={summaryStatValueStyle}>{summaryData.locations.length}</div>
+                    </div>
+                    <div style={summaryStatStyle}>
+                      <div style={summaryStatLabelStyle}>Phases</div>
+                      <div style={summaryStatValueStyle}>{summaryData.phaseCount}</div>
+                    </div>
+                    <div style={summaryStatStyle}>
+                      <div style={summaryStatLabelStyle}>Rows</div>
+                      <div style={summaryStatValueStyle}>{parsedResult.rows.length}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: "8px", fontSize: "12px", fontStyle: "italic", color: "#666" }}>
+                    ⚠️ These are visual summaries only — not validation.
+                  </div>
+
+                  <div style={summaryTablesGridStyle}>
+                    <div style={summaryTablePanelStyle}>
+                      <div style={summaryTableHeaderStyle}>Locations → Events</div>
+                      <div style={summaryTableBodyStyle}>
+                        <table style={summaryTableStyle}>
+                          <thead>
+                            <tr>
+                              <th style={summaryTableHeaderCellStyle}>Location</th>
+                              <th style={summaryTableHeaderCellStyle}>Events</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {summaryData.locationEvents.map((location) => (
+                              <tr key={location.name}>
+                                <td style={summaryTableCellStyle}>{location.name}</td>
+                                <td style={summaryTableCellStyle}>{location.events.length}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    <div style={summaryTablePanelStyle}>
+                      <div style={summaryTableHeaderStyle}>Events → Phases</div>
+                      <div style={summaryTableBodyStyle}>
+                        <table style={summaryTableStyle}>
+                          <thead>
+                            <tr>
+                              <th style={summaryTableHeaderCellStyle}>Event</th>
+                              <th style={summaryTableHeaderCellStyle}>Phases</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {summaryData.eventPhases.map((eventPhase) => (
+                              <tr key={eventPhase.eventName}>
+                                <td style={summaryTableCellStyle}>{eventPhase.eventName}</td>
+                                <td style={summaryTableCellStyle}>{eventPhase.phases.length}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </details>
             </section>
           )}
 
@@ -531,6 +502,101 @@ const tableCellStyle: React.CSSProperties = {
   textAlign: "left",
   color: "#000",
 };
+
+const summaryStatsRowStyle: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+  gap: "12px",
+  marginBottom: "12px",
+};
+
+const summaryStatStyle: React.CSSProperties = {
+  backgroundColor: "#fff",
+  border: "1px solid #999",
+  borderRadius: "10px",
+  padding: "10px 12px",
+};
+
+const summaryStatLabelStyle: React.CSSProperties = {
+  fontSize: "12px",
+  color: "#666",
+  marginBottom: "4px",
+  textTransform: "uppercase",
+  letterSpacing: "0.08em",
+};
+
+const summaryStatValueStyle: React.CSSProperties = {
+  fontSize: "20px",
+  fontWeight: "bold",
+  color: "#000",
+};
+
+const summaryTablesGridStyle: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+  gap: "12px",
+};
+
+const summaryTablePanelStyle: React.CSSProperties = {
+  backgroundColor: "#fff",
+  border: "1px solid #999",
+  borderRadius: "10px",
+  padding: "10px 12px",
+  color: "#000",
+};
+
+const summaryTableHeaderStyle: React.CSSProperties = {
+  fontSize: "14px",
+  fontWeight: "bold",
+  color: "#000",
+  marginBottom: "8px",
+};
+
+const summaryTableBodyStyle: React.CSSProperties = {
+  maxHeight: "320px",
+  overflowY: "auto",
+  border: "1px solid #e0e0e0",
+  borderRadius: "8px",
+};
+
+const summaryTableStyle: React.CSSProperties = {
+  width: "100%",
+  borderCollapse: "collapse",
+  fontSize: "13px",
+};
+
+const summaryTableHeaderCellStyle: React.CSSProperties = {
+  textAlign: "left",
+  padding: "8px",
+  borderBottom: "1px solid #e0e0e0",
+  backgroundColor: "#f5f5f5",
+  position: "sticky",
+  top: 0,
+  zIndex: 1,
+};
+
+const summaryTableCellStyle: React.CSSProperties = {
+  padding: "8px",
+  borderBottom: "1px solid #f0f0f0",
+  color: "#000",
+};
+
+function buildLocationEventSummary(rows: EventImportRow[]) {
+  const locationEvents = new Map<string, Set<string>>();
+  for (const row of rows) {
+    if (!locationEvents.has(row.locationName)) {
+      locationEvents.set(row.locationName, new Set<string>());
+    }
+    locationEvents.get(row.locationName)?.add(row.eventName);
+  }
+
+  return Array.from(locationEvents.entries())
+    .map(([name, events]) => ({
+      name,
+      events: Array.from(events).sort((a, b) => a.localeCompare(b)),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
 
 /**
  * Derive interpretation summaries from parsed rows

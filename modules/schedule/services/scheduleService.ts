@@ -59,10 +59,6 @@ export async function addAllocation(command: AddAllocationCommand): Promise<Allo
     throw new Error('Event not found');
   }
 
-  if (command.date < event.startDate || command.date > event.endDate) {
-    throw new Error('Allocation date is outside event date range');
-  }
-
   let effortHours: number;
   if (command.effortUnit === 'FTE') {
     effortHours = convertFteToHours(command.effortValue);
@@ -88,10 +84,6 @@ export async function updateAllocation(command: UpdateAllocationCommand): Promis
 
   if (!event) {
     throw new Error('Event not found');
-  }
-
-  if (command.date < event.startDate || command.date > event.endDate) {
-    throw new Error('Allocation date is outside event date range');
   }
 
   let effortHours: number;

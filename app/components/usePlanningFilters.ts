@@ -25,6 +25,7 @@ export interface WorkCategory {
   eventId: string;
   name: string;
   estimatedEffortHours: number;
+  phase?: string;
 }
 
 export interface Location {

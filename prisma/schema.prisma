@@ -42,6 +42,7 @@ model WorkCategory {
   eventId              String
   name                 String
   estimatedEffortHours Float
+  phase                String?
 }
 
 model Allocation {

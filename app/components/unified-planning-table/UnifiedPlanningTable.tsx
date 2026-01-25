@@ -516,6 +516,8 @@ export function UnifiedPlanningTable({
               <WorkCategoryRow
                 key={workCategory.id}
                 eventName={eventName}
+                eventStartDate={event?.startDate}
+                eventEndDate={event?.endDate}
                 workCategory={workCategory}
                 allocatedTotal={allocatedTotal}
                 remaining={remaining}

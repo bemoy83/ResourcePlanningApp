@@ -16,6 +16,7 @@ interface AllocationCellProps {
   allocation?: Allocation;
   draft?: AllocationDraft;
   error?: string;
+  isOutsideEventRange?: boolean;
   onStartCreate(workCategoryId: string, date: string): void;
   onStartEdit(allocationId: string, workCategoryId: string, date: string, effortHours: number): void;
   onChangeDraft(draftKey: string, effortValue: number, effortUnit: "HOURS" | "FTE"): void;
@@ -30,6 +31,7 @@ export function AllocationCell({
   allocation,
   draft,
   error,
+  isOutsideEventRange,
   onStartCreate,
   onStartEdit,
   onChangeDraft,
@@ -37,6 +39,29 @@ export function AllocationCell({
   onCancel,
   onDelete,
 }: AllocationCellProps) {
+  const outsideRangeBadge = isOutsideEventRange ? (
+    <span
+      title="Outside event date range"
+      role="img"
+      aria-label="Outside event date range"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '14px',
+        height: '14px',
+        borderRadius: '50%',
+        backgroundColor: 'var(--status-warning-light)',
+        color: 'var(--status-warning)',
+        fontSize: '10px',
+        fontWeight: 'var(--font-weight-bold)',
+        lineHeight: 1,
+      }}
+    >
+      !
+    </span>
+  ) : null;
+
   // Draft mode - show edit UI
   if (draft) {
     return (
@@ -54,6 +79,19 @@ export function AllocationCell({
         boxShadow: 'var(--shadow-lg)',
         boxSizing: 'border-box',
       }}>
+        {isOutsideEventRange && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'var(--space-xxs)',
+            marginBottom: 'var(--space-xs)',
+            color: 'var(--status-warning)',
+            fontSize: 'var(--font-size-xs)',
+          }}>
+            {outsideRangeBadge}
+            <span>Outside event range</span>
+          </div>
+        )}
         <input
           type="number"
           value={draft.effortValue}
@@ -172,10 +210,15 @@ export function AllocationCell({
           fontWeight: 'var(--font-weight-bold)',
           color: 'var(--text-primary)',
           border: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 'var(--space-xxs)',
         }}
         title="Click to edit"
       >
-        {allocation.effortHours}h
+        <span>{allocation.effortHours}h</span>
+        {outsideRangeBadge}
       </div>
     );
   }

@@ -2,6 +2,7 @@ interface WorkCategory {
   id: string;
   name: string;
   estimatedEffortHours: number;
+  phase?: string;
 }
 
 interface Allocation {

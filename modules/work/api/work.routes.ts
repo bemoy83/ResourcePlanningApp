@@ -8,16 +8,18 @@ import { loadWorkCategoryById, listWorkCategoriesByEvent } from '../persistence/
 import { WorkCategoryId } from '../domain/workCategory';
 
 export async function handleCreateWorkCategory(req: Request, res: Response): Promise<void> {
-  const { eventId, name, estimatedEffortHours } = req.body as {
+  const { eventId, name, estimatedEffortHours, phase } = req.body as {
     eventId: string;
     name: string;
     estimatedEffortHours: number;
+    phase?: string;
   };
 
   const workCategoryId = await createWorkCategory({
     eventId,
     name,
     estimatedEffortHours,
+    phase,
   });
 
   const workCategory = await loadWorkCategoryById(workCategoryId);
