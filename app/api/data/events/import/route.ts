@@ -56,41 +56,61 @@ export async function POST(request: NextRequest) {
       let eventLocationsCreated = 0;
       let phasesCreated = 0;
 
-      // Group rows by event name to calculate event-level dates
       const eventGroups = groupRowsByEvent(body.rows);
+      const eventNames = Array.from(eventGroups.keys());
+      const existingEvents = await db.event.findMany({
+        where: { name: { in: eventNames } },
+      });
+      const eventByName = new Map(existingEvents.map((event) => [event.name, event]));
 
-      // Track created events and locations for reuse within this import
-      const eventCache = new Map<string, string>(); // eventName -> eventId
-      const locationCache = new Map<string, string>(); // locationName -> locationId
+      const locationNames = Array.from(new Set(body.rows.map((row) => row.locationName)));
+      const existingLocations = await db.location.findMany({
+        where: { name: { in: locationNames } },
+        select: { id: true, name: true },
+      });
+      const locationByName = new Map(existingLocations.map((location) => [location.name, location.id]));
 
-      // Process each event group
+      const missingLocationNames = locationNames.filter((name) => !locationByName.has(name));
+      if (missingLocationNames.length > 0) {
+        const created = await db.location.createMany({
+          data: missingLocationNames.map((name) => ({ name })),
+          skipDuplicates: true,
+        });
+        locationsCreated += created.count;
+        const createdLocations = await db.location.findMany({
+          where: { name: { in: missingLocationNames } },
+          select: { id: true, name: true },
+        });
+        for (const location of createdLocations) {
+          locationByName.set(location.name, location.id);
+        }
+      }
+
       for (const [eventName, eventRows] of eventGroups) {
-        // Calculate event date range (min startDate, max endDate)
         const eventStartDate = new Date(
-          Math.min(...eventRows.map((r) => new Date(r.startDate).getTime()))
+          Math.min(...eventRows.map((row) => new Date(row.startDate).getTime()))
         );
         const eventEndDate = new Date(
-          Math.max(...eventRows.map((r) => new Date(r.endDate).getTime()))
+          Math.max(...eventRows.map((row) => new Date(row.endDate).getTime()))
         );
 
-        // 1. Events: Create or reuse by name
-        let event = await db.event.findFirst({
-          where: { name: eventName },
-        });
-
+        let event = eventByName.get(eventName);
         if (event) {
-          // Reuse existing event - update dates to match import
-          event = await db.event.update({
-            where: { id: event.id },
-            data: {
-              startDate: eventStartDate,
-              endDate: eventEndDate,
-              status: "ACTIVE",
-            },
-          });
+          const startChanged = event.startDate.getTime() !== eventStartDate.getTime();
+          const endChanged = event.endDate.getTime() !== eventEndDate.getTime();
+          const statusChanged = event.status !== "ACTIVE";
+          if (startChanged || endChanged || statusChanged) {
+            event = await db.event.update({
+              where: { id: event.id },
+              data: {
+                startDate: eventStartDate,
+                endDate: eventEndDate,
+                status: "ACTIVE",
+              },
+            });
+          }
           eventsReused++;
         } else {
-          // Create new event
           event = await db.event.create({
             data: {
               name: eventName,
@@ -100,81 +120,79 @@ export async function POST(request: NextRequest) {
             },
           });
           eventsCreated++;
+          eventByName.set(eventName, event);
         }
 
-        eventCache.set(eventName, event.id);
+        const eventLocationNames = Array.from(new Set(eventRows.map((row) => row.locationName)));
+        const locationIds = eventLocationNames
+          .map((name) => locationByName.get(name))
+          .filter((id): id is string => Boolean(id));
 
-        // 2. Locations and EventLocation links
-        const locationNames = new Set(eventRows.map((r) => r.locationName));
-
-        for (const locationName of locationNames) {
-          let locationId = locationCache.get(locationName);
-
-          if (!locationId) {
-            // Check if location exists
-            let location = await db.location.findUnique({
-              where: { name: locationName },
-            });
-
-            if (!location) {
-              // Create new location
-              location = await db.location.create({
-                data: { name: locationName },
-              });
-              locationsCreated++;
-            }
-
-            locationId = location.id;
-            locationCache.set(locationName, locationId);
-          }
-
-          // 3. EventLocation links: Ensure link exists
-          const existingLink = await db.eventLocation.findUnique({
-            where: {
-              eventId_locationId: {
-                eventId: event.id,
-                locationId: locationId,
-              },
-            },
-          });
-
-          if (!existingLink) {
-            await db.eventLocation.create({
-              data: {
-                eventId: event.id,
-                locationId: locationId,
-              },
-            });
-            eventLocationsCreated++;
-          }
-        }
-
-        // 4. EventPhases: Create if not exact match exists
-        for (const row of eventRows) {
-          const phaseStartDate = new Date(row.startDate);
-          const phaseEndDate = new Date(row.endDate);
-
-          // Check for exact match: same eventId, name, startDate, endDate
-          const existingPhase = await db.eventPhase.findFirst({
+        if (locationIds.length > 0) {
+          const existingLinks = await db.eventLocation.findMany({
             where: {
               eventId: event.id,
-              name: row.phase,
-              startDate: phaseStartDate,
-              endDate: phaseEndDate,
+              locationId: { in: locationIds },
             },
+            select: { locationId: true },
           });
+          const existingLocationIds = new Set(existingLinks.map((link) => link.locationId));
+          const missingLinks = locationIds
+            .filter((locationId) => !existingLocationIds.has(locationId))
+            .map((locationId) => ({
+              eventId: event.id,
+              locationId,
+            }));
 
-          if (!existingPhase) {
-            await db.eventPhase.create({
-              data: {
-                eventId: event.id,
-                name: row.phase,
-                startDate: phaseStartDate,
-                endDate: phaseEndDate,
-              },
+          if (missingLinks.length > 0) {
+            const createdLinks = await db.eventLocation.createMany({
+              data: missingLinks,
+              skipDuplicates: true,
             });
-            phasesCreated++;
+            eventLocationsCreated += createdLinks.count;
           }
+        }
+
+        const phasesByKey = new Map<string, { name: string; startDate: string; endDate: string }>();
+        for (const row of eventRows) {
+          const key = buildPhaseKey(row.phase, row.startDate, row.endDate);
+          phasesByKey.set(key, { name: row.phase, startDate: row.startDate, endDate: row.endDate });
+        }
+
+        const existingPhases = await db.eventPhase.findMany({
+          where: { eventId: event.id },
+          select: { name: true, startDate: true, endDate: true },
+        });
+        const existingPhaseKeys = new Set(
+          existingPhases.map((phase) =>
+            buildPhaseKey(
+              phase.name,
+              formatDateKey(phase.startDate),
+              formatDateKey(phase.endDate)
+            )
+          )
+        );
+
+        const missingPhases: Array<{ eventId: string; name: string; startDate: Date; endDate: Date }> = [];
+        for (const phase of phasesByKey.values()) {
+          const key = buildPhaseKey(phase.name, phase.startDate, phase.endDate);
+          if (existingPhaseKeys.has(key)) {
+            continue;
+          }
+          missingPhases.push({
+            eventId: event.id,
+            name: phase.name,
+            startDate: new Date(phase.startDate),
+            endDate: new Date(phase.endDate),
+          });
+        }
+
+        if (missingPhases.length > 0) {
+          const createdPhases = await db.eventPhase.createMany({
+            data: missingPhases,
+            skipDuplicates: true,
+          });
+          phasesCreated += createdPhases.count;
         }
       }
 
@@ -218,4 +236,12 @@ function groupRowsByEvent(
   }
 
   return groups;
+}
+
+function buildPhaseKey(phase: string, startDate: string, endDate: string): string {
+  return `${phase}::${startDate}::${endDate}`;
+}
+
+function formatDateKey(date: Date): string {
+  return date.toISOString().slice(0, 10);
 }

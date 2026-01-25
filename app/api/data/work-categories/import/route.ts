@@ -57,37 +57,57 @@ export async function POST(request: NextRequest) {
     let workCategoriesCreated = 0;
     let workCategoriesUpdated = 0;
 
+    const eventIds = Array.from(eventIdByName.values());
+    const existingCategories = await prisma.workCategory.findMany({
+      where: { eventId: { in: eventIds } },
+      select: { id: true, eventId: true, name: true, phase: true, estimatedEffortHours: true },
+    });
+    const existingByKey = new Map<string, { id: string; estimatedEffortHours: number }>();
+    for (const category of existingCategories) {
+      const key = buildWorkCategoryKey(category.eventId, category.name, category.phase ?? "");
+      existingByKey.set(key, { id: category.id, estimatedEffortHours: category.estimatedEffortHours });
+    }
+
+    const createMap = new Map<string, { eventId: string; name: string; estimatedEffortHours: number; phase: string }>();
+    const updateMap = new Map<string, number>();
+
     for (const row of normalizedRows) {
       const eventId = eventIdByName.get(row.eventName);
       if (!eventId) {
         continue;
       }
 
-      const existing = await prisma.workCategory.findFirst({
-        where: {
-          eventId,
-          name: row.workCategoryName,
-          phase: row.phase,
-        },
-      });
+      const key = buildWorkCategoryKey(eventId, row.workCategoryName, row.phase);
+      const existing = existingByKey.get(key);
 
       if (existing) {
-        await prisma.workCategory.update({
-          where: { id: existing.id },
-          data: { estimatedEffortHours: row.estimatedEffortHours },
-        });
-        workCategoriesUpdated += 1;
+        if (existing.estimatedEffortHours !== row.estimatedEffortHours) {
+          updateMap.set(existing.id, row.estimatedEffortHours);
+        }
       } else {
-        await prisma.workCategory.create({
-          data: {
-            eventId,
-            name: row.workCategoryName,
-            estimatedEffortHours: row.estimatedEffortHours,
-            phase: row.phase,
-          },
+        createMap.set(key, {
+          eventId,
+          name: row.workCategoryName,
+          estimatedEffortHours: row.estimatedEffortHours,
+          phase: row.phase,
         });
-        workCategoriesCreated += 1;
       }
+    }
+
+    if (createMap.size > 0) {
+      const created = await prisma.workCategory.createMany({
+        data: Array.from(createMap.values()),
+        skipDuplicates: true,
+      });
+      workCategoriesCreated += created.count;
+    }
+
+    for (const [id, estimatedEffortHours] of updateMap) {
+      await prisma.workCategory.update({
+        where: { id },
+        data: { estimatedEffortHours },
+      });
+      workCategoriesUpdated += 1;
     }
 
     const response: ImportExecuteResponse = {
@@ -109,4 +129,8 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+function buildWorkCategoryKey(eventId: string, name: string, phase: string): string {
+  return `${eventId}::${name}::${phase}`;
 }
