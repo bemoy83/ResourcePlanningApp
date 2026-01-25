@@ -20,11 +20,14 @@ interface ImportResult {
   eventsMatched: number;
 }
 
+const IMPORT_BATCH_SIZE = 200;
+
 export default function WorkCategoryImportPage() {
   const [parsedResult, setParsedResult] = useState<ParsedImportResult | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
+  const [importProgress, setImportProgress] = useState<{ current: number; total: number } | null>(null);
 
   const handleXlsxUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -79,26 +82,51 @@ export default function WorkCategoryImportPage() {
     setIsImporting(true);
     setImportError(null);
     setImportResult(null);
+    setImportProgress(null);
 
     try {
-      const response = await fetch("/api/data/work-categories/import", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ rows: parsedResult.rows }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Import failed");
+      const eventNames = new Set(parsedResult.rows.map((row) => row.eventName));
+      const expectedEventsMatched = eventNames.size;
+      const batches: WorkCategoryImportRow[][] = [];
+      for (let i = 0; i < parsedResult.rows.length; i += IMPORT_BATCH_SIZE) {
+        batches.push(parsedResult.rows.slice(i, i + IMPORT_BATCH_SIZE));
       }
 
-      setImportResult(data);
+      const totalBatches = batches.length;
+      let aggregate: ImportResult = {
+        workCategoriesCreated: 0,
+        workCategoriesUpdated: 0,
+        eventsMatched: expectedEventsMatched,
+      };
+
+      for (let index = 0; index < batches.length; index += 1) {
+        setImportProgress({ current: index + 1, total: totalBatches });
+        const response = await fetch("/api/data/work-categories/import", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ rows: batches[index] }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || `Import failed on batch ${index + 1}`);
+        }
+
+        aggregate = {
+          workCategoriesCreated: aggregate.workCategoriesCreated + (data.workCategoriesCreated ?? 0),
+          workCategoriesUpdated: aggregate.workCategoriesUpdated + (data.workCategoriesUpdated ?? 0),
+          eventsMatched: expectedEventsMatched,
+        };
+      }
+
+      setImportResult(aggregate);
     } catch (error) {
       setImportError(error instanceof Error ? error.message : "Unknown error during import");
     } finally {
       setIsImporting(false);
+      setImportProgress(null);
     }
   };
 
@@ -255,6 +283,11 @@ export default function WorkCategoryImportPage() {
                 {isImporting ? "Importing..." : "Import work categories"}
               </Button>
             </div>
+            {importProgress && (
+              <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "8px", textAlign: "right" }}>
+                Importing batch {importProgress.current} of {importProgress.total}...
+              </div>
+            )}
           </>
         ) : null}
 

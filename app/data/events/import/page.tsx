@@ -17,11 +17,14 @@ interface ImportResult {
   phasesCreated: number;
 }
 
+const IMPORT_BATCH_SIZE = 200;
+
 export default function ImportPreviewPage() {
   const [parsedResult, setParsedResult] = useState<ParsedImportResult | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
+  const [importProgress, setImportProgress] = useState<{ current: number; total: number } | null>(null);
 
   const handleExportSummary = () => {
     if (!interpretation) {
@@ -98,29 +101,76 @@ export default function ImportPreviewPage() {
     setIsImporting(true);
     setImportError(null);
     setImportResult(null);
+    setImportProgress(null);
 
     try {
-      const response = await fetch("/api/data/events/import", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          rows: parsedResult.rows,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Import failed");
+      const eventGroups = new Map<string, EventImportRow[]>();
+      for (const row of parsedResult.rows) {
+        const group = eventGroups.get(row.eventName);
+        if (group) {
+          group.push(row);
+        } else {
+          eventGroups.set(row.eventName, [row]);
+        }
       }
 
-      setImportResult(data);
+      const batches: EventImportRow[][] = [];
+      let currentBatch: EventImportRow[] = [];
+      let currentCount = 0;
+      for (const rows of eventGroups.values()) {
+        if (currentCount > 0 && currentCount + rows.length > IMPORT_BATCH_SIZE) {
+          batches.push(currentBatch);
+          currentBatch = [];
+          currentCount = 0;
+        }
+        currentBatch.push(...rows);
+        currentCount += rows.length;
+      }
+      if (currentBatch.length > 0) {
+        batches.push(currentBatch);
+      }
+
+      const totalBatches = batches.length;
+      let aggregate: ImportResult = {
+        eventsCreated: 0,
+        eventsReused: 0,
+        locationsCreated: 0,
+        eventLocationsCreated: 0,
+        phasesCreated: 0,
+      };
+
+      for (let index = 0; index < batches.length; index += 1) {
+        setImportProgress({ current: index + 1, total: totalBatches });
+        const response = await fetch("/api/data/events/import", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            rows: batches[index],
+          }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || `Import failed on batch ${index + 1}`);
+        }
+
+        aggregate = {
+          eventsCreated: aggregate.eventsCreated + (data.eventsCreated ?? 0),
+          eventsReused: aggregate.eventsReused + (data.eventsReused ?? 0),
+          locationsCreated: aggregate.locationsCreated + (data.locationsCreated ?? 0),
+          eventLocationsCreated: aggregate.eventLocationsCreated + (data.eventLocationsCreated ?? 0),
+          phasesCreated: aggregate.phasesCreated + (data.phasesCreated ?? 0),
+        };
+      }
+
+      setImportResult(aggregate);
     } catch (error) {
       setImportError(error instanceof Error ? error.message : "Unknown error during import");
     } finally {
       setIsImporting(false);
+      setImportProgress(null);
     }
   };
 
@@ -279,6 +329,11 @@ export default function ImportPreviewPage() {
                 >
                   {isImporting ? "Importing..." : "Import Events"}
                 </button>
+                {importProgress && (
+                  <div style={{ marginTop: "8px", fontSize: "12px", color: "#555" }}>
+                    Importing batch {importProgress.current} of {importProgress.total}...
+                  </div>
+                )}
                 {parsedResult.errors.length > 0 && (
                   <div style={{ marginTop: "8px", fontSize: "12px", color: "#c62828" }}>
                     Cannot import: Fix parse errors first
