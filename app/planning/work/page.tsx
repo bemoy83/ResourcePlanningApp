@@ -32,7 +32,7 @@ const formatPhaseLabel = (phase: string) => {
 };
 
 const sortPhases = (phases: string[]) => {
-  const order = new Map(DEFAULT_PHASES.map((name, index) => [name, index]));
+  const order = new Map<string, number>(DEFAULT_PHASES.map((name, index) => [name, index]));
   return [...phases].sort((a, b) => {
     const orderA = order.get(a) ?? 999;
     const orderB = order.get(b) ?? 999;

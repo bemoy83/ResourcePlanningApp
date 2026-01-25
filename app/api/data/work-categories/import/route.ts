@@ -63,13 +63,13 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      const candidates = await prisma.workCategory.findMany({
+      const existing = await prisma.workCategory.findFirst({
         where: {
           eventId,
           name: row.workCategoryName,
+          phase: row.phase,
         },
       });
-      const existing = candidates.find((candidate) => (candidate.phase ?? "") === row.phase);
 
       if (existing) {
         await prisma.workCategory.update({
