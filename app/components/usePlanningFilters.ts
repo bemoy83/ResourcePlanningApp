@@ -3,84 +3,36 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DateRange, DateRangePreset, getDateRangeFromPreset } from "./dateRange";
 import { daysInMonth, formatDateLocal, formatDateParts, nextDateString, parseDateParts } from "../utils/date";
+import {
+  Event,
+  EventPhase,
+  WorkCategory,
+  Location,
+  EventLocation,
+  Allocation,
+  DailyDemand,
+  DailyCapacityComparison,
+  WorkCategoryPressure,
+  AllocationDraft,
+  Evaluation,
+} from '../types/shared';
 
-export interface PlanningEvent {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  status: string;
-  phases?: EventPhase[];
-}
+// Re-export for backwards compatibility
+export type {
+  EventPhase,
+  WorkCategory,
+  Location,
+  EventLocation,
+  Allocation,
+  DailyDemand,
+  DailyCapacityComparison,
+  WorkCategoryPressure,
+  AllocationDraft,
+  Evaluation,
+};
 
-export interface EventPhase {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-}
-
-export interface WorkCategory {
-  id: string;
-  eventId: string;
-  name: string;
-  estimatedEffortHours: number;
-  phase?: string;
-}
-
-export interface Location {
-  id: string;
-  name: string;
-}
-
-export interface EventLocation {
-  id: string;
-  eventId: string;
-  locationId: string;
-}
-
-export interface Allocation {
-  id: string;
-  eventId: string;
-  workCategoryId: string;
-  date: string;
-  effortHours: number;
-}
-
-export interface DailyDemand {
-  date: string;
-  totalEffortHours: number;
-}
-
-export interface DailyCapacityComparison {
-  date: string;
-  demandHours: number;
-  capacityHours: number;
-  isOverAllocated: boolean;
-  isUnderAllocated: boolean;
-}
-
-export interface WorkCategoryPressure {
-  workCategoryId: string;
-  remainingEffortHours: number;
-  remainingDays: number;
-  isUnderPressure: boolean;
-}
-
-export interface AllocationDraft {
-  allocationId: string | null;
-  key: string;
-  workCategoryId: string;
-  date: string;
-  effortValue: number;
-  effortUnit: "HOURS" | "FTE";
-}
-
-export interface Evaluation {
-  dailyDemand: DailyDemand[];
-  dailyCapacityComparison: DailyCapacityComparison[];
-  workCategoryPressure: WorkCategoryPressure[];
-}
+// PlanningEvent is an alias for Event used in planning filter contexts
+export type PlanningEvent = Event;
 
 type DateRangeSource = "preset" | "custom" | "year-month";
 

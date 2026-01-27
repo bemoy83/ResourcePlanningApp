@@ -23,30 +23,7 @@ import {
   parseDateParts,
 } from "../../../utils/date";
 import { getHolidayDatesForRange } from "../../../utils/holidays";
-
-interface PlanningEvent {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  status: string;
-}
-
-interface WorkCategory {
-  id: string;
-  eventId: string;
-  name: string;
-  estimatedEffortHours: number;
-  phase?: string;
-}
-
-interface Allocation {
-  id: string;
-  eventId: string;
-  workCategoryId: string;
-  date: string;
-  effortHours: number;
-}
+import { PlanningEvent, WorkCategory, Allocation } from "../../../types/shared";
 
 function PlanningToolbar({ children }: { children: ReactNode }) {
   return <div>{children}</div>;

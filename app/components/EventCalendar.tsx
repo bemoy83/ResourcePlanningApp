@@ -1,14 +1,8 @@
 import { useMemo, memo, useState, useRef, useEffect } from "react";
 import { UnifiedEvent } from "../../types/calendar";
-import { buildDateFlags, DateFlags } from "../utils/date";
+import { buildDateFlags } from "../utils/date";
 import { Tooltip, TooltipState } from "./tooltip";
-
-interface TimelineLayout {
-  dates: string[];
-  dateColumnWidth: number;
-  timelineOriginPx: number;
-  dateMeta?: DateFlags[];
-}
+import { TimelineLayout } from "../types/shared";
 
 interface EventCalendarProps {
   events: UnifiedEvent[];

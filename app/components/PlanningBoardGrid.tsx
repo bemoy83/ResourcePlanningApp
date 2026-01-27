@@ -8,85 +8,27 @@ import {
   generateLeftColumnsTemplate,
 } from './layoutConstants';
 import { buildDateFlags, DateFlags } from '../utils/date';
+import {
+  Event,
+  Location,
+  EventLocation,
+  WorkCategory,
+  Allocation,
+  AllocationDraft,
+  DailyCapacityComparison,
+  WorkCategoryPressure,
+  Evaluation,
+  TimelineLayout,
+} from '../types/shared';
 
-interface Event {
-  id: string;
-  name: string;
+// Event in PlanningBoardGrid can have optional start/end dates
+interface PlanningBoardEvent extends Omit<Event, 'startDate' | 'endDate' | 'status'> {
   startDate?: string;
   endDate?: string;
 }
 
-interface Location {
-  id: string;
-  name: string;
-}
-
-interface EventLocation {
-  id: string;
-  eventId: string;
-  locationId: string;
-}
-
-interface WorkCategory {
-  id: string;
-  eventId: string;
-  name: string;
-  estimatedEffortHours: number;
-  phase?: string;
-}
-
-interface Allocation {
-  id: string;
-  eventId: string;
-  workCategoryId: string;
-  date: string;
-  effortHours: number;
-}
-
-interface AllocationDraft {
-  allocationId: string | null;
-  key: string;
-  workCategoryId: string;
-  date: string;
-  effortValue: number;
-  effortUnit: "HOURS" | "FTE";
-}
-
-interface DailyDemand {
-  date: string;
-  totalEffortHours: number;
-}
-
-interface DailyCapacityComparison {
-  date: string;
-  demandHours: number;
-  capacityHours: number;
-  isOverAllocated: boolean;
-  isUnderAllocated: boolean;
-}
-
-interface WorkCategoryPressure {
-  workCategoryId: string;
-  remainingEffortHours: number;
-  remainingDays: number;
-  isUnderPressure: boolean;
-}
-
-interface Evaluation {
-  dailyDemand: DailyDemand[];
-  dailyCapacityComparison: DailyCapacityComparison[];
-  workCategoryPressure: WorkCategoryPressure[];
-}
-
-interface TimelineLayout {
-  dates: string[];
-  dateColumnWidth: number;
-  timelineOriginPx: number;
-  dateMeta?: DateFlags[];
-}
-
 interface PlanningBoardGridProps {
-  events: Event[];
+  events: PlanningBoardEvent[];
   locations?: Location[];
   eventLocations?: EventLocation[];
   dates: string[];
@@ -127,7 +69,7 @@ export const PlanningBoardGrid = memo(function PlanningBoardGrid({
 }: PlanningBoardGridProps) {
   // Memoize event lookup map (Phase 2.2)
   const eventMap = useMemo(() => {
-    const map = new Map<string, Event>();
+    const map = new Map<string, PlanningBoardEvent>();
     for (const event of events) {
       map.set(event.id, event);
     }

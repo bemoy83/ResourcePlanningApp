@@ -1,14 +1,4 @@
-interface Allocation {
-  id: string;
-  effortHours: number;
-}
-
-interface AllocationDraft {
-  allocationId: string | null;
-  key: string;
-  effortValue: number;
-  effortUnit: "HOURS" | "FTE";
-}
+import { Allocation, AllocationDraft } from '../types/shared';
 
 interface AllocationCellProps {
   workCategoryId: string;

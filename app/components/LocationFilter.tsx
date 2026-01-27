@@ -3,11 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Chip } from "./Chip";
 import { Button } from "./Button";
-
-interface Location {
-  id: string;
-  name: string;
-}
+import { Location } from '../types/shared';
 
 interface LocationTagGroup {
   name: string;

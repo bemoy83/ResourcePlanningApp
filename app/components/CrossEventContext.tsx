@@ -4,32 +4,13 @@ import {
   calculateLeftColumnOffsets,
   generateLeftColumnsTemplate,
 } from './layoutConstants';
-import { buildDateFlags, DateFlags } from '../utils/date';
-
-interface DailyDemand {
-  date: string;
-  totalEffortHours: number;
-}
-
-interface DailyCapacityComparison {
-  date: string;
-  demandHours: number;
-  capacityHours: number;
-  isOverAllocated: boolean;
-  isUnderAllocated: boolean;
-}
-
-interface CrossEventEvaluation {
-  crossEventDailyDemand: DailyDemand[];
-  crossEventCapacityComparison: DailyCapacityComparison[];
-}
-
-interface TimelineLayout {
-  dates: string[];
-  dateColumnWidth: number;
-  timelineOriginPx: number;
-  dateMeta?: DateFlags[];
-}
+import { buildDateFlags } from '../utils/date';
+import {
+  CrossEventEvaluation,
+  DailyCapacityComparison,
+  DailyDemand,
+  TimelineLayout,
+} from '../types/shared';
 
 interface CrossEventContextProps {
   crossEventEvaluation: CrossEventEvaluation;

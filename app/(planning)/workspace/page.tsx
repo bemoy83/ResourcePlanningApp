@@ -12,27 +12,21 @@ import { UnifiedDateRangeButton } from "../../components/UnifiedDateRangeButton"
 import { TooltipToggle, useTooltipPreference } from "../../components/TooltipToggle";
 import { ThemeToggle } from "../../components/ThemeToggle";
 import { SegmentedControl } from "../../components/SegmentedControl";
+import { usePlanningFilters } from "../../components/usePlanningFilters";
 import {
-  usePlanningFilters,
   Allocation,
   AllocationDraft,
-  DailyCapacityComparison,
-  DailyDemand,
+  CrossEventEvaluation,
   Evaluation,
   EventLocation,
   Location,
   PlanningEvent,
   WorkCategory,
-} from "../../components/usePlanningFilters";
+} from "../../types/shared";
 
 interface LocationTagGroup {
   name: string;
   locationIds: string[];
-}
-
-interface CrossEventEvaluation {
-  crossEventDailyDemand: DailyDemand[];
-  crossEventCapacityComparison: DailyCapacityComparison[];
 }
 
 function PlanningToolbar({ children }: { children: ReactNode }) {

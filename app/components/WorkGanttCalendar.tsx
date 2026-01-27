@@ -1,22 +1,18 @@
 import { useMemo, memo, useState, useRef, useEffect } from "react";
-import { buildDateFlags, DateFlags } from "../utils/date";
+import { buildDateFlags } from "../utils/date";
 import { getHolidayDatesForRange } from "../utils/holidays";
 import { Tooltip, TooltipState } from "./tooltip";
 import {
   groupWorkCategoriesByEvent,
   WorkGanttEventRow,
+  AllocationSpan,
+} from "./workGanttUtils";
+import {
   Event,
   WorkCategory,
   Allocation,
-  AllocationSpan,
-} from "./workGanttUtils";
-
-interface TimelineLayout {
-  dates: string[];
-  dateColumnWidth: number;
-  timelineOriginPx: number;
-  dateMeta?: DateFlags[];
-}
+  TimelineLayout,
+} from "../types/shared";
 
 interface WorkGanttCalendarProps {
   events: Event[];

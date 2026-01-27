@@ -4,65 +4,13 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { PlanningBoardGrid } from "../../../components/PlanningBoardGrid";
 import { nextDateString } from "../../../utils/date";
-
-interface Event {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  status: string;
-}
-
-interface WorkCategory {
-  id: string;
-  eventId: string;
-  name: string;
-  estimatedEffortHours: number;
-  phase?: string;
-}
-
-interface Allocation {
-  id: string;
-  eventId: string;
-  workCategoryId: string;
-  date: string;
-  effortHours: number;
-}
-
-interface DailyDemand {
-  date: string;
-  totalEffortHours: number;
-}
-
-interface DailyCapacityComparison {
-  date: string;
-  demandHours: number;
-  capacityHours: number;
-  isOverAllocated: boolean;
-  isUnderAllocated: boolean;
-}
-
-interface WorkCategoryPressure {
-  workCategoryId: string;
-  remainingEffortHours: number;
-  remainingDays: number;
-  isUnderPressure: boolean;
-}
-
-interface Evaluation {
-  dailyDemand: DailyDemand[];
-  dailyCapacityComparison: DailyCapacityComparison[];
-  workCategoryPressure: WorkCategoryPressure[];
-}
-
-interface AllocationDraft {
-  allocationId: string | null;
-  key: string;
-  workCategoryId: string;
-  date: string;
-  effortValue: number;
-  effortUnit: "HOURS" | "FTE";
-}
+import {
+  Event,
+  WorkCategory,
+  Allocation,
+  Evaluation,
+  AllocationDraft,
+} from "../../../types/shared";
 
 interface VisibleDateRange {
   startDate: string;

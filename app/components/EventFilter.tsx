@@ -3,14 +3,13 @@
 import { useId, useState, useRef, useEffect } from "react";
 import { Chip } from "./Chip";
 import { Button } from "./Button";
+import { Event } from '../types/shared';
 
-interface Event {
-  id: string;
-  name: string;
-}
+// EventFilter only needs id and name from Event
+type FilterableEvent = Pick<Event, 'id' | 'name'>;
 
 interface EventFilterProps {
-  events: Event[];
+  events: FilterableEvent[];
   selectedEventIds: Set<string>;
   onSelectionChange: (selectedIds: Set<string>) => void;
   selectionMode?: "multi" | "single";

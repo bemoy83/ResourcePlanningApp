@@ -1,29 +1,9 @@
-interface WorkCategory {
-  id: string;
-  name: string;
-  estimatedEffortHours: number;
-  phase?: string;
-}
-
-interface Allocation {
-  workCategoryId: string;
-  effortHours: number;
-}
-
-interface WorkCategoryPressure {
-  workCategoryId: string;
-  remainingEffortHours: number;
-  remainingDays: number;
-  isUnderPressure: boolean;
-}
-
-interface DailyCapacityComparison {
-  date: string;
-  demandHours: number;
-  capacityHours: number;
-  isOverAllocated: boolean;
-  isUnderAllocated: boolean;
-}
+import {
+  WorkCategory,
+  Allocation,
+  WorkCategoryPressure,
+  DailyCapacityComparison,
+} from '../types/shared';
 
 interface EvaluationSummaryProps {
   workCategories: WorkCategory[];

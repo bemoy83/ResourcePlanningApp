@@ -4,22 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "../../components/Button";
 import { EventFilter } from "../../components/EventFilter";
-
-type EventPhase = {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-};
-
-type PlanningEvent = {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  status: string;
-  phases?: EventPhase[];
-};
+import { EventPhase, PlanningEvent } from "../../types/shared";
 
 const DEFAULT_PHASES = ["ASSEMBLY", "MOVE_IN", "EVENT", "MOVE_OUT", "DISMANTLE"] as const;
 

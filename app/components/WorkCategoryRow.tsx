@@ -2,38 +2,12 @@ import { useMemo } from 'react';
 import { AllocationCell } from './AllocationCell';
 import { DateFlags } from '../utils/date';
 import { buildAllocationSpans, AllocationSpan } from './workGanttUtils';
-
-interface WorkCategory {
-  id: string;
-  eventId: string;
-  name: string;
-  estimatedEffortHours: number;
-  phase?: string;
-}
-
-interface Allocation {
-  id: string;
-  eventId: string;
-  workCategoryId: string;
-  date: string;
-  effortHours: number;
-}
-
-interface AllocationDraft {
-  allocationId: string | null;
-  key: string;
-  workCategoryId: string;
-  date: string;
-  effortValue: number;
-  effortUnit: "HOURS" | "FTE";
-}
-
-interface WorkCategoryPressure {
-  workCategoryId: string;
-  remainingEffortHours: number;
-  remainingDays: number;
-  isUnderPressure: boolean;
-}
+import {
+  WorkCategory,
+  Allocation,
+  AllocationDraft,
+  WorkCategoryPressure,
+} from '../types/shared';
 
 interface WorkCategoryRowProps {
   eventName: string;

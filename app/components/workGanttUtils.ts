@@ -3,28 +3,7 @@
  * Converts discrete daily allocations into continuous timeline spans
  */
 
-export interface Allocation {
-  id: string;
-  eventId: string;
-  workCategoryId: string;
-  date: string;
-  effortHours: number;
-}
-
-export interface WorkCategory {
-  id: string;
-  eventId: string;
-  name: string;
-  estimatedEffortHours: number;
-  phase?: string;
-}
-
-export interface Event {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-}
+import { Allocation, WorkCategory, Event } from '../types/shared';
 
 export interface AllocationSpan {
   workCategoryId: string;

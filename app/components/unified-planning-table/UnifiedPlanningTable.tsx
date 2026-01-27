@@ -11,12 +11,13 @@ import {
   TimelineLayout,
   Event,
   Location,
+  EventLocation,
   WorkCategory,
   Allocation,
   AllocationDraft,
   Evaluation,
   CrossEventEvaluation,
-} from './shared/types';
+} from '../../types/shared';
 import {
   LEFT_COLUMNS,
   TIMELINE_DATE_COLUMN_WIDTH,
@@ -27,12 +28,6 @@ import {
 } from '../layoutConstants';
 import { buildDateFlags, getTodayString } from '../../utils/date';
 import { getHolidayDatesForRange } from '../../utils/holidays';
-
-interface EventLocation {
-  id: string;
-  eventId: string;
-  locationId: string;
-}
 
 interface UnifiedPlanningTableProps {
   events: Event[];
