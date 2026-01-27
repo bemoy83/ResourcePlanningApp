@@ -37,6 +37,7 @@ interface WorkCategory {
 
 interface Allocation {
   id: string;
+  eventId: string;
   workCategoryId: string;
   date: string;
   effortHours: number;

@@ -175,12 +175,12 @@ export default function WorkGanttPage() {
       }
 
       const numDays = daysInMonth(finalYear, finalMonth);
-      const startDate = formatDateParts({ year: finalYear, month: finalMonth, day: 1 });
-      const endDate = formatDateParts({ year: finalYear, month: finalMonth, day: numDays });
+      const startDate = formatDateParts(finalYear, finalMonth, 1);
+      const endDate = formatDateParts(finalYear, finalMonth, numDays);
       return { startDate, endDate };
     }
 
-    return getDateRangeFromPreset(dateRangePreset);
+    return getDateRangeFromPreset(dateRangePreset, customDateRange);
   }, [dateRangePreset, customDateRange, selectedYear, selectedMonth, monthOffset]);
 
   // Generate dates array for timeline
@@ -256,12 +256,12 @@ export default function WorkGanttPage() {
     setCustomDateRange(range);
   }, []);
 
-  const handleYearChange = useCallback((year: number) => {
+  const handleYearChange = useCallback((year: number | null) => {
     setSelectedYear(year);
     setMonthOffset(0);
   }, []);
 
-  const handleMonthChange = useCallback((month: number) => {
+  const handleMonthChange = useCallback((month: number | null) => {
     setSelectedMonth(month);
     setMonthOffset(0);
   }, []);
