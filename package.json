@@ -3,6 +3,7 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
+    "purge:import": "tsx scripts/purge-import.ts",
     "studio": "prisma studio"
   },
   "prisma": {

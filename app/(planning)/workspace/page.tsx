@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { UnifiedPlanningTable } from "../../components/unified-planning-table/UnifiedPlanningTable";
 import { Chip } from "../../components/Chip";
 import { Button } from "../../components/Button";
@@ -664,6 +665,36 @@ export default function WorkspacePage() {
             </h1>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-md)" }}>
+            <Link
+              href="/planning/work/gantt"
+              style={{
+                padding: "8px 16px",
+                borderRadius: "var(--radius-full)",
+                border: "var(--border-width-thin) solid var(--border-primary)",
+                textDecoration: "none",
+                color: "var(--text-primary)",
+                backgroundColor: "var(--surface-default)",
+                fontSize: "var(--font-size-sm)",
+                fontWeight: "var(--font-weight-medium)",
+              }}
+            >
+              Work Gantt
+            </Link>
+            <Link
+              href="/planning/work"
+              style={{
+                padding: "8px 16px",
+                borderRadius: "var(--radius-full)",
+                border: "var(--border-width-thin) solid var(--border-primary)",
+                textDecoration: "none",
+                color: "var(--text-primary)",
+                backgroundColor: "var(--surface-default)",
+                fontSize: "var(--font-size-sm)",
+                fontWeight: "var(--font-weight-medium)",
+              }}
+            >
+              Add Work
+            </Link>
             <TooltipToggle enabled={tooltipsEnabled} onChange={setTooltipsEnabled} />
             <ThemeToggle />
           </div>

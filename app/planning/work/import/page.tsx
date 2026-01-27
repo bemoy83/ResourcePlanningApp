@@ -279,13 +279,46 @@ export default function WorkCategoryImportPage() {
             </div>
 
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px" }}>
-              <Button type="button" variant="primary" size="md" disabled={!canImport} onClick={handleImport}>
-                {isImporting ? "Importing..." : "Import work categories"}
-              </Button>
+              {importResult ? (
+                <Link
+                  href="/planning/work"
+                  style={{
+                    padding: "10px 16px",
+                    borderRadius: "999px",
+                    border: "1px solid var(--border-primary)",
+                    textDecoration: "none",
+                    color: "var(--text-primary)",
+                    backgroundColor: "var(--surface-default)",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                  }}
+                >
+                  Go to work categories
+                </Link>
+              ) : (
+                <Button type="button" variant="primary" size="md" disabled={!canImport} onClick={handleImport}>
+                  {isImporting ? "Importing..." : "Import work categories"}
+                </Button>
+              )}
             </div>
             {importProgress && (
-              <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "8px", textAlign: "right" }}>
-                Importing batch {importProgress.current} of {importProgress.total}...
+              <div style={{ marginBottom: "8px" }}>
+                <div style={{
+                  height: "6px",
+                  backgroundColor: "var(--border-primary)",
+                  borderRadius: "999px",
+                  overflow: "hidden",
+                }}>
+                  <div style={{
+                    width: `${Math.round((importProgress.current / importProgress.total) * 100)}%`,
+                    height: "100%",
+                    backgroundColor: "var(--status-success)",
+                    transition: "width 200ms ease",
+                  }} />
+                </div>
+                <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "6px", textAlign: "right" }}>
+                  Importing batch {importProgress.current} of {importProgress.total}...
+                </div>
               </div>
             )}
           </>

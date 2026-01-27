@@ -338,51 +338,47 @@ export function UnifiedPlanningTable({
           </div>
 
           {/* Calendar Section - One row per location */}
-          {calendarRows.length > 0 && (
-            <section className="calendar-section" style={{ position: 'relative', zIndex: 1 }}>
-              {calendarRows.map(({ location, events: locationEvents }, index) => (
-                <CalendarLocationRow
-                  key={location.id}
-                  location={location}
-                  events={locationEvents}
-                  timeline={timeline}
-                  tooltipsEnabled={tooltipsEnabled}
-                  rowIndex={index}
-                  isHighlighted={highlightedLocationIds.has(location.id)}
-                  onEventHover={handleEventHover}
-                />
-              ))}
-              {/* Today indicator line inside calendar section - above calendar content (z-index 1) but below sticky columns (z-index 3) */}
-              <TodayIndicator
-                todayIndex={todayIndex}
-                dateColumnWidth={TIMELINE_DATE_COLUMN_WIDTH}
-                timelineOriginPx={TIMELINE_ORIGIN_PX}
-                topOffset={0}
+          <section className="calendar-section" style={{ position: 'relative', zIndex: 1 }}>
+            {calendarRows.map(({ location, events: locationEvents }, index) => (
+              <CalendarLocationRow
+                key={location.id}
+                location={location}
+                events={locationEvents}
+                timeline={timeline}
+                tooltipsEnabled={tooltipsEnabled}
+                rowIndex={index}
+                isHighlighted={highlightedLocationIds.has(location.id)}
+                onEventHover={handleEventHover}
               />
-            </section>
-          )}
+            ))}
+            {/* Today indicator line inside calendar section - above calendar content (z-index 1) but below sticky columns (z-index 3) */}
+            <TodayIndicator
+              todayIndex={todayIndex}
+              dateColumnWidth={TIMELINE_DATE_COLUMN_WIDTH}
+              timelineOriginPx={TIMELINE_ORIGIN_PX}
+              topOffset={0}
+            />
+          </section>
 
           {/* Cross-Event Section - Summary rows */}
-          {crossEventEvaluation.crossEventDailyDemand.length > 0 && (
-            <section className="cross-event-section" style={{ position: 'relative', zIndex: 1, marginTop: 'var(--space-md)', marginBottom: 'var(--space-md)' }}>
-              <CrossEventDemandRow
-                dailyDemand={crossEventEvaluation.crossEventDailyDemand}
-                dailyCapacityComparison={crossEventEvaluation.crossEventCapacityComparison}
-                timeline={timeline}
-              />
-              <CrossEventCapacityRow
-                dailyCapacityComparison={crossEventEvaluation.crossEventCapacityComparison}
-                timeline={timeline}
-              />
-              {/* Today indicator line inside cross-event section - above cross-event content but below sticky columns (z-index 3) */}
-              <TodayIndicator
-                todayIndex={todayIndex}
-                dateColumnWidth={TIMELINE_DATE_COLUMN_WIDTH}
-                timelineOriginPx={TIMELINE_ORIGIN_PX}
-                topOffset={0}
-              />
-            </section>
-          )}
+          <section className="cross-event-section" style={{ position: 'relative', zIndex: 1, marginTop: 'var(--space-md)', marginBottom: 'var(--space-md)' }}>
+            <CrossEventDemandRow
+              dailyDemand={crossEventEvaluation.crossEventDailyDemand}
+              dailyCapacityComparison={crossEventEvaluation.crossEventCapacityComparison}
+              timeline={timeline}
+            />
+            <CrossEventCapacityRow
+              dailyCapacityComparison={crossEventEvaluation.crossEventCapacityComparison}
+              timeline={timeline}
+            />
+            {/* Today indicator line inside cross-event section - above cross-event content but below sticky columns (z-index 3) */}
+            <TodayIndicator
+              todayIndex={todayIndex}
+              dateColumnWidth={TIMELINE_DATE_COLUMN_WIDTH}
+              timelineOriginPx={TIMELINE_ORIGIN_PX}
+              topOffset={0}
+            />
+          </section>
 
           {/* Work Categories Labels Row - Sticky below cross-event */}
           <div

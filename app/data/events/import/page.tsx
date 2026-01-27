@@ -1,8 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { EventXlsxParseError, parseEventXlsx } from "@/lib/import/parseEventXlsx";
 import { EventImportRow } from "@/types/event-import";
+import { Button } from "../../../components/Button";
+import { Chip } from "../../../components/Chip";
 
 interface ParsedImportResult {
   rows: EventImportRow[];
@@ -25,6 +28,7 @@ export default function ImportPreviewPage() {
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const [importProgress, setImportProgress] = useState<{ current: number; total: number } | null>(null);
+  const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
 
   const handleExportSummary = () => {
     if (!interpretation) {
@@ -190,14 +194,12 @@ export default function ImportPreviewPage() {
       }))
       .sort((a, b) => a.eventName.localeCompare(b.eventName));
     const phaseCount = eventPhases.reduce((sum, entry) => sum + entry.phases.length, 0);
-    const locationEvents = buildLocationEventSummary(parsedResult.rows);
 
     return {
       events,
       locations,
       eventPhases,
       phaseCount,
-      locationEvents,
     };
   }, [interpretation, parsedResult]);
 
@@ -205,53 +207,84 @@ export default function ImportPreviewPage() {
   const canImport = parsedResult && parsedResult.rows.length > 0 && parsedResult.errors.length === 0 && !isImporting;
 
   return (
-    <div style={{ padding: "20px", maxWidth: "100%", backgroundColor: "#fafafa" }}>
+    <main style={{
+      minHeight: "100vh",
+      padding: "var(--space-xl)",
+      backgroundColor: "var(--bg-primary)",
+    }}>
       {/* 1. Header */}
-      <h1 style={{
-        marginBottom: "8px",
-        color: "#000",
-        borderBottom: "2px solid #333",
-        paddingBottom: "8px"
-      }}>
-        Event Calendar Import — Preview
-      </h1>
-      <div style={{ marginBottom: "24px", fontSize: "14px", color: "#555" }}>
-        Upload XLSX data to preview how it will be interpreted
+      <div style={{ marginBottom: "var(--space-xl)" }}>
+        <div style={{
+          marginBottom: "var(--space-xs)",
+          fontSize: "var(--font-size-xs)",
+          fontWeight: "var(--font-weight-medium)",
+          color: "var(--text-tertiary)",
+          textTransform: "uppercase",
+          letterSpacing: "0.05em",
+        }}>
+          Event Import
+        </div>
+        <h1 style={{
+          margin: "0 0 var(--space-sm) 0",
+          color: "var(--text-primary)",
+          fontSize: "var(--font-size-2xl)",
+          fontWeight: "var(--font-weight-semibold)",
+          letterSpacing: "var(--letter-spacing-tight)",
+        }}>
+          Event Calendar Import — Preview
+        </h1>
+        <p style={{
+          margin: 0,
+          fontSize: "var(--font-size-md)",
+          color: "var(--text-secondary)",
+        }}>
+          Upload XLSX data to preview how it will be interpreted
+        </p>
       </div>
 
       {/* 2. Input Section */}
-      <section style={{ marginBottom: "32px" }}>
+      <section style={{
+        marginBottom: "var(--space-2xl)",
+        padding: "var(--space-xl) var(--space-2xl)",
+        backgroundColor: "var(--surface-default)",
+        border: "var(--border-width-thin) solid var(--border-secondary)",
+        borderRadius: "var(--radius-xl)",
+        boxShadow: "var(--shadow-lg)",
+      }}>
         <h2 style={{
-          fontSize: "18px",
-          marginBottom: "12px",
-          color: "#000",
-          borderBottom: "1px solid #666",
-          paddingBottom: "6px"
+          fontSize: "var(--font-size-lg)",
+          marginBottom: "var(--space-md)",
+          color: "var(--text-primary)",
+          fontWeight: "var(--font-weight-semibold)",
         }}>
           Input
         </h2>
 
         {/* XLSX Upload */}
-        <div style={{ marginBottom: "12px" }}>
-          <label style={{
-            padding: "8px 12px",
-            backgroundColor: "#f5f5f5",
-            border: "2px solid #666",
-            color: "#000",
-            fontSize: "13px",
-            cursor: "pointer",
-            display: "inline-block",
-            marginRight: "12px",
-          }}>
-            Choose XLSX File
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-md)", flexWrap: "wrap" }}>
+          <label>
             <input
               type="file"
               accept=".xlsx"
               onChange={handleXlsxUpload}
               style={{ display: "none" }}
             />
+            <Button
+              variant="default"
+              size="md"
+              onClick={(e) => {
+                e.preventDefault();
+                const input = e.currentTarget.parentElement?.querySelector('input[type="file"]') as HTMLInputElement;
+                input?.click();
+              }}
+            >
+              Choose XLSX File
+            </Button>
           </label>
-          <span style={{ fontSize: "12px", color: "#555" }}>
+          <span style={{
+            fontSize: "var(--font-size-sm)",
+            color: "var(--text-tertiary)",
+          }}>
             Uses the upstream export format
           </span>
         </div>
@@ -262,33 +295,70 @@ export default function ImportPreviewPage() {
         <>
           {/* 3. Parse Errors Section */}
           {parsedResult.errors.length > 0 && (
-            <section style={{ marginBottom: "32px" }}>
+            <section style={{
+              marginBottom: "var(--space-2xl)",
+              padding: "var(--space-xl) var(--space-2xl)",
+              backgroundColor: "var(--surface-default)",
+              border: "var(--border-width-thin) solid var(--status-error)",
+              borderRadius: "var(--radius-xl)",
+              boxShadow: "var(--shadow-lg)",
+            }}>
               <h2 style={{
-                fontSize: "18px",
-                marginBottom: "12px",
-                color: "#c62828",
-                borderBottom: "1px solid #c62828",
-                paddingBottom: "6px"
+                fontSize: "var(--font-size-lg)",
+                marginBottom: "var(--space-md)",
+                color: "var(--status-error)",
+                fontWeight: "var(--font-weight-semibold)",
               }}>
                 Parse Errors ({parsedResult.errors.length})
               </h2>
               <div style={{
-                backgroundColor: "#ffebee",
-                border: "2px solid #c62828",
-                padding: "16px",
+                backgroundColor: "var(--bg-secondary)",
+                border: "var(--border-width-thin) solid var(--border-primary)",
+                borderRadius: "var(--radius-md)",
+                padding: "var(--space-md)",
+                overflowX: "auto",
               }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                <table style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  fontSize: "var(--font-size-sm)",
+                }}>
                   <thead>
-                    <tr style={{ borderBottom: "1px solid #c62828" }}>
-                      <th style={{ padding: "8px", textAlign: "left", width: "100px" }}>Row Index</th>
-                      <th style={{ padding: "8px", textAlign: "left" }}>Error Message</th>
+                    <tr style={{ borderBottom: "var(--border-width-thin) solid var(--border-primary)" }}>
+                      <th style={{
+                        padding: "var(--space-sm)",
+                        textAlign: "left",
+                        width: "100px",
+                        color: "var(--text-secondary)",
+                        fontWeight: "var(--font-weight-medium)",
+                      }}>
+                        Row Index
+                      </th>
+                      <th style={{
+                        padding: "var(--space-sm)",
+                        textAlign: "left",
+                        color: "var(--text-secondary)",
+                        fontWeight: "var(--font-weight-medium)",
+                      }}>
+                        Error Message
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {parsedResult.errors.map((error, idx) => (
-                      <tr key={idx} style={{ borderBottom: "1px solid #ffcdd2" }}>
-                        <td style={{ padding: "8px", color: "#000" }}>{error.rowIndex}</td>
-                        <td style={{ padding: "8px", color: "#000" }}>{error.message}</td>
+                      <tr key={idx} style={{ borderBottom: "var(--border-width-thin) solid var(--border-secondary)" }}>
+                        <td style={{
+                          padding: "var(--space-sm)",
+                          color: "var(--text-primary)",
+                        }}>
+                          {error.rowIndex}
+                        </td>
+                        <td style={{
+                          padding: "var(--space-sm)",
+                          color: "var(--text-primary)",
+                        }}>
+                          {error.message}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -299,43 +369,68 @@ export default function ImportPreviewPage() {
 
           {/* 4. Import Action Section */}
           {parsedResult.rows.length > 0 && (
-            <section style={{ marginBottom: "32px" }}>
+            <section style={{
+              marginBottom: "var(--space-2xl)",
+              padding: "var(--space-xl) var(--space-2xl)",
+              backgroundColor: "var(--surface-default)",
+              border: "var(--border-width-thin) solid var(--border-secondary)",
+              borderRadius: "var(--radius-xl)",
+              boxShadow: "var(--shadow-lg)",
+            }}>
               <h2 style={{
-                fontSize: "18px",
-                marginBottom: "12px",
-                color: "#000",
-                borderBottom: "1px solid #666",
-                paddingBottom: "6px"
+                fontSize: "var(--font-size-lg)",
+                marginBottom: "var(--space-md)",
+                color: "var(--text-primary)",
+                fontWeight: "var(--font-weight-semibold)",
               }}>
                 Execute Import
               </h2>
-              <div style={{
-                backgroundColor: "#f5f5f5",
-                border: "2px solid #999",
-                padding: "16px",
-              }}>
-                <button
-                  onClick={handleImport}
-                  disabled={!canImport}
-                  style={{
-                    padding: "12px 24px",
-                    backgroundColor: canImport ? "#4caf50" : "#ccc",
-                    border: "2px solid #333",
-                    color: canImport ? "#fff" : "#666",
-                    fontSize: "14px",
-                    fontWeight: "bold",
-                    cursor: canImport ? "pointer" : "not-allowed",
-                  }}
-                >
-                  {isImporting ? "Importing..." : "Import Events"}
-                </button>
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
+                {importResult ? (
+                  <Link href="/workspace">
+                    <Button variant="primary" size="md">
+                      Go to workspace
+                    </Button>
+                  </Link>
+                ) : (
+                  <Button
+                    onClick={handleImport}
+                    disabled={!canImport}
+                      variant="primary"
+                      size="md"
+                    >
+                      {isImporting ? "Importing..." : "Import Events"}
+                  </Button>
+                )}
                 {importProgress && (
-                  <div style={{ marginTop: "8px", fontSize: "12px", color: "#555" }}>
-                    Importing batch {importProgress.current} of {importProgress.total}...
+                  <div>
+                    <div style={{
+                      height: "6px",
+                      backgroundColor: "var(--surface-progress-track)",
+                      borderRadius: "var(--radius-full)",
+                      overflow: "hidden",
+                    }}>
+                      <div style={{
+                        width: `${Math.round((importProgress.current / importProgress.total) * 100)}%`,
+                        height: "100%",
+                        backgroundColor: "var(--status-success)",
+                        transition: "width var(--transition-fast)",
+                      }} />
+                    </div>
+                    <div style={{
+                      marginTop: "var(--space-xs)",
+                      fontSize: "var(--font-size-sm)",
+                      color: "var(--text-secondary)",
+                    }}>
+                      Importing batch {importProgress.current} of {importProgress.total}...
+                    </div>
                   </div>
                 )}
                 {parsedResult.errors.length > 0 && (
-                  <div style={{ marginTop: "8px", fontSize: "12px", color: "#c62828" }}>
+                  <div style={{
+                    fontSize: "var(--font-size-sm)",
+                    color: "var(--status-error)",
+                  }}>
                     Cannot import: Fix parse errors first
                   </div>
                 )}
@@ -345,109 +440,308 @@ export default function ImportPreviewPage() {
 
           {/* 5. Interpretation Summary */}
           {parsedResult.rows.length > 0 && interpretation && summaryData && (
-            <section style={{ marginBottom: "32px" }}>
+            <section style={{
+              marginBottom: "var(--space-2xl)",
+              padding: "var(--space-xl) var(--space-2xl)",
+              backgroundColor: "var(--surface-default)",
+              border: "var(--border-width-thin) solid var(--border-secondary)",
+              borderRadius: "var(--radius-xl)",
+              boxShadow: "var(--shadow-lg)",
+            }}>
               <div style={{
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                gap: "12px",
-                marginBottom: "12px",
-                borderBottom: "1px solid #666",
-                paddingBottom: "6px",
+                gap: "var(--space-md)",
+                marginBottom: "var(--space-lg)",
+                flexWrap: "wrap",
               }}>
-                <h2 style={{ fontSize: "18px", margin: 0, color: "#000" }}>
+                <h2 style={{
+                  fontSize: "var(--font-size-lg)",
+                  margin: 0,
+                  color: "var(--text-primary)",
+                  fontWeight: "var(--font-weight-semibold)",
+                }}>
                   Interpretation Summary
                 </h2>
-                <button
+                <Button
                   onClick={handleExportSummary}
-                  style={{
-                    padding: "6px 12px",
-                    backgroundColor: "#f5f5f5",
-                    border: "1px solid #666",
-                    color: "#000",
-                    fontSize: "12px",
-                    cursor: "pointer",
-                  }}
+                  variant="default"
+                  size="sm"
                 >
                   Export Summary
-                </button>
+                </Button>
               </div>
-              <details>
-                <summary style={{ cursor: "pointer", fontSize: "13px", marginBottom: "8px" }}>
+              <details open>
+                <summary style={{
+                  cursor: "pointer",
+                  fontSize: "var(--font-size-sm)",
+                  marginBottom: "var(--space-md)",
+                  color: "var(--text-secondary)",
+                  fontWeight: "var(--font-weight-medium)",
+                }}>
                   Show interpretation summary
                 </summary>
-                <div style={{
-                  backgroundColor: "#f5f5f5",
-                  border: "2px solid #999",
-                  padding: "16px",
-                  fontSize: "14px",
-                }}>
-                  <div style={summaryStatsRowStyle}>
-                    <div style={summaryStatStyle}>
-                      <div style={summaryStatLabelStyle}>Events</div>
-                      <div style={summaryStatValueStyle}>{summaryData.events.length}</div>
+                <div>
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                    gap: "var(--space-md)",
+                    marginBottom: "var(--space-lg)",
+                  }}>
+                    <div style={{
+                      backgroundColor: "var(--bg-secondary)",
+                      border: "var(--border-width-thin) solid var(--border-primary)",
+                      borderRadius: "var(--radius-md)",
+                      padding: "var(--space-md)",
+                    }}>
+                      <div style={{
+                        fontSize: "var(--font-size-xs)",
+                        color: "var(--text-tertiary)",
+                        marginBottom: "var(--space-xs)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        fontWeight: "var(--font-weight-medium)",
+                      }}>
+                        Events
+                      </div>
+                      <div style={{
+                        fontSize: "var(--font-size-2xl)",
+                        fontWeight: "var(--font-weight-bold)",
+                        color: "var(--text-primary)",
+                      }}>
+                        {summaryData.events.length}
+                      </div>
                     </div>
-                    <div style={summaryStatStyle}>
-                      <div style={summaryStatLabelStyle}>Locations</div>
-                      <div style={summaryStatValueStyle}>{summaryData.locations.length}</div>
+                    <div style={{
+                      backgroundColor: "var(--bg-secondary)",
+                      border: "var(--border-width-thin) solid var(--border-primary)",
+                      borderRadius: "var(--radius-md)",
+                      padding: "var(--space-md)",
+                    }}>
+                      <div style={{
+                        fontSize: "var(--font-size-xs)",
+                        color: "var(--text-tertiary)",
+                        marginBottom: "var(--space-xs)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        fontWeight: "var(--font-weight-medium)",
+                      }}>
+                        Locations
+                      </div>
+                      <div style={{
+                        fontSize: "var(--font-size-2xl)",
+                        fontWeight: "var(--font-weight-bold)",
+                        color: "var(--text-primary)",
+                      }}>
+                        {summaryData.locations.length}
+                      </div>
                     </div>
-                    <div style={summaryStatStyle}>
-                      <div style={summaryStatLabelStyle}>Phases</div>
-                      <div style={summaryStatValueStyle}>{summaryData.phaseCount}</div>
+                    <div style={{
+                      backgroundColor: "var(--bg-secondary)",
+                      border: "var(--border-width-thin) solid var(--border-primary)",
+                      borderRadius: "var(--radius-md)",
+                      padding: "var(--space-md)",
+                    }}>
+                      <div style={{
+                        fontSize: "var(--font-size-xs)",
+                        color: "var(--text-tertiary)",
+                        marginBottom: "var(--space-xs)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        fontWeight: "var(--font-weight-medium)",
+                      }}>
+                        Phases
+                      </div>
+                      <div style={{
+                        fontSize: "var(--font-size-2xl)",
+                        fontWeight: "var(--font-weight-bold)",
+                        color: "var(--text-primary)",
+                      }}>
+                        {summaryData.phaseCount}
+                      </div>
                     </div>
-                    <div style={summaryStatStyle}>
-                      <div style={summaryStatLabelStyle}>Rows</div>
-                      <div style={summaryStatValueStyle}>{parsedResult.rows.length}</div>
+                    <div style={{
+                      backgroundColor: "var(--bg-secondary)",
+                      border: "var(--border-width-thin) solid var(--border-primary)",
+                      borderRadius: "var(--radius-md)",
+                      padding: "var(--space-md)",
+                    }}>
+                      <div style={{
+                        fontSize: "var(--font-size-xs)",
+                        color: "var(--text-tertiary)",
+                        marginBottom: "var(--space-xs)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        fontWeight: "var(--font-weight-medium)",
+                      }}>
+                        Rows
+                      </div>
+                      <div style={{
+                        fontSize: "var(--font-size-2xl)",
+                        fontWeight: "var(--font-weight-bold)",
+                        color: "var(--text-primary)",
+                      }}>
+                        {parsedResult.rows.length}
+                      </div>
                     </div>
                   </div>
 
-                  <div style={{ marginBottom: "8px", fontSize: "12px", fontStyle: "italic", color: "#666" }}>
+                  <div style={{
+                    marginBottom: "var(--space-lg)",
+                    fontSize: "var(--font-size-sm)",
+                    fontStyle: "italic",
+                    color: "var(--text-tertiary)",
+                  }}>
                     ⚠️ These are visual summaries only — not validation.
                   </div>
 
-                  <div style={summaryTablesGridStyle}>
-                    <div style={summaryTablePanelStyle}>
-                      <div style={summaryTableHeaderStyle}>Locations → Events</div>
-                      <div style={summaryTableBodyStyle}>
-                        <table style={summaryTableStyle}>
-                          <thead>
-                            <tr>
-                              <th style={summaryTableHeaderCellStyle}>Location</th>
-                              <th style={summaryTableHeaderCellStyle}>Events</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {summaryData.locationEvents.map((location) => (
-                              <tr key={location.name}>
-                                <td style={summaryTableCellStyle}>{location.name}</td>
-                                <td style={summaryTableCellStyle}>{location.events.length}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                  {/* Locations List */}
+                  <div style={{ marginBottom: "var(--space-xl)" }}>
+                    <h3 style={{
+                      fontSize: "var(--font-size-md)",
+                      fontWeight: "var(--font-weight-semibold)",
+                      color: "var(--text-primary)",
+                      marginBottom: "var(--space-sm)",
+                    }}>
+                      Locations
+                    </h3>
+                    <div style={{
+                      backgroundColor: "var(--bg-secondary)",
+                      border: "var(--border-width-thin) solid var(--border-primary)",
+                      borderRadius: "var(--radius-md)",
+                      padding: "var(--space-md)",
+                    }}>
+                      {summaryData.locations.length > 0 ? (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-sm)" }}>
+                          {summaryData.locations.map((location) => (
+                            <Chip key={location} variant="chip">
+                              {location}
+                            </Chip>
+                          ))}
+                        </div>
+                      ) : (
+                        <span style={{
+                          color: "var(--text-tertiary)",
+                          fontStyle: "italic",
+                          fontSize: "var(--font-size-sm)",
+                        }}>
+                          No locations found
+                        </span>
+                      )}
                     </div>
+                  </div>
 
-                    <div style={summaryTablePanelStyle}>
-                      <div style={summaryTableHeaderStyle}>Events → Phases</div>
-                      <div style={summaryTableBodyStyle}>
-                        <table style={summaryTableStyle}>
-                          <thead>
-                            <tr>
-                              <th style={summaryTableHeaderCellStyle}>Event</th>
-                              <th style={summaryTableHeaderCellStyle}>Phases</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {summaryData.eventPhases.map((eventPhase) => (
-                              <tr key={eventPhase.eventName}>
-                                <td style={summaryTableCellStyle}>{eventPhase.eventName}</td>
-                                <td style={summaryTableCellStyle}>{eventPhase.phases.length}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                  {/* Events & Phases Accordion */}
+                  <div>
+                    <h3 style={{
+                      fontSize: "var(--font-size-md)",
+                      fontWeight: "var(--font-weight-semibold)",
+                      color: "var(--text-primary)",
+                      marginBottom: "var(--space-sm)",
+                    }}>
+                      Events & Phases
+                    </h3>
+                    <div style={{
+                      backgroundColor: "var(--surface-default)",
+                      border: "var(--border-width-thin) solid var(--border-primary)",
+                      borderRadius: "var(--radius-md)",
+                      overflow: "hidden",
+                    }}>
+                      {summaryData.eventPhases.length > 0 ? (
+                        summaryData.eventPhases.map((eventPhase, index) => {
+                          const isExpanded = expandedEvents.has(eventPhase.eventName);
+                          return (
+                            <div
+                              key={eventPhase.eventName}
+                              style={{
+                                borderBottom: index < summaryData.eventPhases.length - 1
+                                  ? "var(--border-width-thin) solid var(--border-secondary)"
+                                  : "none",
+                              }}
+                            >
+                              <button
+                                onClick={() => {
+                                  const newExpanded = new Set(expandedEvents);
+                                  if (isExpanded) {
+                                    newExpanded.delete(eventPhase.eventName);
+                                  } else {
+                                    newExpanded.add(eventPhase.eventName);
+                                  }
+                                  setExpandedEvents(newExpanded);
+                                }}
+                                style={{
+                                  width: "100%",
+                                  padding: "var(--space-md) var(--space-lg)",
+                                  backgroundColor: isExpanded ? "var(--bg-secondary)" : "var(--surface-default)",
+                                  border: "none",
+                                  textAlign: "left",
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  fontSize: "var(--font-size-sm)",
+                                  color: "var(--text-primary)",
+                                  transition: "background-color var(--transition-fast)",
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (!isExpanded) {
+                                    e.currentTarget.style.backgroundColor = "var(--surface-hover)";
+                                  }
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (!isExpanded) {
+                                    e.currentTarget.style.backgroundColor = "var(--surface-default)";
+                                  }
+                                }}
+                              >
+                                <span style={{
+                                  fontWeight: isExpanded
+                                    ? "var(--font-weight-semibold)"
+                                    : "var(--font-weight-medium)",
+                                }}>
+                                  {eventPhase.eventName}
+                                </span>
+                                <span style={{
+                                  fontSize: "var(--font-size-xs)",
+                                  color: "var(--text-tertiary)",
+                                  marginLeft: "var(--space-md)",
+                                }}>
+                                  {isExpanded ? "▼" : "▶"} {eventPhase.phases.length} {eventPhase.phases.length === 1 ? "phase" : "phases"}
+                                </span>
+                              </button>
+                              {isExpanded && (
+                                <div style={{
+                                  padding: "var(--space-md) var(--space-lg)",
+                                  backgroundColor: "var(--bg-primary)",
+                                  borderTop: "var(--border-width-thin) solid var(--border-secondary)",
+                                }}>
+                                  <div style={{
+                                    display: "flex",
+                                    flexWrap: "wrap",
+                                    gap: "var(--space-xs)",
+                                  }}>
+                                    {eventPhase.phases.map((phase) => (
+                                      <Chip key={phase} variant="chip">
+                                        {phase}
+                                      </Chip>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div style={{
+                          padding: "var(--space-lg)",
+                          color: "var(--text-tertiary)",
+                          fontStyle: "italic",
+                          fontSize: "var(--font-size-sm)",
+                        }}>
+                          No events found
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -457,49 +751,54 @@ export default function ImportPreviewPage() {
 
           {/* Import Result - Success */}
           {importResult && (
-            <section style={{ marginBottom: "32px" }}>
+            <section style={{
+              marginBottom: "var(--space-2xl)",
+              padding: "var(--space-xl) var(--space-2xl)",
+              backgroundColor: "var(--surface-default)",
+              border: "var(--border-width-thin) solid var(--status-success)",
+              borderRadius: "var(--radius-xl)",
+              boxShadow: "var(--shadow-lg)",
+            }}>
               <h2 style={{
-                fontSize: "18px",
-                marginBottom: "12px",
-                color: "#2e7d32",
-                borderBottom: "1px solid #2e7d32",
-                paddingBottom: "6px"
+                fontSize: "var(--font-size-lg)",
+                marginBottom: "var(--space-md)",
+                color: "var(--status-success)",
+                fontWeight: "var(--font-weight-semibold)",
               }}>
                 Import Successful
               </h2>
               <div style={{
-                backgroundColor: "#e8f5e9",
-                border: "2px solid #2e7d32",
-                padding: "16px",
-                fontSize: "14px",
-                color: "#000",
+                backgroundColor: "var(--bg-secondary)",
+                border: "var(--border-width-thin) solid var(--border-primary)",
+                borderRadius: "var(--radius-md)",
+                padding: "var(--space-md)",
+                fontSize: "var(--font-size-sm)",
+                color: "var(--text-primary)",
               }}>
-                <div style={{ marginBottom: "8px", fontWeight: "bold", color: "#000" }}>
+                <div style={{
+                  marginBottom: "var(--space-sm)",
+                  fontWeight: "var(--font-weight-semibold)",
+                  color: "var(--text-primary)",
+                }}>
                   Import completed successfully!
                 </div>
-                <ul style={{ margin: 0, paddingLeft: "20px" }}>
-                  <li style={{ color: "#000" }}>Events created: {importResult.eventsCreated}</li>
-                  <li style={{ color: "#000" }}>Events reused: {importResult.eventsReused}</li>
-                  <li style={{ color: "#000" }}>Locations created: {importResult.locationsCreated}</li>
-                  <li style={{ color: "#000" }}>Event-Location links created: {importResult.eventLocationsCreated}</li>
-                  <li style={{ color: "#000" }}>Phases created: {importResult.phasesCreated}</li>
+                <ul style={{
+                  margin: 0,
+                  paddingLeft: "var(--space-xl)",
+                  color: "var(--text-primary)",
+                }}>
+                  <li>Events created: {importResult.eventsCreated}</li>
+                  <li>Events reused: {importResult.eventsReused}</li>
+                  <li>Locations created: {importResult.locationsCreated}</li>
+                  <li>Event-Location links created: {importResult.eventLocationsCreated}</li>
+                  <li>Phases created: {importResult.phasesCreated}</li>
                 </ul>
-                <div style={{ marginTop: "12px" }}>
-                  <a
-                    href="/workspace"
-                    style={{
-                      padding: "8px 16px",
-                      backgroundColor: "#2e7d32",
-                      border: "2px solid #1b5e20",
-                      color: "#fff",
-                      textDecoration: "none",
-                      fontSize: "13px",
-                      display: "inline-block",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    View Event Calendar
-                  </a>
+                <div style={{ marginTop: "var(--space-md)" }}>
+                  <Link href="/workspace">
+                    <Button variant="primary" size="md">
+                      View Event Calendar
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </section>
@@ -507,22 +806,29 @@ export default function ImportPreviewPage() {
 
           {/* Import Result - Error */}
           {importError && (
-            <section style={{ marginBottom: "32px" }}>
+            <section style={{
+              marginBottom: "var(--space-2xl)",
+              padding: "var(--space-xl) var(--space-2xl)",
+              backgroundColor: "var(--surface-default)",
+              border: "var(--border-width-thin) solid var(--status-error)",
+              borderRadius: "var(--radius-xl)",
+              boxShadow: "var(--shadow-lg)",
+            }}>
               <h2 style={{
-                fontSize: "18px",
-                marginBottom: "12px",
-                color: "#c62828",
-                borderBottom: "1px solid #c62828",
-                paddingBottom: "6px"
+                fontSize: "var(--font-size-lg)",
+                marginBottom: "var(--space-md)",
+                color: "var(--status-error)",
+                fontWeight: "var(--font-weight-semibold)",
               }}>
                 Import Failed
               </h2>
               <div style={{
-                backgroundColor: "#ffebee",
-                border: "2px solid #c62828",
-                padding: "16px",
-                fontSize: "14px",
-                color: "#000",
+                backgroundColor: "var(--bg-secondary)",
+                border: "var(--border-width-thin) solid var(--border-primary)",
+                borderRadius: "var(--radius-md)",
+                padding: "var(--space-md)",
+                fontSize: "var(--font-size-sm)",
+                color: "var(--text-primary)",
               }}>
                 <strong>Error:</strong> {importError}
               </div>
@@ -531,13 +837,18 @@ export default function ImportPreviewPage() {
 
           {/* No rows parsed message */}
           {parsedResult.rows.length === 0 && parsedResult.errors.length === 0 && (
-            <section style={{ marginBottom: "32px" }}>
+            <section style={{
+              marginBottom: "var(--space-2xl)",
+              padding: "var(--space-xl) var(--space-2xl)",
+              backgroundColor: "var(--surface-default)",
+              border: "var(--border-width-thin) solid var(--border-secondary)",
+              borderRadius: "var(--radius-xl)",
+              boxShadow: "var(--shadow-lg)",
+            }}>
               <div style={{
-                padding: "20px",
-                backgroundColor: "#fff",
-                border: "2px solid #999",
-                color: "#666",
-                fontSize: "14px",
+                padding: "var(--space-xl)",
+                color: "var(--text-tertiary)",
+                fontSize: "var(--font-size-sm)",
                 textAlign: "center",
                 fontStyle: "italic",
               }}>
@@ -547,111 +858,11 @@ export default function ImportPreviewPage() {
           )}
         </>
       )}
-    </div>
+    </main>
   );
 }
 
-const tableCellStyle: React.CSSProperties = {
-  border: "1px solid #ccc",
-  padding: "10px",
-  textAlign: "left",
-  color: "#000",
-};
 
-const summaryStatsRowStyle: React.CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-  gap: "12px",
-  marginBottom: "12px",
-};
-
-const summaryStatStyle: React.CSSProperties = {
-  backgroundColor: "#fff",
-  border: "1px solid #999",
-  borderRadius: "10px",
-  padding: "10px 12px",
-};
-
-const summaryStatLabelStyle: React.CSSProperties = {
-  fontSize: "12px",
-  color: "#666",
-  marginBottom: "4px",
-  textTransform: "uppercase",
-  letterSpacing: "0.08em",
-};
-
-const summaryStatValueStyle: React.CSSProperties = {
-  fontSize: "20px",
-  fontWeight: "bold",
-  color: "#000",
-};
-
-const summaryTablesGridStyle: React.CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-  gap: "12px",
-};
-
-const summaryTablePanelStyle: React.CSSProperties = {
-  backgroundColor: "#fff",
-  border: "1px solid #999",
-  borderRadius: "10px",
-  padding: "10px 12px",
-  color: "#000",
-};
-
-const summaryTableHeaderStyle: React.CSSProperties = {
-  fontSize: "14px",
-  fontWeight: "bold",
-  color: "#000",
-  marginBottom: "8px",
-};
-
-const summaryTableBodyStyle: React.CSSProperties = {
-  maxHeight: "320px",
-  overflowY: "auto",
-  border: "1px solid #e0e0e0",
-  borderRadius: "8px",
-};
-
-const summaryTableStyle: React.CSSProperties = {
-  width: "100%",
-  borderCollapse: "collapse",
-  fontSize: "13px",
-};
-
-const summaryTableHeaderCellStyle: React.CSSProperties = {
-  textAlign: "left",
-  padding: "8px",
-  borderBottom: "1px solid #e0e0e0",
-  backgroundColor: "#f5f5f5",
-  position: "sticky",
-  top: 0,
-  zIndex: 1,
-};
-
-const summaryTableCellStyle: React.CSSProperties = {
-  padding: "8px",
-  borderBottom: "1px solid #f0f0f0",
-  color: "#000",
-};
-
-function buildLocationEventSummary(rows: EventImportRow[]) {
-  const locationEvents = new Map<string, Set<string>>();
-  for (const row of rows) {
-    if (!locationEvents.has(row.locationName)) {
-      locationEvents.set(row.locationName, new Set<string>());
-    }
-    locationEvents.get(row.locationName)?.add(row.eventName);
-  }
-
-  return Array.from(locationEvents.entries())
-    .map(([name, events]) => ({
-      name,
-      events: Array.from(events).sort((a, b) => a.localeCompare(b)),
-    }))
-    .sort((a, b) => a.name.localeCompare(b.name));
-}
 
 /**
  * Derive interpretation summaries from parsed rows

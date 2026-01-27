@@ -1,8 +1,11 @@
+import { useMemo } from 'react';
 import { AllocationCell } from './AllocationCell';
 import { DateFlags } from '../utils/date';
+import { buildAllocationSpans, AllocationSpan } from './workGanttUtils';
 
 interface WorkCategory {
   id: string;
+  eventId: string;
   name: string;
   estimatedEffortHours: number;
   phase?: string;
@@ -99,6 +102,28 @@ export function WorkCategoryRow({
   const horizontalBorderColor = "var(--calendar-grid-line-soft)";
 
   const CELL_BORDER_WIDTH = 1;
+  const BAR_HEIGHT = 24; // Match gantt view bar height
+
+  // Map phase name to CSS token for bar color
+  const getPhaseBackgroundColor = (phaseName: string | undefined): string => {
+    if (!phaseName) {
+      return 'var(--calendar-span-bg)';
+    }
+    const normalizedPhase = phaseName.trim().toUpperCase();
+    const phaseTokenMap: Record<string, string> = {
+      'ASSEMBLY': 'var(--phase-assembly)',
+      'MOVE_IN': 'var(--phase-move-in)',
+      'EVENT': 'var(--phase-event)',
+      'MOVE_OUT': 'var(--phase-move-out)',
+      'DISMANTLE': 'var(--phase-dismantle)',
+    };
+    return phaseTokenMap[normalizedPhase] || 'var(--calendar-span-bg)';
+  };
+
+  // Build allocation spans for this work category
+  const allocationSpans = useMemo(() => {
+    return buildAllocationSpans(allocations, workCategory);
+  }, [allocations, workCategory]);
 
   const stickyColumnStyle = (offset: number): React.CSSProperties => ({
     position: 'sticky',
@@ -192,6 +217,70 @@ export function WorkCategoryRow({
         height: '100%',
         width: `${timelineWidth}px`,
       }}>
+        {/* Layer 1: Cell backgrounds (weekend/holiday colors) */}
+        {dates.map((date, index) => {
+          const dateFlags = dateMeta[index];
+          const backgroundColor = dateFlags?.isHoliday
+            ? holidayBackground
+            : dateFlags?.isWeekend
+              ? weekendBackground
+              : 'var(--calendar-weekday-bg)';
+
+          return (
+            <div
+              key={`bg-${date}`}
+              style={{
+                position: 'absolute',
+                left: `${index * dateColumnWidth}px`,
+                top: 0,
+                width: `${dateColumnWidth}px`,
+                height: '100%',
+                backgroundColor,
+                zIndex: 0,
+                pointerEvents: 'none',
+              }}
+            />
+          );
+        })}
+
+        {/* Layer 2: Allocation bars */}
+        {allocationSpans.map((span: AllocationSpan, spanIndex: number) => {
+          const normalizedStart = span.startDate.split('T')[0];
+          const normalizedEnd = span.endDate.split('T')[0];
+
+          const startIndex = dates.indexOf(normalizedStart);
+          const endIndex = dates.indexOf(normalizedEnd);
+
+          if (startIndex === -1 && endIndex === -1) return null;
+
+          const spanStart = Math.max(startIndex, 0);
+          const spanEnd = Math.min(endIndex === -1 ? dates.length - 1 : endIndex, dates.length - 1);
+          const spanLength = spanEnd - spanStart + 1;
+
+          const leftOffset = spanStart * dateColumnWidth;
+          const blockWidth = spanLength * dateColumnWidth;
+          const topOffset = `calc(50% - ${BAR_HEIGHT / 2}px)`;
+
+          return (
+            <div
+              key={`bar-${workCategory.id}-${spanIndex}-${span.startDate}`}
+              style={{
+                position: 'absolute',
+                top: topOffset,
+                left: `${leftOffset}px`,
+                width: `${blockWidth}px`,
+                height: `${BAR_HEIGHT}px`,
+                backgroundColor: getPhaseBackgroundColor(span.phase),
+                borderRadius: 'var(--radius-sm)',
+                zIndex: 1,
+                pointerEvents: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+          );
+        })}
+
+        {/* Layer 3: Cell content and borders */}
         {dates.map((date, index) => {
           const cellKey = `${workCategory.id}::${date}`;
           const allocation = allocations.find(
@@ -205,11 +294,6 @@ export function WorkCategoryRow({
           const isOutsideEventRange = eventStartDate && eventEndDate
             ? date < eventStartDate || date > eventEndDate
             : false;
-          const backgroundColor = dateFlags?.isHoliday
-            ? holidayBackground
-            : dateFlags?.isWeekend
-            ? weekendBackground
-            : 'var(--calendar-weekday-bg)';
           const borderColor = dateFlags?.isHoliday
             ? "var(--calendar-holiday-border)"
             : dateFlags?.isWeekend
@@ -226,13 +310,14 @@ export function WorkCategoryRow({
                 top: 0,
                 width: `${dateColumnWidth}px`,
                 height: '100%',
-                backgroundColor,
+                backgroundColor: 'transparent',
                 border: 'none',
                 borderLeft: `1px solid ${borderColor}`,
                 borderRight: `1px solid ${borderColor}`,
                 borderTop: `1px solid ${horizontalBorderColor}`,
                 borderBottom: `1px solid ${horizontalBorderColor}`,
                 overflow: 'visible',
+                zIndex: draft ? 100 : 2,
               }}
             >
               <AllocationCell

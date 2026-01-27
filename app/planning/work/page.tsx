@@ -215,6 +215,21 @@ export default function WorkCategoryPage() {
             Workspace
           </Link>
           <Link
+            href="/planning/work/gantt"
+            style={{
+              padding: "8px 16px",
+              borderRadius: "999px",
+              border: "1px solid var(--border-primary)",
+              textDecoration: "none",
+              color: "var(--text-primary)",
+              backgroundColor: "var(--surface-default)",
+              fontSize: "13px",
+              fontWeight: 500,
+            }}
+          >
+            Work Gantt
+          </Link>
+          <Link
             href="/planning/work/import"
             style={{
               padding: "8px 16px",

@@ -75,7 +75,7 @@ export function AllocationCell({
         left: 0,
         right: 0,
         width: '100%',
-        zIndex: 'var(--z-tooltip)' as any,
+        zIndex: 10,
         boxShadow: 'var(--shadow-lg)',
         boxSizing: 'border-box',
       }}>

@@ -97,12 +97,6 @@ export const CrossEventContext = memo(function CrossEventContext({ crossEventEva
   const weekendBackground = "var(--calendar-weekend-bg)";
   const holidayBackground = "var(--calendar-holiday-bg)";
 
-  // Strict rendering: if no demand data exists, render nothing.
-  // Must be after all hooks to avoid "Rendered fewer hooks than expected".
-  if (crossEventEvaluation.crossEventDailyDemand.length === 0) {
-    return null;
-  }
-
   return (
     <section style={{ minWidth: `${scrollWidth}px`, marginBottom: 'var(--space-xl)' }}>
       {/* Cross-event demand row */}
