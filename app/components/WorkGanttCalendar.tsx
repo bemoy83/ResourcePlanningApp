@@ -1,4 +1,4 @@
-import { useMemo, memo, useState, useRef, useEffect } from "react";
+import { useMemo, memo, useState, useRef, useEffect, useCallback } from "react";
 import { buildDateFlags } from "../utils/date";
 import { getHolidayDatesForRange } from "../utils/holidays";
 import { Tooltip, TooltipState } from "./tooltip";
@@ -7,6 +7,9 @@ import {
   WorkGanttEventRow,
   AllocationSpan,
 } from "./workGanttUtils";
+import { HighlightBadge } from "./shared/HighlightBadge";
+import { useDelayedHover } from "./shared/useDelayedHover";
+import { useEventHoverHighlight } from "./shared/useEventHoverHighlight";
 import {
   Event,
   WorkCategory,
@@ -22,6 +25,7 @@ interface WorkGanttCalendarProps {
   tooltipsEnabled?: boolean;
 }
 
+const CELL_BORDER_WIDTH = 1;
 const ROW_LAYER_HEIGHT = 24;
 
 // Map phase name to CSS token
@@ -135,11 +139,33 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
 
   const weekendBackground = "var(--calendar-weekend-bg)";
   const holidayBackground = "var(--calendar-holiday-bg)";
+  const horizontalBorderColor = 'var(--calendar-grid-line-soft)';
 
   // Group work categories by event and build rows
   const eventRowsMap = useMemo(() => {
     return groupWorkCategoriesByEvent(events, workCategories, allocations);
   }, [events, workCategories, allocations]);
+
+  const eventWorkCategoryMap = useMemo(() => {
+    const map = new Map<string, string[]>();
+    Object.entries(eventRowsMap).forEach(([eventId, rows]) => {
+      if (rows.length > 0) {
+        map.set(eventId, rows.map((row) => row.workCategoryId));
+      }
+    });
+    return map;
+  }, [eventRowsMap]);
+
+  const { hoveredEventId, setHoveredEventId, highlightedIds: highlightedWorkCategoryIds } =
+    useEventHoverHighlight<string>(eventWorkCategoryMap);
+
+  const handleHoverChange = useCallback((eventId: string | null) => {
+    setHoveredEventId(eventId);
+  }, [setHoveredEventId]);
+  const { scheduleHover, clearHover, cancelHover } = useDelayedHover<string>({
+    delayMs: TOOLTIP_DELAY_MS,
+    onHover: handleHoverChange,
+  });
 
   // Create ordered event list with rows
   const eventGroups = useMemo(() => {
@@ -182,6 +208,10 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
     if (tooltipTimeoutRef.current) {
       clearTimeout(tooltipTimeoutRef.current);
       tooltipTimeoutRef.current = null;
+    }
+
+    if (tooltipsEnabled) {
+      scheduleHover(eventRow.eventId);
     }
 
     if (!tooltipsEnabled) {
@@ -238,6 +268,7 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
       tooltipShowTimeoutRef.current = null;
     }
     setTooltip(null);
+    clearHover();
   };
 
   // Cleanup timeouts on unmount
@@ -260,11 +291,12 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
         clearTimeout(tooltipShowTimeoutRef.current);
         tooltipShowTimeoutRef.current = null;
       }
+      cancelHover();
     }
-  }, [tooltipsEnabled]);
+  }, [tooltipsEnabled, cancelHover]);
 
   const cellStyle: React.CSSProperties = {
-    border: 'var(--border-width-thin) solid var(--border-primary)',
+    border: `${CELL_BORDER_WIDTH}px solid var(--border-primary)`,
     padding: 'var(--space-sm)',
     textAlign: 'center' as const,
     fontSize: '11px',
@@ -314,7 +346,7 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
             left: 0,
             zIndex: 'var(--z-sticky-column)' as any,
             backgroundColor: 'var(--sticky-corner-bg)',
-            border: 'var(--border-width-thin) solid var(--sticky-corner-border)',
+            border: `${CELL_BORDER_WIDTH}px solid var(--border-primary)`,
             color: 'var(--sticky-corner-text)',
           }}>Event / Work Category</div>
           <div style={{
@@ -337,7 +369,12 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
                   ? holidayBackground
                   : dateFlags?.isWeekend
                     ? weekendBackground
-                    : "var(--sticky-header-bg)";
+                    : "var(--sticky-header-cell-bg)";
+              const borderColor = dateFlags?.isHoliday
+                ? "var(--calendar-holiday-border)"
+                : dateFlags?.isWeekend
+                  ? "var(--calendar-weekend-border)"
+                  : "var(--border-primary)";
 
               return (
                 <div
@@ -350,7 +387,7 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
                     width: `${DAY_COL_FULL_WIDTH}px`,
                     height: '100%',
                     backgroundColor,
-                    border: `var(--border-width-thin) solid var(--sticky-header-border)`,
+                    border: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
                     color: isToday ? 'var(--today-header-text)' : 'var(--sticky-header-text)',
                     display: 'flex',
                     flexDirection: 'column',
@@ -430,6 +467,7 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
                     position: 'relative',
                     height: `${ROW_LAYER_HEIGHT}px`,
                     border: 'none',
+                    borderBottom: '1px solid var(--sticky-column-bg)',
                     width: '100%',
                     cursor: 'pointer',
                     padding: 0,
@@ -462,7 +500,9 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
                     }}>
                       ▸
                     </span>
-                    {event.name}
+                    <HighlightBadge isHighlighted={hoveredEventId === event.id}>
+                      {event.name}
+                    </HighlightBadge>
                     <span style={{
                       fontSize: '10px',
                       color: 'var(--text-tertiary)',
@@ -494,7 +534,8 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
                             top: 0,
                             width: `${DAY_COL_FULL_WIDTH}px`,
                             height: '100%',
-                            borderRight: '1px solid var(--border-primary)',
+                            borderLeft: '1px solid var(--calendar-grid-line)',
+                            borderRight: '1px solid var(--calendar-grid-line)',
                             boxSizing: 'border-box',
                           }}
                         />
@@ -568,7 +609,7 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
                       style={{
                         display: 'grid',
                         gridTemplateColumns: leftColumnsTemplate,
-                        borderBottom: `1px solid var(--border-primary)`,
+                        borderBottom: '1px solid var(--sticky-column-bg)',
                         position: 'relative',
                         height: `${ROW_LAYER_HEIGHT}px`,
                         boxSizing: 'border-box',
@@ -589,7 +630,11 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
                         border: 'none',
                         color: 'var(--sticky-column-text)',
                       }}>
-                        {workCategoryRow.workCategoryName}
+                        <HighlightBadge
+                          isHighlighted={highlightedWorkCategoryIds.has(workCategoryRow.workCategoryId)}
+                        >
+                          {workCategoryRow.workCategoryName}
+                        </HighlightBadge>
                       </div>
 
                       <div style={{
@@ -605,12 +650,10 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
                             ? holidayBackground
                             : dateFlags?.isWeekend
                               ? weekendBackground
-                              : "var(--surface-default)";
+                              : 'var(--calendar-weekday-bg)';
                           const borderColor = dateFlags?.isHoliday
                             ? "var(--calendar-holiday-border)"
-                            : dateFlags?.isWeekend
-                              ? "var(--calendar-weekend-border)"
-                              : "var(--border-primary)";
+                            : "var(--calendar-grid-line)";
 
                           return (
                             <div
@@ -623,7 +666,11 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
                                 width: `${DAY_COL_FULL_WIDTH}px`,
                                 height: `${ROW_LAYER_HEIGHT}px`,
                                 backgroundColor,
-                                border: `var(--border-width-thin) solid ${borderColor}`,
+                                border: 'none',
+                                borderLeft: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
+                                borderRight: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
+                                borderTop: `${CELL_BORDER_WIDTH}px solid ${horizontalBorderColor}`,
+                                borderBottom: `${CELL_BORDER_WIDTH}px solid ${horizontalBorderColor}`,
                               }}
                             />
                           );

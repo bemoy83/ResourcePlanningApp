@@ -140,6 +140,8 @@
   /* Location Badge - Highlight state for hover interactions */
   --location-badge-highlight-bg: #6366f1;
   --location-badge-highlight-text: #ffffff;
+  --badge-highlight-bg: var(--location-badge-highlight-bg);
+  --badge-highlight-text: var(--location-badge-highlight-text);
   /* === Spacing === */
   --space-xs: 4px;
   --space-sm: 8px;
@@ -392,6 +394,8 @@
   /* Location Badge - Highlight state for hover interactions */
   --location-badge-highlight-bg: #818cf8;
   --location-badge-highlight-text: #09090b;
+  --badge-highlight-bg: var(--location-badge-highlight-bg);
+  --badge-highlight-text: var(--location-badge-highlight-text);
 
   /* Shadows - Deeper, more refined */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);

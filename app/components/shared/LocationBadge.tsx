@@ -1,4 +1,5 @@
 import { CSSProperties, ReactNode } from 'react';
+import { HighlightBadge } from './HighlightBadge';
 
 interface LocationBadgeProps {
   children: ReactNode;
@@ -19,29 +20,17 @@ export function LocationBadge({
   style = {},
   className,
 }: LocationBadgeProps) {
-  const badgeStyle: CSSProperties = isHighlighted
-    ? {
+  return (
+    <HighlightBadge
+      isHighlighted={isHighlighted}
+      style={style}
+      className={className}
+      highlightStyle={{
         backgroundColor: 'var(--location-badge-highlight-bg)',
         color: 'var(--location-badge-highlight-text)',
-        padding: 'var(--space-xxs) var(--space-sm)',
-        borderRadius: 'var(--radius-full)',
-        transition: 'background-color var(--transition-fast), color var(--transition-fast)',
-        display: 'inline-block',
-        ...style,
-      }
-    : {
-        backgroundColor: 'transparent',
-        color: 'inherit',
-        padding: 'var(--space-xxs) var(--space-sm)',
-        borderRadius: 'var(--radius-full)',
-        transition: 'background-color var(--transition-fast), color var(--transition-fast)',
-        display: 'inline-block',
-        ...style,
-      };
-
-  return (
-    <span className={className} style={badgeStyle}>
+      }}
+    >
       {children}
-    </span>
+    </HighlightBadge>
   );
 }

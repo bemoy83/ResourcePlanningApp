@@ -1,4 +1,4 @@
-import { memo, useMemo, useState, useRef, useEffect } from 'react';
+import { memo, useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { TimelineLayout, Location, Event, EventPhase } from '../shared/types';
 import { DateCellsContainer } from '../shared/DateCellsContainer';
 import { StickyLeftCell } from '../shared/StickyLeftCell';
@@ -6,6 +6,7 @@ import { LEFT_COLUMNS, calculateLeftColumnOffsets } from '../../layoutConstants'
 import { buildDateFlags } from '../../../utils/date';
 import { Tooltip, TooltipState } from '../../tooltip';
 import { LocationBadge } from '../../shared/LocationBadge';
+import { useDelayedHover } from '../../shared/useDelayedHover';
 
 interface CalendarSpan {
   eventId: string;
@@ -128,7 +129,13 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const tooltipShowTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const highlightTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const handleHoverChange = useCallback((eventId: string | null) => {
+    onEventHover?.(eventId);
+  }, [onEventHover]);
+  const { scheduleHover, clearHover, cancelHover } = useDelayedHover<string>({
+    delayMs: TOOLTIP_DELAY_MS,
+    onHover: handleHoverChange,
+  });
 
   const leftColumnOffsets = calculateLeftColumnOffsets(LEFT_COLUMNS);
   const timelineWidth = timeline.dates.length * timeline.dateColumnWidth;
@@ -406,13 +413,8 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
     }
 
     // Notify parent of hovered event for cross-location highlighting (with delay)
-    if (highlightTimeoutRef.current) {
-      clearTimeout(highlightTimeoutRef.current);
-    }
     if (tooltipsEnabled && onEventHover) {
-      highlightTimeoutRef.current = setTimeout(() => {
-        onEventHover(eventRow.eventId);
-      }, TOOLTIP_DELAY_MS);
+      scheduleHover(eventRow.eventId);
     }
 
     if (!tooltipsEnabled) {
@@ -471,12 +473,8 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
     setTooltip(null);
 
     // Clear hovered event for cross-location highlighting
-    if (highlightTimeoutRef.current) {
-      clearTimeout(highlightTimeoutRef.current);
-      highlightTimeoutRef.current = null;
-    }
     if (onEventHover) {
-      onEventHover(null);
+      clearHover();
     }
   };
 
@@ -488,11 +486,9 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
       if (tooltipShowTimeoutRef.current) {
         clearTimeout(tooltipShowTimeoutRef.current);
       }
-      if (highlightTimeoutRef.current) {
-        clearTimeout(highlightTimeoutRef.current);
-      }
+      cancelHover();
     };
-  }, []);
+  }, [cancelHover]);
 
   useEffect(() => {
     if (!tooltipsEnabled) {
@@ -501,12 +497,9 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
         clearTimeout(tooltipShowTimeoutRef.current);
         tooltipShowTimeoutRef.current = null;
       }
-      if (highlightTimeoutRef.current) {
-        clearTimeout(highlightTimeoutRef.current);
-        highlightTimeoutRef.current = null;
-      }
+      cancelHover();
     }
-  }, [tooltipsEnabled]);
+  }, [tooltipsEnabled, cancelHover]);
 
   const cellStyle: React.CSSProperties = {
     border: `${CELL_BORDER_WIDTH}px solid var(--border-primary)`,

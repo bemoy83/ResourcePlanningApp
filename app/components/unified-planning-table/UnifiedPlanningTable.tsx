@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { PlanningTableHeader } from './PlanningTableHeader';
 import { CalendarHeader } from './CalendarHeader';
 import { CalendarLocationRow } from './rows/CalendarLocationRow';
@@ -28,6 +28,7 @@ import {
 } from '../layoutConstants';
 import { buildDateFlags, getTodayString } from '../../utils/date';
 import { getHolidayDatesForRange } from '../../utils/holidays';
+import { useEventHoverHighlight } from '../shared/useEventHoverHighlight';
 
 interface UnifiedPlanningTableProps {
   events: Event[];
@@ -87,14 +88,6 @@ export function UnifiedPlanningTable({
   const datesRef = useRef(dates);
   const prevDatesRef = useRef<string[]>(dates);
 
-  // Track which event is being hovered for cross-location highlighting
-  const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
-
-  // Callback for CalendarLocationRow to report hovered event
-  const handleEventHover = useCallback((eventId: string | null) => {
-    setHoveredEventId(eventId);
-  }, []);
-
   const holidayDates = useMemo(() => getHolidayDatesForRange(dates), [dates]);
 
   // Build timeline layout
@@ -130,12 +123,13 @@ export function UnifiedPlanningTable({
     return map;
   }, [eventLocations]);
 
-  // Compute which location IDs should be highlighted based on hovered event
-  const highlightedLocationIds = useMemo(() => {
-    if (!hoveredEventId) return new Set<string>();
-    const locationIds = eventLocationMap.get(hoveredEventId) || [];
-    return new Set(locationIds);
-  }, [hoveredEventId, eventLocationMap]);
+  const { setHoveredEventId, highlightedIds: highlightedLocationIds } =
+    useEventHoverHighlight<string>(eventLocationMap);
+
+  // Callback for CalendarLocationRow to report hovered event
+  const handleEventHover = useCallback((eventId: string | null) => {
+    setHoveredEventId(eventId);
+  }, [setHoveredEventId]);
 
   // Group events by location for calendar rows
   const locationMap = new Map(locations.map((loc) => [loc.id, loc]));
