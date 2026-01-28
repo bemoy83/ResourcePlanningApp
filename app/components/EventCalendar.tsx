@@ -3,6 +3,15 @@ import { UnifiedEvent } from "../../types/calendar";
 import { buildDateFlags } from "../utils/date";
 import { Tooltip, TooltipState } from "./tooltip";
 import { TimelineLayout } from "../types/shared";
+import {
+  IntraDayTransition,
+  SingleDayCollapse,
+  getPhaseOrderIndex,
+  getAbbreviatedLabel,
+  formatPhaseNameForDisplay,
+  getPhaseBackgroundColor,
+  isEventPhaseName,
+} from "./phaseSpanUtils";
 
 interface EventCalendarProps {
   events: UnifiedEvent[];
@@ -17,76 +26,6 @@ interface CalendarSpan {
   startDate: string;
   endDate: string;
   phaseName?: string; // Original phase name for tooltip
-}
-
-/**
- * Represents a phase transition where two phases share the same calendar date.
- * The earlier phase ends and the later phase starts on the same day.
- */
-interface IntraDayTransition {
-  date: string; // The shared date (YYYY-MM-DD)
-  earlierSpanIndex: number; // Index of the phase that ends on this date
-  laterSpanIndex: number; // Index of the phase that starts on this date
-}
-
-/**
- * Tracks single-day phases that all occur on the same date.
- * When 3+ phases share a single day, we collapse to show only the highest priority one.
- */
-interface SingleDayCollapse {
-  date: string;
-  spanIndices: number[]; // All single-day spans on this date
-  visibleSpanIndex: number; // The one to show (EVENT takes precedence)
-}
-
-// Canonical phase order: ASSEMBLY -> MOVE_IN -> EVENT -> MOVE_OUT -> DISMANTLE
-const PHASE_ORDER: Record<string, number> = {
-  'ASSEMBLY': 0,
-  'MOVE_IN': 1,
-  'EVENT': 2,
-  'MOVE_OUT': 3,
-  'DISMANTLE': 4,
-};
-
-// Phase abbreviations for compact display when sharing a date
-const PHASE_ABBREVIATIONS: Record<string, string> = {
-  'ASSEMBLY': 'A',
-  'MOVE_IN': 'MI',
-  'EVENT': 'E',
-  'MOVE_OUT': 'MO',
-  'DISMANTLE': 'D',
-};
-
-/**
- * Get the canonical order index for a phase name.
- * Returns a high number for unknown phases so they sort to the end.
- */
-function getPhaseOrderIndex(phaseName: string | undefined): number {
-  if (!phaseName) return 999;
-  const normalized = phaseName.trim().toUpperCase();
-  return PHASE_ORDER[normalized] ?? 999;
-}
-
-/**
- * Get abbreviated label for compact display when sharing a date.
- * Phase names get standard abbreviations, event names get truncated.
- */
-function getAbbreviatedLabel(label: string, phaseName: string | undefined, isEventPhase: boolean): string {
-  if (!isEventPhase && phaseName) {
-    // It's a phase label - use standard abbreviation
-    const normalized = phaseName.trim().toUpperCase();
-    return PHASE_ABBREVIATIONS[normalized] ?? label.slice(0, 3);
-  }
-  // It's an event name - truncate to first 4 chars
-  return label.length > 4 ? label.slice(0, 4) : label;
-}
-
-/**
- * Format phase name for display by replacing underscores with spaces.
- * e.g., "MOVE_IN" -> "MOVE IN"
- */
-function formatPhaseNameForDisplay(phaseName: string): string {
-  return phaseName.replace(/_/g, ' ');
 }
 
 interface EventRow {
@@ -138,25 +77,6 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
   const leftColumnsTemplate = leftColumns.map((col) => `${col.width}px`).join(" ");
   const timelineWidth = dates.length * DAY_COL_FULL_WIDTH;
   const scrollWidth = timelineOriginPx + timelineWidth;
-
-  const isEventPhaseName = (name: string) => name.trim().toUpperCase() === "EVENT";
-
-  // Map phase name to CSS token
-  const getPhaseBackgroundColor = (phaseName: string | undefined): string => {
-    if (!phaseName) {
-      return 'var(--calendar-span-bg)';
-    }
-    const normalizedPhase = phaseName.trim().toUpperCase();
-    // Map phase names to CSS tokens (convert to lowercase with hyphens)
-    const phaseTokenMap: Record<string, string> = {
-      'ASSEMBLY': 'var(--phase-assembly)',
-      'MOVE_IN': 'var(--phase-move-in)',
-      'EVENT': 'var(--phase-event)',
-      'MOVE_OUT': 'var(--phase-move-out)',
-      'DISMANTLE': 'var(--phase-dismantle)',
-    };
-    return phaseTokenMap[normalizedPhase] || 'var(--calendar-span-bg)';
-  };
 
   const dateMeta = useMemo(() => {
     if (timeline.dateMeta && timeline.dateMeta.length === dates.length) {
@@ -771,7 +691,7 @@ export const EventCalendar = memo(function EventCalendar({ events, timeline, too
                           padding: 'var(--space-sm)',
                           fontWeight: 'var(--font-weight-bold)',
                           fontSize: '11px',
-                          color: 'var(--text-primary)',
+                          color: 'var(--text-inverse)',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',

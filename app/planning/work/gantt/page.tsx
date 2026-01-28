@@ -24,6 +24,7 @@ import {
 } from "../../../utils/date";
 import { getHolidayDatesForRange } from "../../../utils/holidays";
 import { PlanningEvent, WorkCategory, Allocation } from "../../../types/shared";
+import { TIMELINE_DATE_COLUMN_WIDTH } from "../../../components/layoutConstants";
 
 function PlanningToolbar({ children }: { children: ReactNode }) {
   return <div>{children}</div>;
@@ -215,7 +216,7 @@ export default function WorkGanttPage() {
     const holidayDates = getHolidayDatesForRange(dates);
     return {
       dates,
-      dateColumnWidth: 60,
+      dateColumnWidth: TIMELINE_DATE_COLUMN_WIDTH,
       timelineOriginPx: 200,
       dateMeta: undefined, // Will be calculated in component
     };

@@ -1,7 +1,7 @@
 import { useMemo, memo, useState, useRef, useEffect, useCallback } from "react";
 import { buildDateFlags } from "../utils/date";
 import { getHolidayDatesForRange } from "../utils/holidays";
-import { Tooltip, TooltipState } from "./tooltip";
+import { TooltipState } from "./tooltip";
 import {
   groupWorkCategoriesByEvent,
   WorkGanttEventRow,
@@ -9,13 +9,19 @@ import {
 } from "./workGanttUtils";
 import { HighlightBadge } from "./shared/HighlightBadge";
 import { useDelayedHover } from "./shared/useDelayedHover";
-import { useEventHoverHighlight } from "./shared/useEventHoverHighlight";
 import {
   Event,
   WorkCategory,
   Allocation,
   TimelineLayout,
 } from "../types/shared";
+import {
+  computePhaseSpans,
+  getPhaseBackgroundColor,
+  formatPhaseNameForDisplay,
+  getPhaseDisplayLabel,
+} from "./phaseSpanUtils";
+import { createPortal } from "react-dom";
 
 interface WorkGanttCalendarProps {
   events: Event[];
@@ -27,29 +33,7 @@ interface WorkGanttCalendarProps {
 
 const CELL_BORDER_WIDTH = 1;
 const ROW_LAYER_HEIGHT = 24;
-
-// Map phase name to CSS token
-const getPhaseBackgroundColor = (phaseName: string | undefined): string => {
-  if (!phaseName) {
-    return 'var(--calendar-span-bg)';
-  }
-  const normalizedPhase = phaseName.trim().toUpperCase();
-  const phaseTokenMap: Record<string, string> = {
-    'ASSEMBLY': 'var(--phase-assembly)',
-    'MOVE_IN': 'var(--phase-move-in)',
-    'EVENT': 'var(--phase-event)',
-    'MOVE_OUT': 'var(--phase-move-out)',
-    'DISMANTLE': 'var(--phase-dismantle)',
-  };
-  return phaseTokenMap[normalizedPhase] || 'var(--calendar-span-bg)';
-};
-
-/**
- * Format phase name for display by replacing underscores with spaces.
- */
-function formatPhaseNameForDisplay(phaseName: string): string {
-  return phaseName.replace(/_/g, ' ');
-}
+const OUTSIDE_LABEL_GAP_PX = 6;
 
 // Calculate day count between two dates
 const calculateDayCount = (startDate: string, endDate: string): number => {
@@ -63,6 +47,189 @@ const calculateDayCount = (startDate: string, endDate: string): number => {
     return 0;
   }
 };
+
+interface AllocationSpanBarProps {
+  span: AllocationSpan;
+  eventRow: WorkGanttEventRow;
+  leftOffset: number;
+  blockWidth: number;
+  verticalCenterOffset: number;
+  spanHeight: number;
+  timelineWidth: number;
+  tooltipsEnabled: boolean;
+  onSpanMouseEnter: (
+    event: React.MouseEvent<HTMLElement>,
+    eventRow: WorkGanttEventRow,
+    span: AllocationSpan
+  ) => void;
+  onSpanMouseMove: (event: React.MouseEvent<HTMLElement>) => void;
+  onSpanMouseLeave: () => void;
+}
+
+const AllocationSpanBar = memo(function AllocationSpanBar({
+  span,
+  eventRow,
+  leftOffset,
+  blockWidth,
+  verticalCenterOffset,
+  spanHeight,
+  timelineWidth,
+  tooltipsEnabled,
+  onSpanMouseEnter,
+  onSpanMouseMove,
+  onSpanMouseLeave,
+}: AllocationSpanBarProps) {
+  const barBodyRef = useRef<HTMLDivElement | null>(null);
+  const measureRef = useRef<HTMLSpanElement | null>(null);
+  const labelMeasureRef = useRef<HTMLSpanElement | null>(null);
+  const [labelFits, setLabelFits] = useState(true);
+  const [placeOutsideLeft, setPlaceOutsideLeft] = useState(false);
+
+  const updateLabelFit = useCallback(() => {
+    const barBody = barBodyRef.current;
+    const measure = measureRef.current;
+    const labelMeasure = labelMeasureRef.current;
+
+    if (!barBody || !measure || !labelMeasure) return;
+
+    const styles = window.getComputedStyle(barBody);
+    const paddingLeft = Number.parseFloat(styles.paddingLeft) || 0;
+    const paddingRight = Number.parseFloat(styles.paddingRight) || 0;
+    const availableWidth = Math.max(0, barBody.clientWidth - paddingLeft - paddingRight);
+    const neededWidth = measure.scrollWidth;
+    const fits = neededWidth <= availableWidth;
+
+    setLabelFits(fits);
+
+    const labelWidth = labelMeasure.scrollWidth;
+    const overflowRight = leftOffset + blockWidth + labelWidth + OUTSIDE_LABEL_GAP_PX > timelineWidth;
+    setPlaceOutsideLeft(overflowRight);
+  }, [blockWidth, leftOffset, timelineWidth, span.totalHours, eventRow.workCategoryName]);
+
+  useEffect(() => {
+    updateLabelFit();
+  }, [updateLabelFit, blockWidth]);
+
+  useEffect(() => {
+    const barBody = barBodyRef.current;
+    if (!barBody) return;
+
+    if (typeof ResizeObserver === 'undefined') {
+      const handleResize = () => updateLabelFit();
+      window.addEventListener('resize', handleResize);
+      return () => {
+        window.removeEventListener('resize', handleResize);
+      };
+    }
+
+    const resizeObserver = new ResizeObserver(() => updateLabelFit());
+    resizeObserver.observe(barBody);
+    return () => resizeObserver.disconnect();
+  }, [updateLabelFit]);
+
+  const handleMouseEnter = useCallback((event: React.MouseEvent<HTMLElement>) => {
+    onSpanMouseEnter(event, eventRow, span);
+  }, [onSpanMouseEnter, eventRow, span]);
+
+  const barContainerStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: `${verticalCenterOffset}px`,
+    left: `${leftOffset}px`,
+    width: `${blockWidth}px`,
+    height: `${spanHeight}px`,
+    zIndex: 'var(--z-phase)' as any,
+    overflow: 'visible',
+    boxSizing: 'border-box',
+  };
+
+  const barBodyStyle: React.CSSProperties = {
+    position: 'relative',
+    height: '100%',
+    width: '100%',
+    backgroundColor: 'var(--work-bar-bg)',
+    border: 'var(--border-width-thin) solid var(--border-primary)',
+    borderRadius: 'var(--radius-sm)',
+    padding: 'var(--space-sm)',
+    fontWeight: 'var(--font-weight-bold)',
+    fontSize: '11px',
+    color: 'var(--text-inverse)',
+    boxSizing: 'border-box',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 'var(--space-xs)',
+    overflow: 'hidden',
+    cursor: tooltipsEnabled ? 'help' : 'default',
+  };
+
+  const insideLabelStyle: React.CSSProperties = {
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  };
+
+  const hoursStyle: React.CSSProperties = {
+    whiteSpace: 'nowrap',
+    fontWeight: 'var(--font-weight-semibold)',
+  };
+
+  const measureStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    visibility: 'hidden',
+    pointerEvents: 'none',
+    whiteSpace: 'nowrap',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 'var(--space-xs)',
+  };
+
+  const outsideLabelStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    whiteSpace: 'nowrap',
+    fontSize: '11px',
+    fontWeight: 'var(--font-weight-medium)',
+    color: 'var(--text-inverse)',
+    cursor: tooltipsEnabled ? 'help' : 'default',
+    ...(placeOutsideLeft
+      ? { right: '100%', marginRight: 'var(--space-xs)' }
+      : { left: '100%', marginLeft: 'var(--space-xs)' }),
+  };
+
+  return (
+    <div
+      style={barContainerStyle}
+      onMouseEnter={handleMouseEnter}
+      onMouseMove={onSpanMouseMove}
+      onMouseLeave={onSpanMouseLeave}
+    >
+      <div ref={barBodyRef} style={barBodyStyle}>
+        {labelFits && <span style={insideLabelStyle}>{eventRow.workCategoryName}</span>}
+        <span style={hoursStyle}>{span.totalHours}h</span>
+        <span ref={measureRef} style={measureStyle}>
+          <span style={insideLabelStyle}>{eventRow.workCategoryName}</span>
+          <span style={hoursStyle}>{span.totalHours}h</span>
+        </span>
+        <span ref={labelMeasureRef} style={measureStyle}>
+          <span style={insideLabelStyle}>{eventRow.workCategoryName}</span>
+        </span>
+      </div>
+      {!labelFits && (
+        <span
+          style={outsideLabelStyle}
+          onMouseEnter={handleMouseEnter}
+          onMouseMove={onSpanMouseMove}
+          onMouseLeave={onSpanMouseLeave}
+        >
+          {eventRow.workCategoryName}
+        </span>
+      )}
+    </div>
+  );
+});
 
 // Calculate tooltip position based on cursor coordinates
 const calculateTooltipPosition = (clientX: number, clientY: number) => {
@@ -89,6 +256,81 @@ const calculateTooltipPosition = (clientX: number, clientY: number) => {
 
   return { top, left };
 };
+
+// Local tooltip component for WorkGanttCalendar that shows "Work:" instead of "Location:"
+function WorkGanttTooltip({ tooltip }: { tooltip: TooltipState | null }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  if (!tooltip || !tooltip.visible || !mounted) return null;
+
+  const formatDate = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const tooltipContent = (
+    <div
+      style={{
+        position: "fixed",
+        top: `${tooltip.position.top}px`,
+        left: `${tooltip.position.left}px`,
+        backgroundColor: "var(--text-secondary)",
+        color: "var(--text-inverse)",
+        padding: "var(--space-sm) var(--space-md)",
+        borderRadius: "var(--radius-md)",
+        fontSize: "var(--font-size-sm)",
+        zIndex: "var(--z-tooltip)" as any,
+        boxShadow: "var(--shadow-md)",
+        pointerEvents: "none",
+        maxWidth: "250px",
+        lineHeight: "var(--line-height-normal)",
+        wordBreak: "break-word",
+        overflowWrap: "break-word",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          fontWeight: "var(--font-weight-bold)",
+          marginBottom: "var(--space-xs)",
+          borderBottom: "var(--border-width-thin) solid var(--border-strong)",
+          paddingBottom: "var(--space-xs)",
+        }}
+      >
+        {tooltip.content.eventName}
+      </div>
+      <div style={{ marginBottom: "2px" }}>
+        <strong>Phase:</strong> {tooltip.content.phaseName}
+      </div>
+      <div style={{ marginBottom: "2px" }}>
+        <strong>Work:</strong> {tooltip.content.locationName}
+      </div>
+      <div style={{ marginBottom: "2px" }}>
+        <strong>Duration:</strong> {tooltip.content.dayCount}{" "}
+        {tooltip.content.dayCount === 1 ? "day" : "days"}
+      </div>
+      <div style={{ marginBottom: "2px" }}>
+        <strong>Dates:</strong> {formatDate(tooltip.content.startDate)} -{" "}
+        {formatDate(tooltip.content.endDate)}
+      </div>
+    </div>
+  );
+
+  return createPortal(tooltipContent, document.body);
+}
 
 export const WorkGanttCalendar = memo(function WorkGanttCalendar({
   events,
@@ -146,25 +388,45 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
     return groupWorkCategoriesByEvent(events, workCategories, allocations);
   }, [events, workCategories, allocations]);
 
-  const eventWorkCategoryMap = useMemo(() => {
-    const map = new Map<string, string[]>();
+  // Track hovered work category and event separately
+  const [hoveredWorkCategoryId, setHoveredWorkCategoryId] = useState<string | null>(null);
+  const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
+
+  // Get event ID from work category ID
+  const workCategoryToEventMap = useMemo(() => {
+    const map = new Map<string, string>();
     Object.entries(eventRowsMap).forEach(([eventId, rows]) => {
-      if (rows.length > 0) {
-        map.set(eventId, rows.map((row) => row.workCategoryId));
-      }
+      rows.forEach((row) => {
+        map.set(row.workCategoryId, eventId);
+      });
     });
     return map;
   }, [eventRowsMap]);
 
-  const { hoveredEventId, setHoveredEventId, highlightedIds: highlightedWorkCategoryIds } =
-    useEventHoverHighlight<string>(eventWorkCategoryMap);
+  // Highlight only the specific work category being hovered
+  const highlightedWorkCategoryIds = useMemo(() => {
+    if (!hoveredWorkCategoryId) {
+      return new Set<string>();
+    }
+    return new Set([hoveredWorkCategoryId]);
+  }, [hoveredWorkCategoryId]);
 
-  const handleHoverChange = useCallback((eventId: string | null) => {
-    setHoveredEventId(eventId);
-  }, [setHoveredEventId]);
+  // Update event highlight when work category changes
+  useEffect(() => {
+    if (hoveredWorkCategoryId) {
+      const eventId = workCategoryToEventMap.get(hoveredWorkCategoryId);
+      setHoveredEventId(eventId || null);
+    } else {
+      setHoveredEventId(null);
+    }
+  }, [hoveredWorkCategoryId, workCategoryToEventMap]);
+
+  const handleWorkCategoryHoverChange = useCallback((workCategoryId: string | null) => {
+    setHoveredWorkCategoryId(workCategoryId);
+  }, []);
   const { scheduleHover, clearHover, cancelHover } = useDelayedHover<string>({
     delayMs: TOOLTIP_DELAY_MS,
-    onHover: handleHoverChange,
+    onHover: handleWorkCategoryHoverChange,
   });
 
   // Create ordered event list with rows
@@ -201,7 +463,7 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
 
   // Handle mouse enter for tooltip
   const handleSpanMouseEnter = (
-    event: React.MouseEvent<HTMLDivElement>,
+    event: React.MouseEvent<HTMLElement>,
     eventRow: WorkGanttEventRow,
     span: AllocationSpan
   ) => {
@@ -211,7 +473,8 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
     }
 
     if (tooltipsEnabled) {
-      scheduleHover(eventRow.eventId);
+      // Schedule hover for the specific work category (not the event)
+      scheduleHover(eventRow.workCategoryId);
     }
 
     if (!tooltipsEnabled) {
@@ -246,7 +509,7 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
   };
 
   // Handle mouse move to update tooltip position
-  const handleSpanMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
+  const handleSpanMouseMove = (event: React.MouseEvent<HTMLElement>) => {
     if (!tooltipsEnabled) {
       return;
     }
@@ -326,7 +589,7 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
 
   return (
     <>
-      <Tooltip tooltip={tooltip} />
+      <WorkGanttTooltip tooltip={tooltip} />
       <section style={{ minWidth: `${scrollWidth}px` }}>
         {/* Header row with dates */}
         <header style={{
@@ -421,37 +684,7 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
         {/* Event groups with work category rows */}
         <div style={{ border: `var(--border-width-thin) solid var(--border-strong)` }}>
           {eventGroups.map(({ event, rows }) => {
-            // Calculate total height needed for this event group
-            const maxRows = rows.length > 0 ? Math.max(...rows.map((r) => r.row)) + 1 : 0;
-            const groupHeight = Math.max(maxRows, 1) * ROW_LAYER_HEIGHT;
             const isExpanded = expandedEventIds.has(event.id);
-
-            // Calculate event summary for collapsed view
-            let eventSummary: { minDate: string; maxDate: string; totalHours: number } | null = null;
-            if (!isExpanded && rows.length > 0) {
-              let minDate: string | null = null;
-              let maxDate: string | null = null;
-              let totalHours = 0;
-
-              rows.forEach(row => {
-                row.spans.forEach(span => {
-                  const spanStart = span.startDate.split('T')[0];
-                  const spanEnd = span.endDate.split('T')[0];
-
-                  if (!minDate || spanStart < minDate) {
-                    minDate = spanStart;
-                  }
-                  if (!maxDate || spanEnd > maxDate) {
-                    maxDate = spanEnd;
-                  }
-                  totalHours += span.totalHours;
-                });
-              });
-
-              if (minDate && maxDate) {
-                eventSummary = { minDate, maxDate, totalHours };
-              }
-            }
 
             return (
               <div key={event.id}>
@@ -541,23 +774,21 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
                         />
                       );
                     })}
-                  </div>
 
-                  {/* Summary bar when collapsed */}
-                  {!isExpanded && eventSummary && (
-                    <div style={{
-                      position: 'absolute',
-                      left: `${timelineOriginPx}px`,
-                      top: 0,
-                      height: '100%',
-                      width: `${timelineWidth}px`,
-                      pointerEvents: 'none',
-                    }}>
-                      {(() => {
-                        const startIndex = dates.indexOf(eventSummary.minDate);
-                        const endIndex = dates.indexOf(eventSummary.maxDate);
+                    {/* Phase spans - visible in both expanded and collapsed states */}
+                    {event.phases && event.phases.length > 0 && (() => {
+                      const { spans: phaseSpans } = computePhaseSpans(event.phases, DAY_COL_FULL_WIDTH);
 
-                        // Skip if dates are outside visible range
+                      return phaseSpans.map((spanData) => {
+                        // Skip hidden spans (collapsed)
+                        if (spanData.isCollapsedHidden) return null;
+
+                        const { phase, normalizedStart, normalizedEnd, leftAdjustment, widthAdjustment, isInTransition } = spanData;
+
+                        const startIndex = dates.indexOf(normalizedStart);
+                        const endIndex = dates.indexOf(normalizedEnd);
+
+                      // Skip phases completely outside visible range
                         if (startIndex === -1 && endIndex === -1) return null;
 
                         // Clamp to visible range
@@ -565,44 +796,54 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
                         const clampedEnd = Math.min(endIndex === -1 ? dates.length - 1 : endIndex, dates.length - 1);
                         const spanLength = clampedEnd - clampedStart + 1;
 
-                        const leftOffset = clampedStart * DAY_COL_FULL_WIDTH;
-                        const blockWidth = spanLength * DAY_COL_FULL_WIDTH;
+                        // Apply transition adjustments for overlapping phases
+                        const leftOffset = clampedStart * DAY_COL_FULL_WIDTH + leftAdjustment;
+                        const blockWidth = spanLength * DAY_COL_FULL_WIDTH + widthAdjustment;
+                        const spanHeight = 20;
+                        const verticalCenterOffset = (ROW_LAYER_HEIGHT - spanHeight) / 2;
+
+                        // Use abbreviated label when in transition and single-day
+                        const isSingleDaySpan = spanLength === 1;
+                        const displayLabel = getPhaseDisplayLabel(phase.name, isInTransition, isSingleDaySpan);
 
                         return (
                           <div
+                            key={`phase-${phase.id}-${spanData.index}`}
                             style={{
                               position: 'absolute',
-                              top: '50%',
-                              transform: 'translateY(-50%)',
+                              top: `${verticalCenterOffset}px`,
                               left: `${leftOffset}px`,
                               width: `${blockWidth}px`,
-                              height: '20px',
-                              backgroundColor: 'var(--text-tertiary)',
-                              opacity: 0.3,
+                              height: `${spanHeight}px`,
+                              backgroundColor: getPhaseBackgroundColor(phase.name),
+                              border: 'var(--border-width-thin) solid var(--border-primary)',
                               borderRadius: 'var(--radius-sm)',
+                              padding: 'var(--space-sm)',
+                              fontWeight: 'var(--font-weight-bold)',
+                              fontSize: '11px',
+                              color: 'var(--text-inverse)',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              boxSizing: 'border-box',
+                              zIndex: 'var(--z-phase)' as any,
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              fontSize: '11px',
-                              fontWeight: 'var(--font-weight-bold)',
-                              color: 'var(--text-primary)',
                               pointerEvents: 'auto',
-                              zIndex: 1,
                             }}
-                            title={`${eventSummary.minDate} to ${eventSummary.maxDate}: ${eventSummary.totalHours}h total`}
+                            title={`${formatPhaseNameForDisplay(phase.name)}: ${normalizedStart} to ${normalizedEnd}`}
                           >
-                            {eventSummary.totalHours}h
+                            {displayLabel}
                           </div>
                         );
-                      })()}
-                    </div>
-                  )}
+                      });
+                    })()}
+                  </div>
                 </button>
 
                 {/* Work category rows for this event */}
                 {isExpanded && rows.map((workCategoryRow) => {
-                  const rowHeight = ROW_LAYER_HEIGHT;
-
                   return (
                     <div
                       key={workCategoryRow.workCategoryId}
@@ -700,37 +941,20 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
                           const verticalCenterOffset = (ROW_LAYER_HEIGHT - spanHeight) / 2;
 
                           return (
-                            <div
+                            <AllocationSpanBar
                               key={`${workCategoryRow.workCategoryId}-${spanIndex}-${span.startDate}`}
-                              style={{
-                                position: 'absolute',
-                                top: `${verticalCenterOffset}px`,
-                                left: `${leftOffset}px`,
-                                width: `${blockWidth}px`,
-                                height: `${spanHeight}px`,
-                                backgroundColor: getPhaseBackgroundColor(span.phase),
-                                border: 'var(--border-width-thin) solid var(--border-primary)',
-                                borderRadius: 'var(--radius-sm)',
-                                padding: 'var(--space-sm)',
-                                fontWeight: 'var(--font-weight-bold)',
-                                fontSize: '11px',
-                                color: 'var(--text-primary)',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                                boxSizing: 'border-box',
-                                zIndex: 'var(--z-phase)' as any,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: tooltipsEnabled ? 'help' : 'default',
-                              }}
-                              onMouseEnter={(e) => handleSpanMouseEnter(e, workCategoryRow, span)}
-                              onMouseMove={handleSpanMouseMove}
-                              onMouseLeave={handleSpanMouseLeave}
-                            >
-                              {span.totalHours}h
-                            </div>
+                              span={span}
+                              eventRow={workCategoryRow}
+                              leftOffset={leftOffset}
+                              blockWidth={blockWidth}
+                              verticalCenterOffset={verticalCenterOffset}
+                              spanHeight={spanHeight}
+                              timelineWidth={timelineWidth}
+                              tooltipsEnabled={tooltipsEnabled}
+                              onSpanMouseEnter={handleSpanMouseEnter}
+                              onSpanMouseMove={handleSpanMouseMove}
+                              onSpanMouseLeave={handleSpanMouseLeave}
+                            />
                           );
                         })}
                       </div>

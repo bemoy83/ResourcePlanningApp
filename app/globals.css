@@ -113,6 +113,7 @@
   --calendar-holiday-bg: #fef2f2;
   --calendar-header-bg: #f3f4f6;
   --calendar-span-bg: #e5e7eb;
+  --work-bar-bg: #6b7280; /* zinc-500: high contrast for white text */
   --calendar-grid-line: rgba(0, 0, 0, 0.03);
   --calendar-grid-line-soft: rgba(0, 0, 0, 0.015);
   --calendar-row-separator: rgba(0, 0, 0, 0.04);
@@ -367,6 +368,7 @@
     --calendar-holiday-bg: #281d1d;
   --calendar-header-bg: #18181b;
   --calendar-span-bg: #27272a;
+  --work-bar-bg: #a1a1aa; /* zinc-400: high contrast for dark text */
   --calendar-grid-line: rgba(255, 255, 255, 0.02);
   --calendar-grid-line-soft: rgba(255, 255, 255, 0.015);
   --calendar-row-separator: rgba(255, 255, 255, 0.04);
