@@ -20,6 +20,7 @@ import {
   getPhaseBackgroundColor,
   formatPhaseNameForDisplay,
   getPhaseDisplayLabel,
+  isEventPhaseName,
 } from "./phaseSpanUtils";
 import { createPortal } from "react-dom";
 
@@ -32,7 +33,7 @@ interface WorkGanttCalendarProps {
 }
 
 const CELL_BORDER_WIDTH = 1;
-const ROW_LAYER_HEIGHT = 24;
+const ROW_LAYER_HEIGHT = 48; // Increased to allow 2 lines of text
 const OUTSIDE_LABEL_GAP_PX = 6;
 
 // Calculate day count between two dates
@@ -600,14 +601,14 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
           border: `var(--border-width-medium) solid var(--sticky-header-border)`,
           position: 'sticky',
           top: 0,
-          zIndex: 'var(--z-sticky-column)' as any,
-          minHeight: 'var(--row-min-height)',
+          zIndex: 'var(--z-sticky-header)' as any,
+          height: `${ROW_LAYER_HEIGHT}px`,
         }}>
           <div style={{
             ...headerCellStyle,
             position: 'sticky',
             left: 0,
-            zIndex: 'var(--z-sticky-column)' as any,
+            zIndex: 'var(--z-sticky-header)' as any,
             backgroundColor: 'var(--sticky-corner-bg)',
             border: `${CELL_BORDER_WIDTH}px solid var(--border-primary)`,
             color: 'var(--sticky-corner-text)',
@@ -708,42 +709,55 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
                 >
                   <div style={{
                     textAlign: 'left',
-                    padding: 0,
-                    paddingLeft: 'var(--space-md)',
+                    padding: 'var(--space-xs) var(--space-md)',
                     backgroundColor: 'var(--sticky-column-bg)',
                     position: 'sticky',
                     left: 0,
                     zIndex: 'var(--z-sticky-column)' as any,
                     display: 'flex',
-                    alignItems: 'center',
+                    alignItems: 'flex-start',
                     gap: 'var(--space-sm)',
                     color: 'var(--text-primary)',
                     border: 'var(--border-width-thin) solid var(--sticky-column-bg)',
                     fontSize: '11px',
                     boxSizing: 'border-box',
                     height: '100%',
+                    flexWrap: 'wrap',
+                    wordBreak: 'break-word',
+                    overflowWrap: 'break-word',
                   }}>
                     <span style={{
                       display: 'inline-flex',
-                      alignItems: 'center',
+                      alignItems: 'flex-start',
+                      paddingTop: '2px',
                       transition: 'transform var(--transition-fast)',
                       transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
                       fontSize: '10px',
                       color: 'var(--text-secondary)',
+                      flexShrink: 0,
                     }}>
                       ▸
                     </span>
-                    <HighlightBadge isHighlighted={hoveredEventId === event.id}>
-                      {event.name}
-                    </HighlightBadge>
-                    <span style={{
-                      fontSize: '10px',
-                      color: 'var(--text-tertiary)',
-                      fontWeight: 'var(--font-weight-normal)',
-                      marginLeft: 'var(--space-xs)',
+                    <div style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: 'var(--space-xs)',
+                      alignItems: 'baseline',
+                      flex: 1,
+                      minWidth: 0,
                     }}>
-                      ({rows.length} {rows.length === 1 ? 'category' : 'categories'})
-                    </span>
+                      <HighlightBadge isHighlighted={hoveredEventId === event.id}>
+                        {event.name}
+                      </HighlightBadge>
+                      <span style={{
+                        fontSize: '10px',
+                        color: 'var(--text-tertiary)',
+                        fontWeight: 'var(--font-weight-normal)',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        ({rows.length} {rows.length === 1 ? 'category' : 'categories'})
+                      </span>
+                    </div>
                   </div>
 
                   {/* Timeline area with background and gridlines (always visible) */}
@@ -804,7 +818,22 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
 
                         // Use abbreviated label when in transition and single-day
                         const isSingleDaySpan = spanLength === 1;
-                        const displayLabel = getPhaseDisplayLabel(phase.name, isInTransition, isSingleDaySpan);
+                        const isEventPhase = isEventPhaseName(phase.name);
+
+                        // For EVENT phases, show the event name instead of "EVENT"
+                        let displayLabel: string;
+                        if (isEventPhase) {
+                          if (isInTransition && isSingleDaySpan) {
+                            // Abbreviate event name when in transition and single-day
+                            displayLabel = event.name.length > 4 ? event.name.slice(0, 4) : event.name;
+                          } else {
+                            // Show full event name
+                            displayLabel = event.name;
+                          }
+                        } else {
+                          // Use standard phase display label for non-EVENT phases
+                          displayLabel = getPhaseDisplayLabel(phase.name, isInTransition, isSingleDaySpan);
+                        }
 
                         return (
                           <div
@@ -832,7 +861,7 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
                               justifyContent: 'center',
                               pointerEvents: 'auto',
                             }}
-                            title={`${formatPhaseNameForDisplay(phase.name)}: ${normalizedStart} to ${normalizedEnd}`}
+                            title={`${isEventPhase ? event.name : formatPhaseNameForDisplay(phase.name)}: ${normalizedStart} to ${normalizedEnd}`}
                           >
                             {displayLabel}
                           </div>
@@ -859,7 +888,7 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
                       <div style={{
                         ...cellStyle,
                         textAlign: 'left',
-                        paddingLeft: 'var(--space-xl)',
+                        padding: 'var(--space-xs) var(--space-xl)',
                         fontSize: '11px',
                         backgroundColor: 'var(--sticky-column-bg)',
                         position: 'sticky',
@@ -867,9 +896,11 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
                         zIndex: 'var(--z-sticky-column)' as any,
                         height: `${ROW_LAYER_HEIGHT}px`,
                         display: 'flex',
-                        alignItems: 'center',
+                        alignItems: 'flex-start',
                         border: 'none',
                         color: 'var(--sticky-column-text)',
+                        wordBreak: 'break-word',
+                        overflowWrap: 'break-word',
                       }}>
                         <HighlightBadge
                           isHighlighted={highlightedWorkCategoryIds.has(workCategoryRow.workCategoryId)}

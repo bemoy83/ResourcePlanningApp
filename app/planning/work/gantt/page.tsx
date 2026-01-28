@@ -217,7 +217,7 @@ export default function WorkGanttPage() {
     return {
       dates,
       dateColumnWidth: TIMELINE_DATE_COLUMN_WIDTH,
-      timelineOriginPx: 200,
+      timelineOriginPx: 300, // Increased width for sticky left column to accommodate longer names
       dateMeta: undefined, // Will be calculated in component
     };
   }, [dates]);
