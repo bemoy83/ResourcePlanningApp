@@ -7,8 +7,9 @@ import { CrossEventCapacityRow } from './rows/CrossEventCapacityRow';
 import { TodayIndicator } from '../shared/TodayIndicator';
 import { WorkCategoryRow } from '../WorkCategoryRow';
 import { StickyLeftCell } from './shared/StickyLeftCell';
+import { useTimelineLayout } from '../shared/useTimelineLayout';
+import { centeredCellStyle } from '../shared/gridStyles';
 import {
-  TimelineLayout,
   Event,
   Location,
   EventLocation,
@@ -22,12 +23,9 @@ import {
   LEFT_COLUMNS,
   TIMELINE_DATE_COLUMN_WIDTH,
   TIMELINE_ORIGIN_PX,
-  CALENDAR_HEADER_HEIGHT,
   calculateLeftColumnOffsets,
   generateLeftColumnsTemplate,
 } from '../layoutConstants';
-import { buildDateFlags, getTodayString } from '../../utils/date';
-import { getHolidayDatesForRange } from '../../utils/holidays';
 import { useEventHoverHighlight } from '../shared/useEventHoverHighlight';
 
 interface UnifiedPlanningTableProps {
@@ -88,28 +86,8 @@ export function UnifiedPlanningTable({
   const datesRef = useRef(dates);
   const prevDatesRef = useRef<string[]>(dates);
 
-  const holidayDates = useMemo(() => getHolidayDatesForRange(dates), [dates]);
-
-  // Build timeline layout
-  const timeline: TimelineLayout = useMemo(
-    () => ({
-      dates,
-      dateColumnWidth: TIMELINE_DATE_COLUMN_WIDTH,
-      timelineOriginPx: TIMELINE_ORIGIN_PX,
-      dateMeta: buildDateFlags(dates, holidayDates),
-    }),
-    [dates, holidayDates]
-  );
-
-  // Calculate scroll width
-  const timelineWidth = dates.length * TIMELINE_DATE_COLUMN_WIDTH;
-  const scrollWidth = TIMELINE_ORIGIN_PX + timelineWidth;
-
-  // Calculate today's index in the dates array
-  const todayIndex = useMemo(() => {
-    const today = getTodayString();
-    return dates.indexOf(today);
-  }, [dates]);
+  // Use shared timeline layout hook
+  const { timeline, todayIndex, scrollWidth } = useTimelineLayout(dates);
 
   // Map events to locations
   const eventLocationMap = useMemo(() => {
@@ -286,20 +264,7 @@ export function UnifiedPlanningTable({
     });
   }, [dateColumnWidth, focusedEventId, onLocateFailure, timelineOriginPx]);
 
-  const cellStyle: React.CSSProperties = {
-    border: 'var(--border-width-thin) solid var(--border-primary)',
-    padding: 'var(--space-sm)',
-    textAlign: 'center' as const,
-    fontSize: 'var(--font-size-sm)',
-    backgroundColor: 'var(--surface-default)',
-    color: 'var(--text-primary)',
-    minHeight: 'var(--row-min-height)',
-    boxSizing: 'border-box' as const,
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center',
-  };
+  const cellStyle = centeredCellStyle;
 
   return (
     <div

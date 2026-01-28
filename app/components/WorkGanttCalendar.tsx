@@ -1,6 +1,7 @@
 import { useMemo, memo, useState, useRef, useEffect, useCallback } from "react";
 import { buildDateFlags, getTodayString } from "../utils/date";
 import { getHolidayDatesForRange } from "../utils/holidays";
+import { calculateSpanPosition, calculateVerticalCenter } from "../utils/timelinePosition";
 import { Tooltip } from "./tooltip";
 import {
   TOOLTIP_DELAY_MS,
@@ -16,6 +17,8 @@ import {
 import { HighlightBadge } from "./shared/HighlightBadge";
 import { TodayIndicator } from "./shared/TodayIndicator";
 import { useDelayedHover } from "./shared/useDelayedHover";
+import { getDateColumnStyles, getDateHeaderTextColor } from "./shared/dateColumnStyles";
+import { baseCellStyle, headerCellStyle as sharedHeaderCellStyle } from "./shared/gridStyles";
 import {
   Event,
   WorkCategory,
@@ -299,8 +302,6 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
     return buildDateFlags(dates, holidayDates);
   }, [dates, holidayDates, timeline.dateMeta]);
 
-  const weekendBackground = "var(--calendar-weekend-bg)";
-  const holidayBackground = "var(--calendar-holiday-bg)";
   const horizontalBorderColor = 'var(--calendar-grid-line-soft)';
 
   // Group work categories by event and build rows
@@ -495,18 +496,15 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
   }, [tooltipsEnabled, cancelHover, cancelPhaseHover]);
 
   const cellStyle: React.CSSProperties = {
+    ...baseCellStyle,
     border: `${CELL_BORDER_WIDTH}px solid var(--border-primary)`,
-    padding: 'var(--space-sm)',
-    textAlign: 'center' as const,
     fontSize: '11px',
-    backgroundColor: 'var(--surface-default)',
-    color: 'var(--text-primary)',
-    boxSizing: 'border-box' as const,
   };
 
   const headerCellStyle: React.CSSProperties = {
-    ...cellStyle,
-    minHeight: 'var(--row-min-height)',
+    ...sharedHeaderCellStyle,
+    border: `${CELL_BORDER_WIDTH}px solid var(--border-primary)`,
+    fontSize: '11px',
   };
 
   // Return nothing if no events with allocations
@@ -564,19 +562,8 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
               const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
               const day = dateObj.getDate();
               const isToday = dateFlags?.isToday ?? false;
-
-              const backgroundColor = isToday
-                ? 'var(--today-header-bg)'
-                : dateFlags?.isHoliday
-                  ? holidayBackground
-                  : dateFlags?.isWeekend
-                    ? weekendBackground
-                    : "var(--sticky-header-cell-bg)";
-              const borderColor = dateFlags?.isHoliday
-                ? "var(--calendar-holiday-border)"
-                : dateFlags?.isWeekend
-                  ? "var(--calendar-weekend-border)"
-                  : "var(--border-primary)";
+              const { backgroundColor, borderColor } = getDateColumnStyles(dateFlags, { isHeader: true, isToday });
+              const textColor = getDateHeaderTextColor(isToday);
 
               return (
                 <div
@@ -590,7 +577,7 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
                     height: '100%',
                     backgroundColor,
                     border: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
-                    color: isToday ? 'var(--today-header-text)' : 'var(--sticky-header-text)',
+                    color: textColor,
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'center',
@@ -610,7 +597,7 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
                   <div style={{
                     fontSize: 'var(--font-size-md)',
                     fontWeight: 'var(--font-weight-semibold)',
-                    color: isToday ? 'var(--today-header-text)' : 'var(--sticky-header-text)',
+                    color: textColor,
                   }}>
                     {day}
                   </div>
@@ -879,13 +866,9 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
                       }}>
                         {dates.map((date, index) => {
                           const dateFlags = dateMeta[index];
-                          const backgroundColor = dateFlags?.isHoliday
-                            ? holidayBackground
-                            : dateFlags?.isWeekend
-                              ? weekendBackground
-                              : 'var(--calendar-weekday-bg)';
-                          const borderColor = dateFlags?.isHoliday
-                            ? "var(--calendar-holiday-border)"
+                          const { backgroundColor, borderColor } = getDateColumnStyles(dateFlags);
+                          const verticalBorder = dateFlags?.isHoliday
+                            ? borderColor
                             : "var(--calendar-grid-line)";
 
                           return (
@@ -900,8 +883,8 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
                                 height: `${ROW_LAYER_HEIGHT}px`,
                                 backgroundColor,
                                 border: 'none',
-                                borderLeft: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
-                                borderRight: `${CELL_BORDER_WIDTH}px solid ${borderColor}`,
+                                borderLeft: `${CELL_BORDER_WIDTH}px solid ${verticalBorder}`,
+                                borderRight: `${CELL_BORDER_WIDTH}px solid ${verticalBorder}`,
                                 borderTop: `${CELL_BORDER_WIDTH}px solid ${horizontalBorderColor}`,
                                 borderBottom: `${CELL_BORDER_WIDTH}px solid ${horizontalBorderColor}`,
                               }}
@@ -911,34 +894,25 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
 
                         {/* Allocation spans (bars) */}
                         {workCategoryRow.spans.map((span, spanIndex) => {
-                          const normalizedStart = span.startDate.split('T')[0];
-                          const normalizedEnd = span.endDate.split('T')[0];
+                          const position = calculateSpanPosition(
+                            span.startDate,
+                            span.endDate,
+                            dates,
+                            DAY_COL_FULL_WIDTH
+                          );
 
-                          const startIndex = dates.indexOf(normalizedStart);
-                          const endIndex = dates.indexOf(normalizedEnd);
+                          if (!position) return null;
 
-                          // Skip spans completely outside visible range
-                          if (startIndex === -1 && endIndex === -1) return null;
-
-                          // Clamp to visible range
-                          const spanStart = Math.max(startIndex, 0);
-                          const spanEnd = Math.min(endIndex === -1 ? dates.length - 1 : endIndex, dates.length - 1);
-                          const spanLength = spanEnd - spanStart + 1;
-
-                          const leftOffset = spanStart * DAY_COL_FULL_WIDTH;
-                          const blockWidth = spanLength * DAY_COL_FULL_WIDTH;
-                          // Bars are positioned within their own row container
-                          // Center them vertically within the ROW_LAYER_HEIGHT cell
-                          const spanHeight = 20; // Fixed height for bars
-                          const verticalCenterOffset = (ROW_LAYER_HEIGHT - spanHeight) / 2;
+                          const spanHeight = 20;
+                          const verticalCenterOffset = calculateVerticalCenter(ROW_LAYER_HEIGHT, spanHeight);
 
                           return (
                             <AllocationSpanBar
                               key={`${workCategoryRow.workCategoryId}-${spanIndex}-${span.startDate}`}
                               span={span}
                               eventRow={workCategoryRow}
-                              leftOffset={leftOffset}
-                              blockWidth={blockWidth}
+                              leftOffset={position.leftOffset}
+                              blockWidth={position.width}
                               verticalCenterOffset={verticalCenterOffset}
                               spanHeight={spanHeight}
                               timelineWidth={timelineWidth}
