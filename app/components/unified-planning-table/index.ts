@@ -17,7 +17,7 @@ export { PlanningTableHeader } from './PlanningTableHeader';
 export { CalendarLocationRow } from './rows/CalendarLocationRow';
 export { CrossEventDemandRow } from './rows/CrossEventDemandRow';
 export { CrossEventCapacityRow } from './rows/CrossEventCapacityRow';
-export { TodayIndicator } from './TodayIndicator';
+export { TodayIndicator } from '../shared/TodayIndicator';
 export { DateCellsContainer } from './shared/DateCellsContainer';
 export { StickyLeftCell } from './shared/StickyLeftCell';
 export type * from './shared/types';

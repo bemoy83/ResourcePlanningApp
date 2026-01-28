@@ -4,7 +4,7 @@ import { CalendarHeader } from './CalendarHeader';
 import { CalendarLocationRow } from './rows/CalendarLocationRow';
 import { CrossEventDemandRow } from './rows/CrossEventDemandRow';
 import { CrossEventCapacityRow } from './rows/CrossEventCapacityRow';
-import { TodayIndicator } from './TodayIndicator';
+import { TodayIndicator } from '../shared/TodayIndicator';
 import { WorkCategoryRow } from '../WorkCategoryRow';
 import { StickyLeftCell } from './shared/StickyLeftCell';
 import {
@@ -318,7 +318,7 @@ export function UnifiedPlanningTable({
             position: 'sticky',
             top: 0,
             zIndex: 10,
-            backgroundColor: 'var(--surface-default)',
+            backgroundColor: 'none',
           }}
         >
           {/* Calendar Header - "Locations" label - highest z-index to stay on top */}
@@ -382,6 +382,7 @@ export function UnifiedPlanningTable({
               fontWeight: 'var(--font-weight-bold)',
               fontSize: 'var(--font-size-sm)',
               minWidth: `${scrollWidth}px`,
+              width: `${scrollWidth}px`,
               alignItems: 'stretch',
               boxSizing: 'border-box',
             }}
@@ -480,7 +481,7 @@ export function UnifiedPlanningTable({
         </div>
 
         {/* Planning Grid Section - Scrollable work categories */}
-        <section className="planning-grid-section" style={{ position: 'relative', border: 'var(--border-width-thin) solid var(--border-strong)' }}>
+        <section className="planning-grid-section" style={{ position: 'relative', border: 'none' }}>
           {/* Today indicator line for planning grid section - below sticky columns (z-index 3) */}
           <TodayIndicator
             todayIndex={todayIndex}

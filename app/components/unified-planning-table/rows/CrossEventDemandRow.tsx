@@ -74,6 +74,7 @@ export const CrossEventDemandRow = memo(function CrossEventDemandRow({
         backgroundColor: 'var(--sticky-header-bg)',
         position: 'relative',
         minWidth: `${timeline.timelineOriginPx + timelineWidth}px`,
+        width: `${timeline.timelineOriginPx + timelineWidth}px`,
       }}
     >
       {/* Sticky label cell */}
@@ -144,6 +145,7 @@ export const CrossEventDemandRow = memo(function CrossEventDemandRow({
                 fontWeight: 'var(--font-weight-bold)',
                 color: hasIssue ? 'var(--capacity-over-text)' : 'inherit',
                 backgroundColor: hasIssue ? 'var(--capacity-over)' : baseBackground,
+                zIndex: 'var(--z-allocation-text)' as any,
               }}
             >
               {crossDemand && crossDemand.totalEffortHours > 0 ? `${crossDemand.totalEffortHours}h` : ''}

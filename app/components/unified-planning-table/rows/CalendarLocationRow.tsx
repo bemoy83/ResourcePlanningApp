@@ -1,10 +1,12 @@
-import { memo, useMemo, useState, useRef, useEffect, useCallback } from 'react';
+import { memo, useMemo, useEffect, useCallback } from 'react';
 import { TimelineLayout, Location, Event, EventPhase } from '../shared/types';
 import { DateCellsContainer } from '../shared/DateCellsContainer';
 import { StickyLeftCell } from '../shared/StickyLeftCell';
 import { LEFT_COLUMNS, calculateLeftColumnOffsets } from '../../layoutConstants';
 import { buildDateFlags } from '../../../utils/date';
-import { Tooltip, TooltipState } from '../../tooltip';
+import { Tooltip } from '../../tooltip';
+import { TOOLTIP_DELAY_MS, buildTooltipContent, calculateTooltipPosition } from '../../tooltipUtils';
+import { useTooltip } from '../../shared/useTooltip';
 import { LocationBadge } from '../../shared/LocationBadge';
 import { useDelayedHover } from '../../shared/useDelayedHover';
 
@@ -111,8 +113,6 @@ interface CalendarLocationRowProps {
 
 const CELL_BORDER_WIDTH = 1;
 const ROW_LAYER_HEIGHT = 24;
-const TOOLTIP_DELAY_MS = 700;
-
 /**
  * Renders one location row in the calendar section.
  * Shows event phases as colored timeline spans with vertical stacking for overlaps.
@@ -126,9 +126,11 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
   isHighlighted = false,
   onEventHover,
 }: CalendarLocationRowProps) {
-  const [tooltip, setTooltip] = useState<TooltipState | null>(null);
-  const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const tooltipShowTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { tooltip, scheduleShow, move, hide } = useTooltip({
+    enabled: tooltipsEnabled,
+    delayMs: TOOLTIP_DELAY_MS,
+    getPosition: calculateTooltipPosition,
+  });
   const handleHoverChange = useCallback((eventId: string | null) => {
     onEventHover?.(eventId);
   }, [onEventHover]);
@@ -365,53 +367,11 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
     : 'none';
   const horizontalBorderColor = 'var(--calendar-grid-line-soft)';
 
-  // Tooltip handlers
-  const calculateDayCount = (startDate: string, endDate: string): number => {
-    try {
-      const start = new Date(startDate.split('T')[0]);
-      const end = new Date(endDate.split('T')[0]);
-      const diffTime = Math.abs(end.getTime() - start.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return diffDays + 1;
-    } catch {
-      return 0;
-    }
-  };
-
-  const calculateTooltipPosition = (clientX: number, clientY: number) => {
-    const tooltipWidth = 250;
-    const tooltipHeight = 120;
-    const spacing = 8;
-
-    let top = clientY;
-    let left = clientX;
-
-    if (left + tooltipWidth > window.innerWidth - spacing) {
-      left = Math.max(spacing, window.innerWidth - tooltipWidth - spacing);
-    }
-    if (left < spacing) {
-      left = spacing;
-    }
-    if (top + tooltipHeight > window.innerHeight - spacing) {
-      top = Math.max(spacing, window.innerHeight - tooltipHeight - spacing);
-    }
-    if (top < spacing) {
-      top = spacing;
-    }
-
-    return { top, left };
-  };
-
   const handleSpanMouseEnter = (
     event: React.MouseEvent<HTMLDivElement>,
     eventRow: EventRow,
     span: CalendarSpan
   ) => {
-    if (tooltipTimeoutRef.current) {
-      clearTimeout(tooltipTimeoutRef.current);
-      tooltipTimeoutRef.current = null;
-    }
-
     // Notify parent of hovered event for cross-location highlighting (with delay)
     if (tooltipsEnabled && onEventHover) {
       scheduleHover(eventRow.eventId);
@@ -421,33 +381,22 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
       return;
     }
 
-    if (tooltipShowTimeoutRef.current) {
-      clearTimeout(tooltipShowTimeoutRef.current);
-    }
-
-    const dayCount = calculateDayCount(span.startDate, span.endDate);
     // For tooltip: use formatted phase name (span.label already formatted, but for EVENT phase use original phaseName formatted)
     const phaseName = span.label === eventRow.eventName
       ? formatPhaseNameForDisplay(span.phaseName || 'EVENT')
       : span.label;
-    const mouseX = event.clientX;
-    const mouseY = event.clientY;
-
-    tooltipShowTimeoutRef.current = setTimeout(() => {
-      const position = calculateTooltipPosition(mouseX, mouseY);
-      setTooltip({
-        visible: true,
-        content: {
-          eventName: eventRow.eventName,
-          phaseName: phaseName,
-          locationName: location.name,
-          startDate: span.startDate,
-          endDate: span.endDate,
-          dayCount,
-        },
-        position,
-      });
-    }, TOOLTIP_DELAY_MS);
+    const tooltipContent = buildTooltipContent({
+      eventName: eventRow.eventName,
+      phaseName,
+      locationName: location.name,
+      startDate: span.startDate,
+      endDate: span.endDate,
+    });
+    scheduleShow(
+      tooltipContent,
+      event.clientX,
+      event.clientY
+    );
   };
 
   const handleSpanMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -455,22 +404,11 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
       return;
     }
 
-    setTooltip((prevTooltip) => {
-      if (!prevTooltip || !prevTooltip.visible) return prevTooltip;
-      const position = calculateTooltipPosition(event.clientX, event.clientY);
-      return {
-        ...prevTooltip,
-        position,
-      };
-    });
+    move(event.clientX, event.clientY);
   };
 
   const handleSpanMouseLeave = () => {
-    if (tooltipShowTimeoutRef.current) {
-      clearTimeout(tooltipShowTimeoutRef.current);
-      tooltipShowTimeoutRef.current = null;
-    }
-    setTooltip(null);
+    hide();
 
     // Clear hovered event for cross-location highlighting
     if (onEventHover) {
@@ -479,27 +417,11 @@ export const CalendarLocationRow = memo(function CalendarLocationRow({
   };
 
   useEffect(() => {
-    return () => {
-      if (tooltipTimeoutRef.current) {
-        clearTimeout(tooltipTimeoutRef.current);
-      }
-      if (tooltipShowTimeoutRef.current) {
-        clearTimeout(tooltipShowTimeoutRef.current);
-      }
-      cancelHover();
-    };
-  }, [cancelHover]);
-
-  useEffect(() => {
     if (!tooltipsEnabled) {
-      setTooltip(null);
-      if (tooltipShowTimeoutRef.current) {
-        clearTimeout(tooltipShowTimeoutRef.current);
-        tooltipShowTimeoutRef.current = null;
-      }
-      cancelHover();
+      hide();
+      clearHover();
     }
-  }, [tooltipsEnabled, cancelHover]);
+  }, [tooltipsEnabled, hide, clearHover]);
 
   const cellStyle: React.CSSProperties = {
     border: `${CELL_BORDER_WIDTH}px solid var(--border-primary)`,

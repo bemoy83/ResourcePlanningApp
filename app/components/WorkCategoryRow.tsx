@@ -292,7 +292,7 @@ export function WorkCategoryRow({
                 borderTop: `1px solid ${horizontalBorderColor}`,
                 borderBottom: `1px solid ${horizontalBorderColor}`,
                 overflow: 'visible',
-                zIndex: draft ? 100 : 2,
+                zIndex: draft ? 100 : (allocation ? 'var(--z-allocation-text)' as any : 2),
               }}
             >
               <AllocationCell

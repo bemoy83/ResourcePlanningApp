@@ -23,7 +23,13 @@ import {
   parseDateParts,
 } from "../../../utils/date";
 import { getHolidayDatesForRange } from "../../../utils/holidays";
-import { PlanningEvent, WorkCategory, Allocation } from "../../../types/shared";
+import {
+  PlanningEvent,
+  WorkCategory,
+  Allocation,
+  Location,
+  EventLocation,
+} from "../../../types/shared";
 import { TIMELINE_DATE_COLUMN_WIDTH } from "../../../components/layoutConstants";
 
 function PlanningToolbar({ children }: { children: ReactNode }) {
@@ -34,6 +40,8 @@ export default function WorkGanttPage() {
   const [events, setEvents] = useState<PlanningEvent[]>([]);
   const [workCategories, setWorkCategories] = useState<WorkCategory[]>([]);
   const [allocations, setAllocations] = useState<Allocation[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [eventLocations, setEventLocations] = useState<EventLocation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tooltipsEnabled, setTooltipsEnabled] = useTooltipPreference();
@@ -62,10 +70,18 @@ export default function WorkGanttPage() {
       setError(null);
 
       try {
-        const [eventsRes, workCategoriesRes, allocationsRes] = await Promise.all([
+        const [
+          eventsRes,
+          workCategoriesRes,
+          allocationsRes,
+          locationsRes,
+          eventLocationsRes,
+        ] = await Promise.all([
           fetch("/api/events"),
           fetch("/api/work-categories"),
           fetch("/api/schedule/allocations"),
+          fetch("/api/locations"),
+          fetch("/api/event-locations"),
         ]);
 
         if (!eventsRes.ok) {
@@ -78,13 +94,17 @@ export default function WorkGanttPage() {
         const eventsData: PlanningEvent[] = await eventsRes.json();
         const activeEvents = eventsData.filter((e) => e.status === "ACTIVE");
         const workCategoriesData: WorkCategory[] = await workCategoriesRes.json();
-        const allocationsData: Allocation[] = allocationsRes.ok
-          ? await allocationsRes.json()
+        const allocationsData: Allocation[] = allocationsRes.ok ? await allocationsRes.json() : [];
+        const locationsData: Location[] = locationsRes.ok ? await locationsRes.json() : [];
+        const eventLocationsData: EventLocation[] = eventLocationsRes.ok
+          ? await eventLocationsRes.json()
           : [];
 
         setEvents(activeEvents);
         setWorkCategories(workCategoriesData);
         setAllocations(allocationsData);
+        setLocations(locationsData);
+        setEventLocations(eventLocationsData);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load data");
       } finally {
@@ -160,6 +180,28 @@ export default function WorkGanttPage() {
 
     return getDateRangeFromPreset(dateRangePreset, customDateRange);
   }, [dateRangePreset, customDateRange, selectedYear, selectedMonth, monthOffset]);
+
+  const eventLocationMap = useMemo(() => {
+    const locationNameById = new Map(locations.map((loc) => [loc.id, loc.name]));
+    const tempMap = new Map<string, Set<string>>();
+
+    eventLocations.forEach((eventLocation) => {
+      const locationName = locationNameById.get(eventLocation.locationId);
+      if (!locationName) return;
+
+      if (!tempMap.has(eventLocation.eventId)) {
+        tempMap.set(eventLocation.eventId, new Set());
+      }
+      tempMap.get(eventLocation.eventId)!.add(locationName);
+    });
+
+    const map = new Map<string, string[]>();
+    tempMap.forEach((locationSet, eventId) => {
+      map.set(eventId, Array.from(locationSet).sort((a, b) => a.localeCompare(b)));
+    });
+
+    return map;
+  }, [locations, eventLocations]);
 
   // Generate dates array for timeline
   const dates = useMemo(() => {
@@ -526,6 +568,7 @@ export default function WorkGanttPage() {
           allocations={filteredAllocations}
           timeline={timeline}
           tooltipsEnabled={tooltipsEnabled}
+          eventLocationMap={eventLocationMap}
         />
       </div>
     </div>

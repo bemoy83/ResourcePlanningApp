@@ -65,6 +65,7 @@ export const CrossEventCapacityRow = memo(function CrossEventCapacityRow({
         backgroundColor: 'var(--sticky-header-bg)',
         position: 'relative',
         minWidth: `${timeline.timelineOriginPx + timelineWidth}px`,
+        width: `${timeline.timelineOriginPx + timelineWidth}px`,
       }}
     >
       {/* Sticky label cell */}
@@ -165,6 +166,7 @@ export const CrossEventCapacityRow = memo(function CrossEventCapacityRow({
                 top: 0,
                 width: `${timeline.dateColumnWidth}px`,
                 height: '100%',
+                zIndex: 'var(--z-allocation-text)' as any,
               }}
               title={`All Events Demand: ${crossComparison.demandHours}h, Total Capacity: ${crossComparison.capacityHours}h`}
             >

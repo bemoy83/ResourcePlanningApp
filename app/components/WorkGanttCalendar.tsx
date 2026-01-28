@@ -1,13 +1,20 @@
 import { useMemo, memo, useState, useRef, useEffect, useCallback } from "react";
-import { buildDateFlags } from "../utils/date";
+import { buildDateFlags, getTodayString } from "../utils/date";
 import { getHolidayDatesForRange } from "../utils/holidays";
-import { TooltipState } from "./tooltip";
+import { Tooltip } from "./tooltip";
+import {
+  TOOLTIP_DELAY_MS,
+  buildTooltipContent,
+  calculateTooltipPosition,
+} from "./tooltipUtils";
+import { useTooltip } from "./shared/useTooltip";
 import {
   groupWorkCategoriesByEvent,
   WorkGanttEventRow,
   AllocationSpan,
 } from "./workGanttUtils";
 import { HighlightBadge } from "./shared/HighlightBadge";
+import { TodayIndicator } from "./shared/TodayIndicator";
 import { useDelayedHover } from "./shared/useDelayedHover";
 import {
   Event,
@@ -22,7 +29,6 @@ import {
   getPhaseDisplayLabel,
   isEventPhaseName,
 } from "./phaseSpanUtils";
-import { createPortal } from "react-dom";
 
 interface WorkGanttCalendarProps {
   events: Event[];
@@ -30,24 +36,12 @@ interface WorkGanttCalendarProps {
   allocations: Allocation[];
   timeline: TimelineLayout;
   tooltipsEnabled?: boolean;
+  eventLocationMap?: Map<string, string[]>;
 }
 
 const CELL_BORDER_WIDTH = 1;
 const ROW_LAYER_HEIGHT = 48; // Increased to allow 2 lines of text
 const OUTSIDE_LABEL_GAP_PX = 6;
-
-// Calculate day count between two dates
-const calculateDayCount = (startDate: string, endDate: string): number => {
-  try {
-    const start = new Date(startDate.split('T')[0]);
-    const end = new Date(endDate.split('T')[0]);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays + 1; // Inclusive of both start and end dates
-  } catch {
-    return 0;
-  }
-};
 
 interface AllocationSpanBarProps {
   span: AllocationSpan;
@@ -232,106 +226,8 @@ const AllocationSpanBar = memo(function AllocationSpanBar({
   );
 });
 
-// Calculate tooltip position based on cursor coordinates
-const calculateTooltipPosition = (clientX: number, clientY: number) => {
-  const tooltipWidth = 250;
-  const tooltipHeight = 140;
-  const spacing = 8;
-
-  let top = clientY;
-  let left = clientX;
-
-  // Adjust if tooltip would go off-screen
-  if (left + tooltipWidth > window.innerWidth - spacing) {
-    left = Math.max(spacing, window.innerWidth - tooltipWidth - spacing);
-  }
-  if (left < spacing) {
-    left = spacing;
-  }
-  if (top + tooltipHeight > window.innerHeight - spacing) {
-    top = Math.max(spacing, window.innerHeight - tooltipHeight - spacing);
-  }
-  if (top < spacing) {
-    top = spacing;
-  }
-
-  return { top, left };
-};
-
-// Local tooltip component for WorkGanttCalendar that shows "Work:" instead of "Location:"
-function WorkGanttTooltip({ tooltip }: { tooltip: TooltipState | null }) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
-  }, []);
-
-  if (!tooltip || !tooltip.visible || !mounted) return null;
-
-  const formatDate = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
-    } catch {
-      return dateStr;
-    }
-  };
-
-  const tooltipContent = (
-    <div
-      style={{
-        position: "fixed",
-        top: `${tooltip.position.top}px`,
-        left: `${tooltip.position.left}px`,
-        backgroundColor: "var(--text-secondary)",
-        color: "var(--text-inverse)",
-        padding: "var(--space-sm) var(--space-md)",
-        borderRadius: "var(--radius-md)",
-        fontSize: "var(--font-size-sm)",
-        zIndex: "var(--z-tooltip)" as any,
-        boxShadow: "var(--shadow-md)",
-        pointerEvents: "none",
-        maxWidth: "250px",
-        lineHeight: "var(--line-height-normal)",
-        wordBreak: "break-word",
-        overflowWrap: "break-word",
-        overflow: "hidden",
-      }}
-    >
-      <div
-        style={{
-          fontWeight: "var(--font-weight-bold)",
-          marginBottom: "var(--space-xs)",
-          borderBottom: "var(--border-width-thin) solid var(--border-strong)",
-          paddingBottom: "var(--space-xs)",
-        }}
-      >
-        {tooltip.content.eventName}
-      </div>
-      <div style={{ marginBottom: "2px" }}>
-        <strong>Phase:</strong> {tooltip.content.phaseName}
-      </div>
-      <div style={{ marginBottom: "2px" }}>
-        <strong>Work:</strong> {tooltip.content.locationName}
-      </div>
-      <div style={{ marginBottom: "2px" }}>
-        <strong>Duration:</strong> {tooltip.content.dayCount}{" "}
-        {tooltip.content.dayCount === 1 ? "day" : "days"}
-      </div>
-      <div style={{ marginBottom: "2px" }}>
-        <strong>Dates:</strong> {formatDate(tooltip.content.startDate)} -{" "}
-        {formatDate(tooltip.content.endDate)}
-      </div>
-    </div>
-  );
-
-  return createPortal(tooltipContent, document.body);
-}
+const getTooltipPosition = (clientX: number, clientY: number) =>
+  calculateTooltipPosition(clientX, clientY, { width: 250, height: 140 });
 
 export const WorkGanttCalendar = memo(function WorkGanttCalendar({
   events,
@@ -339,15 +235,33 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
   allocations,
   timeline,
   tooltipsEnabled = true,
+  eventLocationMap,
 }: WorkGanttCalendarProps) {
-  const [tooltip, setTooltip] = useState<TooltipState | null>(null);
-  const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const tooltipShowTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const {
+    tooltip: workTooltip,
+    scheduleShow: scheduleWorkTooltip,
+    move: moveWorkTooltip,
+    hide: hideWorkTooltip,
+  } = useTooltip({
+    enabled: tooltipsEnabled,
+    delayMs: TOOLTIP_DELAY_MS,
+    getPosition: getTooltipPosition,
+  });
+  const {
+    tooltip: phaseTooltip,
+    scheduleShow: schedulePhaseTooltip,
+    move: movePhaseTooltip,
+    hide: hidePhaseTooltip,
+  } = useTooltip({
+    enabled: tooltipsEnabled,
+    delayMs: TOOLTIP_DELAY_MS,
+    getPosition: getTooltipPosition,
+  });
+  const emptyEventLocationMap = useMemo(() => new Map<string, string[]>(), []);
+  const resolvedEventLocationMap = eventLocationMap ?? emptyEventLocationMap;
 
   // Track which events are expanded (default: all expanded)
   const [expandedEventIds, setExpandedEventIds] = useState<Set<string>>(() => new Set(events.map(e => e.id)));
-
-  const TOOLTIP_DELAY_MS = 700;
 
   // Toggle event expansion
   const toggleEventExpansion = (eventId: string) => {
@@ -369,6 +283,11 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
   const leftColumnsTemplate = leftColumns.map((col) => `${col.width}px`).join(" ");
   const timelineWidth = dates.length * DAY_COL_FULL_WIDTH;
   const scrollWidth = timelineOriginPx + timelineWidth;
+
+  const todayIndex = useMemo(() => {
+    const today = getTodayString();
+    return dates.indexOf(today);
+  }, [dates]);
 
   // Get holiday dates to properly mark them in dateMeta
   const holidayDates = useMemo(() => getHolidayDatesForRange(dates), [dates]);
@@ -392,6 +311,7 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
   // Track hovered work category and event separately
   const [hoveredWorkCategoryId, setHoveredWorkCategoryId] = useState<string | null>(null);
   const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
+  const [hoveredEventIdFromPhase, setHoveredEventIdFromPhase] = useState<string | null>(null);
 
   // Get event ID from work category ID
   const workCategoryToEventMap = useMemo(() => {
@@ -407,10 +327,15 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
   // Highlight only the specific work category being hovered
   const highlightedWorkCategoryIds = useMemo(() => {
     if (!hoveredWorkCategoryId) {
-      return new Set<string>();
+      if (!hoveredEventIdFromPhase && !hoveredEventId) {
+        return new Set<string>();
+      }
+      const eventId = hoveredEventIdFromPhase ?? hoveredEventId;
+      const eventRows = eventRowsMap[eventId ?? ""] || [];
+      return new Set(eventRows.map((row) => row.workCategoryId));
     }
     return new Set([hoveredWorkCategoryId]);
-  }, [hoveredWorkCategoryId]);
+  }, [hoveredWorkCategoryId, hoveredEventIdFromPhase, hoveredEventId, eventRowsMap]);
 
   // Update event highlight when work category changes
   useEffect(() => {
@@ -422,6 +347,8 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
     }
   }, [hoveredWorkCategoryId, workCategoryToEventMap]);
 
+  const effectiveHoveredEventId = hoveredEventIdFromPhase ?? hoveredEventId;
+
   const handleWorkCategoryHoverChange = useCallback((workCategoryId: string | null) => {
     setHoveredWorkCategoryId(workCategoryId);
   }, []);
@@ -429,6 +356,11 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
     delayMs: TOOLTIP_DELAY_MS,
     onHover: handleWorkCategoryHoverChange,
   });
+  const { scheduleHover: schedulePhaseHover, clearHover: clearPhaseHover, cancelHover: cancelPhaseHover } =
+    useDelayedHover<string>({
+      delayMs: TOOLTIP_DELAY_MS,
+      onHover: setHoveredEventIdFromPhase,
+    });
 
   // Create ordered event list with rows
   const eventGroups = useMemo(() => {
@@ -468,11 +400,6 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
     eventRow: WorkGanttEventRow,
     span: AllocationSpan
   ) => {
-    if (tooltipTimeoutRef.current) {
-      clearTimeout(tooltipTimeoutRef.current);
-      tooltipTimeoutRef.current = null;
-    }
-
     if (tooltipsEnabled) {
       // Schedule hover for the specific work category (not the event)
       scheduleHover(eventRow.workCategoryId);
@@ -482,31 +409,20 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
       return;
     }
 
-    if (tooltipShowTimeoutRef.current) {
-      clearTimeout(tooltipShowTimeoutRef.current);
-    }
-
-    const dayCount = calculateDayCount(span.startDate, span.endDate);
-    const mouseX = event.clientX;
-    const mouseY = event.clientY;
-
-    tooltipShowTimeoutRef.current = setTimeout(() => {
-      const position = calculateTooltipPosition(mouseX, mouseY);
-      setTooltip({
-        visible: true,
-        content: {
-          eventName: eventRow.eventName,
-          phaseName: span.phase
-            ? `${formatPhaseNameForDisplay(span.phase)} (${span.totalHours}h)`
-            : `Work (${span.totalHours}h)`,
-          locationName: eventRow.workCategoryName,
-          startDate: span.startDate,
-          endDate: span.endDate,
-          dayCount,
-        },
-        position,
-      });
-    }, TOOLTIP_DELAY_MS);
+    hidePhaseTooltip();
+    scheduleWorkTooltip(
+      buildTooltipContent({
+        eventName: eventRow.eventName,
+        phaseName: span.phase
+          ? `${formatPhaseNameForDisplay(span.phase)} (${span.totalHours}h)`
+          : `Work (${span.totalHours}h)`,
+        locationName: eventRow.workCategoryName,
+        startDate: span.startDate,
+        endDate: span.endDate,
+      }),
+      event.clientX,
+      event.clientY
+    );
   };
 
   // Handle mouse move to update tooltip position
@@ -515,49 +431,68 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
       return;
     }
 
-    setTooltip((prevTooltip) => {
-      if (!prevTooltip || !prevTooltip.visible) return prevTooltip;
-      const position = calculateTooltipPosition(event.clientX, event.clientY);
-      return {
-        ...prevTooltip,
-        position,
-      };
-    });
+    moveWorkTooltip(event.clientX, event.clientY);
   };
 
   // Handle mouse leave for tooltip
   const handleSpanMouseLeave = () => {
-    if (tooltipShowTimeoutRef.current) {
-      clearTimeout(tooltipShowTimeoutRef.current);
-      tooltipShowTimeoutRef.current = null;
-    }
-    setTooltip(null);
+    hideWorkTooltip();
     clearHover();
   };
 
-  // Cleanup timeouts on unmount
-  useEffect(() => {
-    return () => {
-      if (tooltipTimeoutRef.current) {
-        clearTimeout(tooltipTimeoutRef.current);
-      }
-      if (tooltipShowTimeoutRef.current) {
-        clearTimeout(tooltipShowTimeoutRef.current);
-      }
-    };
-  }, []);
+  const handlePhaseMouseEnter = (
+    event: React.MouseEvent<HTMLDivElement>,
+    eventId: string,
+    eventName: string,
+    phaseName: string,
+    startDate: string,
+    endDate: string
+  ) => {
+    if (!tooltipsEnabled) {
+      return;
+    }
+
+    const locationNames = resolvedEventLocationMap.get(eventId) ?? [];
+    const locationLabel = locationNames.length > 0 ? locationNames.join(", ") : "Unassigned";
+
+    hideWorkTooltip();
+    schedulePhaseTooltip(
+      buildTooltipContent({
+        eventName,
+        phaseName,
+        locationName: locationLabel,
+        startDate,
+        endDate,
+      }),
+      event.clientX,
+      event.clientY
+    );
+
+    setHoveredWorkCategoryId(null);
+    schedulePhaseHover(eventId);
+  };
+
+  const handlePhaseMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!tooltipsEnabled) {
+      return;
+    }
+
+    movePhaseTooltip(event.clientX, event.clientY);
+  };
+
+  const handlePhaseMouseLeave = () => {
+    hidePhaseTooltip();
+    clearPhaseHover();
+  };
 
   // Clear tooltip when tooltips are disabled
   useEffect(() => {
     if (!tooltipsEnabled) {
-      setTooltip(null);
-      if (tooltipShowTimeoutRef.current) {
-        clearTimeout(tooltipShowTimeoutRef.current);
-        tooltipShowTimeoutRef.current = null;
-      }
+      setHoveredEventIdFromPhase(null);
       cancelHover();
+      cancelPhaseHover();
     }
-  }, [tooltipsEnabled, cancelHover]);
+  }, [tooltipsEnabled, cancelHover, cancelPhaseHover]);
 
   const cellStyle: React.CSSProperties = {
     border: `${CELL_BORDER_WIDTH}px solid var(--border-primary)`,
@@ -590,8 +525,9 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
 
   return (
     <>
-      <WorkGanttTooltip tooltip={tooltip} />
-      <section style={{ minWidth: `${scrollWidth}px` }}>
+      <Tooltip tooltip={workTooltip} locationLabel="Work" />
+      <Tooltip tooltip={phaseTooltip} locationLabel="Locations" />
+      <section style={{ minWidth: `${scrollWidth}px`, width: `${scrollWidth}px` }}>
         {/* Header row with dates */}
         <header style={{
           display: 'grid',
@@ -603,6 +539,8 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
           top: 0,
           zIndex: 'var(--z-sticky-header)' as any,
           height: `${ROW_LAYER_HEIGHT}px`,
+          minWidth: `${scrollWidth}px`,
+          width: `${scrollWidth}px`,
         }}>
           <div style={{
             ...headerCellStyle,
@@ -683,7 +621,18 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
         </header>
 
         {/* Event groups with work category rows */}
-        <div style={{ border: `var(--border-width-thin) solid var(--border-strong)` }}>
+        <div
+          style={{
+            border: `var(--border-width-thin) solid var(--border-strong)`,
+            position: 'relative',
+          }}
+        >
+          <TodayIndicator
+            todayIndex={todayIndex}
+            dateColumnWidth={DAY_COL_FULL_WIDTH}
+            timelineOriginPx={timelineOriginPx}
+            topOffset={0}
+          />
           {eventGroups.map(({ event, rows }) => {
             const isExpanded = expandedEventIds.has(event.id);
 
@@ -746,7 +695,7 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
                       flex: 1,
                       minWidth: 0,
                     }}>
-                      <HighlightBadge isHighlighted={hoveredEventId === event.id}>
+                      <HighlightBadge isHighlighted={effectiveHoveredEventId === event.id}>
                         {event.name}
                       </HighlightBadge>
                       <span style={{
@@ -860,8 +809,20 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
                               alignItems: 'center',
                               justifyContent: 'center',
                               pointerEvents: 'auto',
+                              cursor: tooltipsEnabled ? 'help' : 'default',
                             }}
-                            title={`${isEventPhase ? event.name : formatPhaseNameForDisplay(phase.name)}: ${normalizedStart} to ${normalizedEnd}`}
+                            onMouseEnter={(e) =>
+                              handlePhaseMouseEnter(
+                                e,
+                                event.id,
+                                event.name,
+                                isEventPhase ? "EVENT" : formatPhaseNameForDisplay(phase.name),
+                                normalizedStart,
+                                normalizedEnd
+                              )
+                            }
+                            onMouseMove={handlePhaseMouseMove}
+                            onMouseLeave={handlePhaseMouseLeave}
                           >
                             {displayLabel}
                           </div>
