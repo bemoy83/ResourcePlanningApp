@@ -274,6 +274,7 @@ export function UnifiedPlanningTable({
         height: '100%',
         width: '100%',
         overflow: 'auto',
+        backgroundColor: 'var(--bg-primary)',
       }}
     >
       <div style={{ minWidth: `${scrollWidth}px`, position: 'relative' }}>
@@ -283,7 +284,7 @@ export function UnifiedPlanningTable({
             position: 'sticky',
             top: 0,
             zIndex: 10,
-            backgroundColor: 'none',
+            backgroundColor: 'var(--bg-primary)',
           }}
         >
           {/* Calendar Header - "Locations" label - highest z-index to stay on top */}
