@@ -1,0 +1,69 @@
+/* Scroll container - the outermost wrapper */
+.scrollContainer {
+  height: 100%;
+  width: 100%;
+  overflow: auto;
+  background-color: var(--bg-primary);
+}
+
+/* Content wrapper - contains all scrollable content */
+.contentWrapper {
+  position: relative;
+}
+
+/* Sticky navigation - wraps calendar, cross-event, and labels */
+.stickyNavigation {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky-navigation);
+  background-color: var(--bg-primary);
+}
+
+/* Calendar header wrapper - "Locations" label */
+.calendarHeaderWrapper {
+  position: relative;
+  z-index: var(--z-calendar-header-label);
+}
+
+/* Calendar section - location rows */
+.calendarSection {
+  position: relative;
+  z-index: var(--z-base);
+}
+
+/* Cross-event section - demand/capacity summary rows */
+.crossEventSection {
+  position: relative;
+  z-index: var(--z-base);
+  margin-top: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+/* Work category labels row - header for the grid */
+.labelsRow {
+  z-index: var(--z-sticky-labels);
+  background-color: var(--sticky-header-bg);
+  border: var(--border-width-medium) solid var(--sticky-header-border);
+  display: grid;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
+  align-items: stretch;
+  box-sizing: border-box;
+}
+
+/* Sticky label cell - used in the labels row header */
+.labelCell {
+  padding: var(--space-sm);
+  text-align: center;
+  background-color: var(--sticky-corner-bg);
+  color: var(--sticky-corner-text);
+  border: none;
+  height: 100%;
+  align-self: stretch;
+  box-sizing: border-box;
+}
+
+/* Planning grid section - work category rows */
+.planningGridSection {
+  position: relative;
+}

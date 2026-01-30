@@ -251,10 +251,12 @@
     --z-sticky-column: 6;
     /* Sticky left columns - above content and indicators, below headers */
 
-  /* Navigation Layers (11-20) - Sticky headers and navigation */
-  --z-sticky-header: 8;      /* Sticky section headers - above content and columns */
-  --z-sticky-cross-event: 9; /* Cross-event section wrapper - above headers */
-  --z-sticky-calendar: 10;   /* Sticky calendar wrapper - highest navigation layer */
+  /* Navigation Layers (8-15) - Sticky headers and navigation */
+  --z-sticky-header: 8;          /* Sticky section headers - above content and columns */
+  --z-sticky-cross-event: 9;     /* Cross-event section wrapper - above headers */
+  --z-sticky-navigation: 10;     /* Sticky navigation wrapper - contains calendar/cross-event/labels */
+  --z-sticky-labels: 11;         /* Work category labels row - above navigation content */
+  --z-calendar-header-label: 12; /* Calendar header "Locations" label - highest in sticky section */
 
   /* Floating UI (100-200) - Dropdowns and floating panels */
   --z-dropdown: 100;        /* Dropdown menus - above all content and navigation */

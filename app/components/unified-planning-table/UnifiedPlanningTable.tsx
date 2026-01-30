@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import styles from './UnifiedPlanningTable.module.css';
 import { PlanningTableHeader } from './PlanningTableHeader';
 import { CalendarHeader } from './CalendarHeader';
 import { CalendarLocationRow } from './rows/CalendarLocationRow';
@@ -269,31 +270,18 @@ export function UnifiedPlanningTable({
   return (
     <div
       ref={scrollContainerRef}
-      className="unified-planning-table"
-      style={{
-        height: '100%',
-        width: '100%',
-        overflow: 'auto',
-        backgroundColor: 'var(--bg-primary)',
-      }}
+      className={styles.scrollContainer}
     >
-      <div style={{ minWidth: `${scrollWidth}px`, position: 'relative' }}>
+      <div className={styles.contentWrapper} style={{ minWidth: `${scrollWidth}px` }}>
         {/* Sticky Navigation Sections - Calendar + Cross-Event Context */}
-        <div
-          style={{
-            position: 'sticky',
-            top: 0,
-            zIndex: 10,
-            backgroundColor: 'var(--bg-primary)',
-          }}
-        >
+        <div className={styles.stickyNavigation}>
           {/* Calendar Header - "Locations" label - highest z-index to stay on top */}
-          <div style={{ position: 'relative', zIndex: 20 }}>
+          <div className={styles.calendarHeaderWrapper}>
             <CalendarHeader timeline={timeline} />
           </div>
 
           {/* Calendar Section - One row per location */}
-          <section className="calendar-section" style={{ position: 'relative', zIndex: 1 }}>
+          <section className={styles.calendarSection}>
             {calendarRows.map(({ location, events: locationEvents }, index) => (
               <CalendarLocationRow
                 key={location.id}
@@ -306,7 +294,7 @@ export function UnifiedPlanningTable({
                 onEventHover={handleEventHover}
               />
             ))}
-            {/* Today indicator line inside calendar section - above calendar content (z-index 1) but below sticky columns (z-index 3) */}
+            {/* Today indicator line inside calendar section */}
             <TodayIndicator
               todayIndex={todayIndex}
               dateColumnWidth={TIMELINE_DATE_COLUMN_WIDTH}
@@ -316,7 +304,7 @@ export function UnifiedPlanningTable({
           </section>
 
           {/* Cross-Event Section - Summary rows */}
-          <section className="cross-event-section" style={{ position: 'relative', zIndex: 1, marginTop: 'var(--space-md)', marginBottom: 'var(--space-md)' }}>
+          <section className={styles.crossEventSection}>
             <CrossEventDemandRow
               dailyDemand={crossEventEvaluation.crossEventDailyDemand}
               dailyCapacityComparison={crossEventEvaluation.crossEventCapacityComparison}
@@ -335,111 +323,47 @@ export function UnifiedPlanningTable({
             />
           </section>
 
-          {/* Work Categories Labels Row - Sticky below cross-event */}
+          {/* Work Categories Labels Row - Part of sticky header section */}
           <div
+            className={styles.labelsRow}
             style={{
-              position: 'sticky',
-              top: 0,
-              zIndex: 11,
-              backgroundColor: 'var(--sticky-header-bg)',
-              border: 'var(--border-width-medium) solid var(--sticky-header-border)',
-              display: 'grid',
               gridTemplateColumns: gridTemplateColumns,
-              fontWeight: 'var(--font-weight-bold)',
-              fontSize: 'var(--font-size-sm)',
               minWidth: `${scrollWidth}px`,
               width: `${scrollWidth}px`,
-              alignItems: 'stretch',
-              boxSizing: 'border-box',
             }}
           >
             <StickyLeftCell
               leftOffset={leftColumnOffsets[0]}
-              style={{
-                padding: 'var(--space-sm)',
-                textAlign: 'center',
-                backgroundColor: 'var(--sticky-corner-bg)',
-                color: 'var(--sticky-corner-text)',
-                borderTop: 'none',
-                borderBottom: 'none',
-                borderLeft: 'none',
-                borderRight: 'none',
-                height: '100%',
-                alignSelf: 'stretch',
-                boxSizing: 'border-box',
-              }}
+              className={styles.labelCell}
+              style={{ backgroundColor: 'var(--sticky-corner-bg)', color: 'var(--sticky-corner-text)' }}
             >
               Event
             </StickyLeftCell>
             <StickyLeftCell
               leftOffset={leftColumnOffsets[1]}
-              style={{
-                padding: 'var(--space-sm)',
-                textAlign: 'center',
-                backgroundColor: 'var(--sticky-corner-bg)',
-                color: 'var(--sticky-corner-text)',
-                borderTop: 'none',
-                borderBottom: 'none',
-                borderLeft: 'none',
-                borderRight: 'none',
-                height: '100%',
-                alignSelf: 'stretch',
-                boxSizing: 'border-box',
-              }}
+              className={styles.labelCell}
+              style={{ backgroundColor: 'var(--sticky-corner-bg)', color: 'var(--sticky-corner-text)' }}
             >
               Work Category
             </StickyLeftCell>
             <StickyLeftCell
               leftOffset={leftColumnOffsets[2]}
-              style={{
-                padding: 'var(--space-sm)',
-                textAlign: 'center',
-                backgroundColor: 'var(--sticky-corner-bg)',
-                color: 'var(--sticky-corner-text)',
-                borderTop: 'none',
-                borderBottom: 'none',
-                borderLeft: 'none',
-                borderRight: 'none',
-                height: '100%',
-                alignSelf: 'stretch',
-                boxSizing: 'border-box',
-              }}
+              className={styles.labelCell}
+              style={{ backgroundColor: 'var(--sticky-corner-bg)', color: 'var(--sticky-corner-text)' }}
             >
               Estimate
             </StickyLeftCell>
             <StickyLeftCell
               leftOffset={leftColumnOffsets[3]}
-              style={{
-                padding: 'var(--space-sm)',
-                textAlign: 'center',
-                backgroundColor: 'var(--sticky-corner-bg)',
-                color: 'var(--sticky-corner-text)',
-                borderTop: 'none',
-                borderBottom: 'none',
-                borderLeft: 'none',
-                borderRight: 'none',
-                height: '100%',
-                alignSelf: 'stretch',
-                boxSizing: 'border-box',
-              }}
+              className={styles.labelCell}
+              style={{ backgroundColor: 'var(--sticky-corner-bg)', color: 'var(--sticky-corner-text)' }}
             >
               Allocated
             </StickyLeftCell>
             <StickyLeftCell
               leftOffset={leftColumnOffsets[4]}
-              style={{
-                padding: 'var(--space-sm)',
-                textAlign: 'center',
-                backgroundColor: 'var(--sticky-corner-bg)',
-                color: 'var(--sticky-corner-text)',
-                borderTop: 'none',
-                borderBottom: 'none',
-                borderLeft: 'none',
-                borderRight: 'none',
-                height: '100%',
-                alignSelf: 'stretch',
-                boxSizing: 'border-box',
-              }}
+              className={styles.labelCell}
+              style={{ backgroundColor: 'var(--sticky-corner-bg)', color: 'var(--sticky-corner-text)' }}
             >
               Remaining
             </StickyLeftCell>
@@ -447,7 +371,7 @@ export function UnifiedPlanningTable({
         </div>
 
         {/* Planning Grid Section - Scrollable work categories */}
-        <section className="planning-grid-section" style={{ position: 'relative', border: 'none' }}>
+        <section className={styles.planningGridSection}>
           {/* Today indicator line for planning grid section - below sticky columns (z-index 3) */}
           <TodayIndicator
             todayIndex={todayIndex}
