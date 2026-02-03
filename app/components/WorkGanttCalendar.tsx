@@ -850,11 +850,35 @@ export const WorkGanttCalendar = memo(function WorkGanttCalendar({
                         wordBreak: 'break-word',
                         overflowWrap: 'break-word',
                       }}>
-                        <HighlightBadge
-                          isHighlighted={highlightedWorkCategoryIds.has(workCategoryRow.workCategoryId)}
-                        >
-                          {workCategoryRow.workCategoryName}
-                        </HighlightBadge>
+                        <div style={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          gap: 'var(--space-xs)',
+                          alignItems: 'baseline',
+                          flex: 1,
+                          minWidth: 0,
+                        }}>
+                          <HighlightBadge
+                            isHighlighted={highlightedWorkCategoryIds.has(workCategoryRow.workCategoryId)}
+                          >
+                            {workCategoryRow.workCategoryName}
+                          </HighlightBadge>
+                          {(() => {
+                            const workCategory = workCategories.find(wc => wc.id === workCategoryRow.workCategoryId);
+                            const phase = workCategory?.phase;
+                            if (!phase) return null;
+                            return (
+                              <span style={{
+                                fontSize: '10px',
+                                color: 'var(--text-tertiary)',
+                                fontWeight: 'var(--font-weight-normal)',
+                                whiteSpace: 'nowrap',
+                              }}>
+                                ({formatPhaseNameForDisplay(phase)})
+                              </span>
+                            );
+                          })()}
+                        </div>
                       </div>
 
                       <div style={{
