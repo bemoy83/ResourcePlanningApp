@@ -198,7 +198,7 @@ export function AllocationCell({
           padding: 'var(--space-xs)',
           backgroundColor: 'transparent',
           fontWeight: 'var(--font-weight-bold)',
-          color: 'var(--text-primary)',
+          color: 'var(--text-inverse)',
           border: 'none',
           display: 'flex',
           alignItems: 'center',

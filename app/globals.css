@@ -114,6 +114,10 @@
   --calendar-header-bg: #f3f4f6;
   --calendar-span-bg: #e5e7eb;
   --work-bar-bg: #6b7280; /* zinc-500: high contrast for white text */
+  --work-assembly-bg: #6b7280;
+    /* Assembly/build-up work (same neutral grey) */
+    --work-dismantle-bg: #6b7280;
+    /* Dismantle/tear-down work (same neutral grey) */
   --calendar-grid-line: rgba(0, 0, 0, 0.03);
   --calendar-grid-line-soft: rgba(0, 0, 0, 0.015);
   --calendar-row-separator: rgba(0, 0, 0, 0.04);
@@ -376,6 +380,10 @@
   --calendar-header-bg: #18181b;
   --calendar-span-bg: #27272a;
   --work-bar-bg: #a1a1aa; /* zinc-400: high contrast for dark text */
+  --work-assembly-bg: #a1a1aa;
+    /* Assembly/build-up work (same neutral grey) */
+    --work-dismantle-bg: #a1a1aa;
+    /* Dismantle/tear-down work (same neutral grey) */
   --calendar-grid-line: rgba(255, 255, 255, 0.02);
   --calendar-grid-line-soft: rgba(255, 255, 255, 0.015);
   --calendar-row-separator: rgba(255, 255, 255, 0.04);

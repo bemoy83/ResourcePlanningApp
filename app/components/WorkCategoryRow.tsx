@@ -79,7 +79,7 @@ export function WorkCategoryRow({
   const CELL_BORDER_WIDTH = 1;
   const BAR_HEIGHT = 24; // Match gantt view bar height
 
-  // Map phase name to CSS token for bar color
+  // Map phase name to CSS token for bar color (event phases)
   const getPhaseBackgroundColor = (phaseName: string | undefined): string => {
     if (!phaseName) {
       return 'var(--calendar-span-bg)';
@@ -93,6 +93,19 @@ export function WorkCategoryRow({
       'DISMANTLE': 'var(--phase-dismantle)',
     };
     return phaseTokenMap[normalizedPhase] || 'var(--calendar-span-bg)';
+  };
+
+  // Map work phase to neutral work color (for allocation spans)
+  const getWorkPhaseColor = (phaseName: string | undefined): string => {
+    if (!phaseName) {
+      return 'var(--work-bar-bg)';
+    }
+    const normalizedPhase = phaseName.trim().toUpperCase();
+    if (normalizedPhase === 'DISMANTLE') {
+      return 'var(--work-dismantle-bg)';
+    }
+    // Default to assembly color for ASSEMBLY, MOVE_IN, EVENT, MOVE_OUT
+    return 'var(--work-assembly-bg)';
   };
 
   // Build allocation spans for this work category
@@ -236,6 +249,8 @@ export function WorkCategoryRow({
           const blockWidth = spanLength * dateColumnWidth;
           const topOffset = `calc(50% - ${BAR_HEIGHT / 2}px)`;
 
+          const isDismantle = span.phase?.toUpperCase() === 'DISMANTLE';
+
           return (
             <div
               key={`bar-${workCategory.id}-${spanIndex}-${span.startDate}`}
@@ -245,8 +260,9 @@ export function WorkCategoryRow({
                 left: `${leftOffset}px`,
                 width: `${blockWidth}px`,
                 height: `${BAR_HEIGHT}px`,
-                backgroundColor: getPhaseBackgroundColor(span.phase),
+                backgroundColor: getWorkPhaseColor(span.phase),
                 borderRadius: 'var(--radius-sm)',
+                borderLeft: `6px solid ${isDismantle ? 'var(--phase-dismantle)' : 'var(--phase-assembly)'}`,
                 zIndex: 1,
                 pointerEvents: 'none',
                 boxSizing: 'border-box',
