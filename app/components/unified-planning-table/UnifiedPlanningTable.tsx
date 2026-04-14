@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import styles from './UnifiedPlanningTable.module.css';
-import { PlanningTableHeader } from './PlanningTableHeader';
 import { CalendarHeader } from './CalendarHeader';
 import { CalendarLocationRow } from './rows/CalendarLocationRow';
 import { CrossEventDemandRow } from './rows/CrossEventDemandRow';
@@ -21,6 +20,7 @@ import {
   CrossEventEvaluation,
 } from '../../types/shared';
 import {
+  CALENDAR_HEADER_HEIGHT,
   LEFT_COLUMNS,
   TIMELINE_DATE_COLUMN_WIDTH,
   TIMELINE_ORIGIN_PX,
@@ -273,9 +273,9 @@ export function UnifiedPlanningTable({
       className={styles.scrollContainer}
     >
       <div className={styles.contentWrapper} style={{ minWidth: `${scrollWidth}px` }}>
-        {/* Sticky Navigation Sections - Calendar + Cross-Event Context */}
-        <div className={styles.stickyNavigation}>
-          {/* Calendar Header - "Locations" label - highest z-index to stay on top */}
+        {/* Calendar, location rows, cross-event context, then sticky labels row */}
+        <div className={styles.tableTopSections}>
+          {/* Calendar Header - date bands stick to top of the scroll area */}
           <div className={styles.calendarHeaderWrapper}>
             <CalendarHeader timeline={timeline} />
           </div>
@@ -330,6 +330,7 @@ export function UnifiedPlanningTable({
               gridTemplateColumns: gridTemplateColumns,
               minWidth: `${scrollWidth}px`,
               width: `${scrollWidth}px`,
+              top: `${CALENDAR_HEADER_HEIGHT}px`,
             }}
           >
             <StickyLeftCell

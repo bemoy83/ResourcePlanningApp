@@ -11,18 +11,23 @@
   position: relative;
 }
 
-/* Sticky navigation - wraps calendar, cross-event, and labels */
-.stickyNavigation {
-  position: sticky;
-  top: 0;
-  z-index: var(--z-sticky-navigation);
+/*
+ * Top stack (calendar, locations, cross-event, labels). Only the calendar header
+ * and labels row use position: sticky — a single sticky wrapper that included all
+ * location rows exceeded the viewport, so the browser could not keep the date
+ * header pinned.
+ */
+.tableTopSections {
+  position: relative;
   background-color: var(--bg-primary);
 }
 
-/* Calendar header wrapper - "Locations" label */
+/* Calendar header (months / weeks / days) — stays visible while scrolling below */
 .calendarHeaderWrapper {
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: var(--z-calendar-header-label);
+  background-color: var(--bg-primary);
 }
 
 /* Calendar section - location rows */
@@ -39,8 +44,10 @@
   margin-bottom: var(--space-md);
 }
 
-/* Work category labels row - header for the grid */
+/* Work category labels row — sticks below the calendar header while scrolling the grid */
 .labelsRow {
+  position: sticky;
+  /* top is set inline to CALENDAR_HEADER_HEIGHT so it stays flush under the date header */
   z-index: var(--z-sticky-labels);
   background-color: var(--sticky-header-bg);
   border: var(--border-width-medium) solid var(--sticky-header-border);
