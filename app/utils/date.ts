@@ -1,4 +1,4 @@
-const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+export const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export function parseDateParts(date: string): { year: number; month: number; day: number } {
   const [yearStr, monthStr, dayStr] = date.split("-");
@@ -109,5 +109,5 @@ export function buildDateFlags(dates: string[], holidayDates?: Set<string>): Dat
 
 export function formatLabelDate(date: string): string {
   const { month, day } = parseDateParts(date);
-  return `${MONTH_NAMES[month - 1]} ${day}`;
+  return `${MONTH_LABELS[month - 1]} ${day}`;
 }

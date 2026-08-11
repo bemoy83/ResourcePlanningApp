@@ -4,8 +4,8 @@ import { useCallback, useMemo, useState } from "react";
 import { Button } from "./Button";
 import { SegmentedControl } from "./SegmentedControl";
 import { DateRange, DateRangePreset } from "./dateRange";
-import { UnifiedDateRangePicker } from "./UnifiedDateRangePicker";
-import { formatLabelDate, formatDateLocal, parseDateParts } from "../utils/date";
+import { UnifiedDateRangePicker } from "./unified-date-range-picker";
+import { formatLabelDate, formatDateLocal, parseDateParts, MONTH_LABELS } from "../utils/date";
 
 interface UnifiedDateRangeButtonProps {
   selectedPreset: DateRangePreset;
@@ -41,7 +41,7 @@ const presetLabels: Record<DateRangePreset, string> = {
   custom: "Custom",
 };
 
-const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const monthLabels = MONTH_LABELS;
 
 export function UnifiedDateRangeButton({
   selectedPreset,
