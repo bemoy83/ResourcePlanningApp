@@ -248,10 +248,10 @@
   --z-base: 1;              /* Default content layer - use for base content elements */
   --z-phase: 3;
     /* Event phase spans and gantt bars - base content layer */
-    --z-today-indicator: 4;
-    /* Visual indicators (e.g., today line) - above content and phase spans */
-    --z-allocation-text: 5;
-    /* Allocation work numbers/text - above today line for readability */
+    --z-allocation-text: 4;
+    /* Allocation work numbers/text - below today line so the line stays visible */
+    --z-today-indicator: 5;
+    /* Visual indicators (e.g., today line) - above content, phase spans, and allocation cells */
     --z-sticky-column: 6;
     /* Sticky left columns - above content and indicators, below headers */
 
